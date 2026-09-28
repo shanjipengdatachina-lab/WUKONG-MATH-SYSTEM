@@ -441,7 +441,9 @@
 
     html += '<p class="kp-index">' + esc(index.join(' · ')) + '</p>';
     html += '<h1 class="kp-title">' + esc(chapter.name) + '</h1>';
-    html += '<p class="kp-def">' + esc(meta.join(' · ')) + '。点击右栏「本页目录」可定位到任意一节。</p>';
+    /* 「本页目录」在宽屏是右栏、窄屏摞在正文下面 —— 所以这句话**不能**写成"点击右栏"：
+       ≥1024 才有右栏（1024~1279 那一档原来干脆没有右栏，话说得出口、栏却不在）。 */
+    html += '<p class="kp-def">' + esc(meta.join(' · ')) + '。「本页目录」里可以跳到任意一节。</p>';
     html += notesHTML(book, chapter);
 
     (chapter.children || []).forEach(function (node, si) {

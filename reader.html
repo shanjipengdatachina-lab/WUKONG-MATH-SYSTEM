@@ -505,12 +505,13 @@
   transition:border-color 140ms cubic-bezier(.2,.8,.2,1);
 }.opt:hover .opt__radio{border-color:var(--math-line-strong)}.opt__input:checked + .opt__radio{border-color:var(--math-primary)}.opt__input:checked + .opt__radio::after{
   content:"";position:absolute;inset:3px;border-radius:50%;background:var(--math-primary);
-}.opt__input:focus-visible + .opt__radio{outline:2px solid var(--math-primary);outline-offset:2px}.opt__key{flex:0 0 14px;font-family:var(--math-font-mono);font-size:calc(13px * var(--math-fs));color:var(--math-ink-3)}.opt__text{min-width:0;font-size:calc(14px * var(--math-fs));line-height:1.5;color:var(--math-ink-2)}.opt__text--num{font-family:var(--math-font-mono);font-variant-numeric:tabular-nums}.side-cta{padding:20px 28px 32px}@media (max-width:1279px) and (min-width:1024px){.reader-shell{grid-template-columns:288px minmax(0,1fr)}#chapter-tree{grid-row:1 / span 2}#related-quiz{
-    grid-column:2;grid-row:2;
-    position:static;height:auto;overflow:visible;
-    border-left:0;border-top:1px solid var(--math-border);
-    margin-top:48px;
-  }.reader-article{padding:40px 32px 0}.side-block{padding:24px 32px}.side-block:first-child{padding-top:24px}.side-cta{padding:20px 32px 32px}}@media (max-width:1023px){.reader-shell{grid-template-columns:minmax(0,1fr)}#chapter-tree,#knowledge-point,#related-quiz{grid-column:1}#chapter-tree{grid-row:1}#knowledge-point{grid-row:2}#related-quiz{grid-row:3}.reader-tree{
+}.opt__input:focus-visible + .opt__radio{outline:2px solid var(--math-primary);outline-offset:2px}.opt__key{flex:0 0 14px;font-family:var(--math-font-mono);font-size:calc(13px * var(--math-fs));color:var(--math-ink-3)}.opt__text{min-width:0;font-size:calc(14px * var(--math-fs));line-height:1.5;color:var(--math-ink-2)}.opt__text--num{font-family:var(--math-font-mono);font-variant-numeric:tabular-nums}.side-cta{padding:20px 28px 32px}/* 1024~1279 也是**三栏**（右栏必须在）。
+   这一档原来把右栏的内容挪到正文下面（两栏），于是 1024~1279 的窗口**根本没有右栏**，
+   而正文里还写着"点击右栏（本页目录）"—— 话说得出口、栏却不在（用户问过两次"右侧还是没有侧边栏"）。
+   宽度那件事（--panel-right 取多少）写在 ide.css 的同名媒体块里：ide.css 比这里晚加载，
+   写在这里会被它压回去。这里只留正文与右栏内边距的收档。 */
+@media (max-width:1279px) and (min-width:1024px){
+  .reader-article{padding:40px 40px 0}.side-block{padding:24px 24px}.side-block:first-child{padding-top:24px}.side-cta{padding:20px 24px 32px}}@media (max-width:1023px){.reader-shell{grid-template-columns:minmax(0,1fr)}#chapter-tree,#knowledge-point,#related-quiz{grid-column:1}#chapter-tree{grid-row:1}#knowledge-point{grid-row:2}#related-quiz{grid-row:3}.reader-tree{
     position:static;height:auto;overflow:visible;
     border-right:0;border-bottom:1px solid var(--math-border);
   }.tree-head{position:static;height:auto;padding:14px 16px;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.tree-head:hover{background:var(--math-surface)}.tree-head__icon{display:block;transition:transform 140ms cubic-bezier(.2,.8,.2,1)}.tree-toggle:focus-visible + .tree-head{outline:2px solid var(--math-primary);outline-offset:-2px}.tree-toggle:checked ~ .tree-head .tree-head__icon{transform:rotate(180deg)}.tree-stage{position:static;display:none}.tree-toggle:checked ~ .tree-stage{display:flex}.tree-body{display:none;padding-bottom:0}.tree-toggle:checked ~ .tree-body{display:block}.reader-article{padding:40px 32px 0}#related-quiz{

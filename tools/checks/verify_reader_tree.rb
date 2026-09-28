@@ -10,6 +10,11 @@
 #   展开 / 收起的真实手感由 tools/checks/harness-tail.js 真跑一遍来验。
 ROOT = (ENV['WKMATH_ROOT'] || File.expand_path('../..', __dir__)).dup.force_encoding('UTF-8')
 html  = File.read(File.join(ROOT, 'reader.html'), encoding: 'UTF-8')
+# 剥掉 CSS 注释的副本：守线要盯的常是"某条规则还在不在"，而解释性注释里往往就把那条规则
+# 原文抄了一遍 —— 不剥就会被自己的注释顶绿（/顶红），这个坑这个项目踩过好几次。
+# **定义放在最前面**：守线是一段段加的，谁先谁后不固定，用在中段再定义就会 NameError
+# （2026-09-29 真踩到：run_all 那头的"体检脚本崩了也算红灯"就是这么给抓出来的）。
+html_css = html.gsub(%r{/\*[\s\S]*?\*/}, '')
 live  = File.read(File.join(ROOT, 'assets/js/reader-live.js'), encoding: 'UTF-8')
 js    = File.read(File.join(ROOT, 'assets/js/pages.js'), encoding: 'UTF-8')
 shell = File.read(File.join(ROOT, 'assets/js/ide-shell.js'), encoding: 'UTF-8')
@@ -152,11 +157,24 @@ issues << '右栏收起时没有只留标题栏（56px 窄条里会露出正文�
 issues << '右栏收起时那颗按钮没留在窄条里（应把 .side-bar 居中留着）' unless
   css[/\.reader-shell\[data-right="hidden"\]\s*\.side-bar\s*\{[\s\S]{0,140}?justify-content:\s*center/m]
 #     另外两处同源的问题：
-#     ② 1024~1279 这一档，右栏的内容落到正文下面（页面里那段两列布局），
-#        所以这一列必须收成 0 —— 不收就留一条 320px 的空带，右边缘看着就是"右栏空了/没了"。
-#     ③ 窄屏两栏是**摞起来**的，两颗收起按钮都没有意义；左栏那颗原来就藏了，右栏那颗漏了。
-issues << '1024~1279 没把右栏那一列收成 0（右边会留一条 320px 空带，像"右栏没了"）' unless
-  css[/@media \(min-width:\s*1024px\) and \(max-width:\s*1279px\)\s*\{\s*\.reader-shell\s*\{\s*--panel-right:\s*0px/m]
+#     ② 1024~1279 这一档**右栏必须是真栏**。这一档原来把右栏内容挪到正文下面（两栏），
+#        于是 1024~1279 的窗口根本没有右栏，而正文里还写着"点击右栏（本页目录）"——
+#        用户连着两次问"右侧还是没有侧边栏"，就是这一档。
+#        守三件事：右栏有真实宽度、最窄的 1024 窗口下正文还留得下、页面里不许再把它挪到正文下面。
+band1279 = css[/@media \(min-width:\s*1024px\) and \(max-width:\s*1279px\)\s*\{\s*\.reader-shell\s*\{([^}]*)\}/m, 1].to_s
+pr1279 = band1279[/--panel-right:\s*(\d+)px/, 1]
+issues << '1024~1279 没给右栏宽度（这一档会没有右栏，用户问过两次）' if pr1279.nil?
+issues << "1024~1279 的右栏只有 #{pr1279}px（收成 0 就等于没有右栏）" if pr1279 && pr1279.to_i < 200
+if pr1279
+  article_min = 1024 - 288 - pr1279.to_i
+  issues << "1024 窗口下正文只剩 #{article_min}px（右栏太宽，正文被挤没了）" if article_min < 320
+end
+issues << '页面里又把右栏挪到正文下面了（1024~1279 就没有右栏了）' if
+  html_css[/#related-quiz\{\s*grid-column:2/]
+#     ③ 那句话不能再写"点击右栏"：窄屏（<1024）右栏是摞在正文下面的，没有"右栏"可点。
+#     **比对的锚要带上前面的句号** —— 上面这行解释里就写着"点击右栏"四个字，
+#     只搜这四个字会被自己的注释顶红（这个坑踩过好几次了）。
+issues << '正文里又写着"点击右栏"（窄屏没有右栏，这句话就落空了）' if live.include?('。点击右栏')
 narrow760 = css[/@media \(max-width:\s*1023px\)\s*\{([^}]*)\}/m, 1].to_s
 issues << '窄屏下右栏那颗收起按钮还露着（点了什么都不会发生）' unless narrow760.include?('.side-collapse')
 # 窄屏这一条还必须在选择器里带上 .reader-shell：页面自己那份基础规则（.tree-collapse{display:inline-flex}）
@@ -165,9 +183,9 @@ issues << '窄屏藏按钮那条没带 .reader-shell（权重不够，页面自�
   narrow760[/\.reader-shell\s+\.tree-collapse[\s\S]{0,90}?\.reader-shell\s+\.side-collapse/]
 #     三栏只写一份：reader.html 里不许再有那份死副本 —— 它比 ide.css 早，
 #     会把 ide.css 的两列/三列判断压回去（1024~1279 那条空带就是这么来的）。
-#     **比对前先剥掉 CSS 注释**：上面那段解释里就写着 `--panel-right:320px` 这几个字，
-#     不剥的话守线会被自己的注释顶红（"守线别被自己的注释骗"这个坑踩过好几次了）。
-html_css = html.gsub(%r{/\*[\s\S]*?\*/}, '')
+#     **比对前先剥掉 CSS 注释**（html_css 在文件开头就备好了）：上面那段解释里就写着
+#     `--panel-right:320px` 这几个字，不剥的话守线会被自己的注释顶红（"守线别被自己的注释骗"
+#     这个坑踩过好几次了）。
 issues << 'reader.html 里又抄了一份三栏布局（那份会压住 ide.css 的判断）' if
   html_css.include?('--panel-right:320px')
 issues << 'reader.html 里还留着旧顶栏面板开关的死样式（.shell-panels / .shell-panel-btn）' if
