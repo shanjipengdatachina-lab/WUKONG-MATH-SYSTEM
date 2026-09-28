@@ -30,10 +30,10 @@
   var ACCENT_ATTR = 'data-wk-accent';
   var THEMES = ['light', 'mid', 'dark'];
   var SIZES = ['std', 'lg', 'xl'];
-  var ACCENTS = ['green', 'blue', 'violet', 'amber', 'cyan', 'rose'];
+  var ACCENTS = ['green', 'blue', 'violet', 'amber', 'cyan', 'rose', 'red'];
   var THEME_LABEL = { light: '亮色', mid: '中色', dark: '暗色' };
   var FS_LABEL = { std: '标准', lg: '大', xl: '特大' };
-  var ACCENT_LABEL = { green: '松绿', blue: '靛蓝', violet: '紫罗兰', amber: '琥珀', cyan: '青碧', rose: '玫红' };
+  var ACCENT_LABEL = { green: '松绿', blue: '靛蓝', violet: '紫罗兰', amber: '琥珀', cyan: '青碧', rose: '玫红', red: '中国红' };
   /* 默认高亮色是松绿（Trae 的品牌绿）—— **不写属性**，它就住在 tokens.css 的 :root 里。
      这样"从没设过"和"设成松绿"在 DOM 上完全一样，不会出现"重置了但属性还挂着"的灰区。 */
   var ACCENT_DEFAULT = 'green';

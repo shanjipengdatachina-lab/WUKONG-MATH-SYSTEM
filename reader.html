@@ -56,14 +56,9 @@
 
       <div class="ide-rail__foot">
         <span class="ide-rail__sep" aria-hidden="true"></span>
-        <button type="button" class="ide-rail__item" id="toggle-left" aria-pressed="true" aria-controls="chapter-tree" title="左栏：目录（⌘/Ctrl + B）">
-          <i data-lucide="panel-left" class="ide-rail__icon"></i>
-          <span class="ide-rail__label">目录</span>
-        </button>
-        <button type="button" class="ide-rail__item" id="toggle-right" aria-pressed="true" aria-controls="related-quiz" title="右栏：本页目录（⌘/Ctrl + ⌥/Alt + B）">
-          <i data-lucide="panel-right" class="ide-rail__icon"></i>
-          <span class="ide-rail__label">本页</span>
-        </button>
+        <!-- 「目录 / 本页」这两个面板开关已撤（用户："左下角俩按钮在各自的顶部都有了可以去掉"）：
+             左右两栏的标题栏上各自就有收起 / 展开按钮（#tree-collapse / #side-collapse），
+             同一个动作不该在两处出现。快捷键 ⌘/Ctrl + B、⌘/Ctrl + ⌥/Alt + B 仍然可用。 -->
         <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
           <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
           <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
@@ -555,7 +550,8 @@
   flex:none;padding:1px 6px;border-radius:4px;
   background:var(--math-primary-soft);color:var(--math-primary);
   font-size:calc(12px * var(--math-fs));font-weight:600;
-}.kp-source{margin:12px 0 0;max-width:34em;font-size:calc(12px * var(--math-fs));line-height:1.7;color:var(--math-ink-4);word-break:break-all}.kp-source a{color:var(--math-ink-3);text-decoration:underline;text-underline-offset:2px}.kp-source a:hover{color:var(--math-primary)}.kp-source a:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px;border-radius:2px}.tree-note{margin:0;padding:8px 12px;font-size:calc(12px * var(--math-fs));line-height:1.6;color:var(--math-ink-4)}.ch-row__warn,.volume-head__warn{
+}/* .kp-source（正文里"目录来源：https://…"那一行）已按用户要求撤掉：数据来源网址不再显示，
+   后期目录数据由自己后台上传。渲染那段与它的样式（含 <a> 三态）一起删干净，不留死样式。 */.tree-note{margin:0;padding:8px 12px;font-size:calc(12px * var(--math-fs));line-height:1.6;color:var(--math-ink-4)}.ch-row__warn,.volume-head__warn{
   flex:none;padding:0 5px;border-radius:4px;
   background:var(--math-surface);
   font-size:calc(11px * var(--math-fs));line-height:16px;color:var(--math-ink-4);

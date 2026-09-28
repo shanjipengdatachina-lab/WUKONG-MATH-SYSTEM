@@ -301,7 +301,10 @@
   }
 
   /* 换学段之后中间栏回到哪儿：初中回到手写正文（设计稿的初始状态），
-     其余学段落到第一册第一章。 */
+     其余学段落到第一册第一章。
+     **兜底**：万一这个学段的目录里一个能渲染的"章"都没有（数据还没上），
+     必须给一句明确的话 —— 原来这里悄悄就返回了，中间栏会留着**上一个学段**那篇文章，
+     用户看到的就是"左边选了小学、正文还是高中的三角函数"。 */
   function showStageHome() {
     if (currentStage === DEFAULT_STAGE) {
       showAuthored();
@@ -313,11 +316,22 @@
       for (var ci = 0; ci < kids.length; ci++) {
         if (kids[ci].kind !== 'chapter') continue;
         var key = layout.keys[bi][ci];
+        if (!chapterByNo[key]) continue; // 索引里没有这一章（数据缺口）→ 接着往后找
         renderChapter(chapterByNo[key]);
         markActiveKey(key);
         return;
       }
     }
+    showStageEmpty();
+  }
+
+  /* 这个学段一条章都没有时的中间栏：说清是什么情况，而不是留一篇别的学段的文章 */
+  function showStageEmpty() {
+    var info = stageInfo(currentStage) || {};
+    art.innerHTML = '<h1 class="kp-title">' + esc(info.name || '这个学段') + '还没上内容</h1>' +
+      '<p class="sec-empty">目录由后台上传，这一学段的册与章还在准备中。左边的学段按钮随时可以切回去。</p>';
+    document.title = (info.short || '学段') + ' · 章节阅读';
+    buildOutline();
   }
 
   function setStage(code) {
@@ -387,22 +401,15 @@
     return html + '</ol>';
   }
 
-  /* 待核与来源：这份目录要给学生看，哪儿还没核到、目录从哪来，正文里都说清 */
-  function sourceHTML(source) {
-    if (/^https?:\/\//.test(source)) {
-      return '<a href="' + esc(source) + '" target="_blank" rel="noopener">' + esc(source) + '</a>';
-    }
-    return esc(source);
-  }
-
+  /* 待核：这份目录要给学生看，哪儿还没核到，正文里就说清。
+     **不再渲染"目录来源"那一行**（用户要的："目录里所有的数据来源的那个网址 去掉即可；
+     后期我们的数据都是自己后台上传的"）—— 数据里 source 字段仍留着：生成器拿它当必填项、
+     校验也还在，只是不再把那串网址端到学生面前。 */
   function notesHTML(book, chapter) {
     var html = '';
     var pending = chapter.pending || book.pending;
     if (pending) {
       html += '<p class="kp-pending"><span class="kp-pending__tag">待核</span>' + esc(pending) + '</p>';
-    }
-    if (book.source) {
-      html += '<p class="kp-source">目录来源：' + sourceHTML(book.source) + '</p>';
     }
     return html;
   }

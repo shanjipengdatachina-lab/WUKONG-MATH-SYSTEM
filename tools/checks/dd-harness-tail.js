@@ -77,9 +77,11 @@ eq(themeChips[2]._pressed, 'false', '「暗色」松开');
    换色要同时做三件事：写 <html>、记本机、广播；坏值一律回落默认。 */
 eq(window.WK_DISPLAY.get().accent, 'green', '默认高亮色是松绿');
 eq(__html.hasAttribute('data-wk-accent'), false, '默认那一档不写属性（"没设过"与"设成默认"在 DOM 上一样）');
-eq(window.WK_DISPLAY.accents.length, 6, '给了六个可选高亮色');
+eq(window.WK_DISPLAY.accents.length, 7, '给了七个可选高亮色（六个原色 + 用户要的中国红）');
 eq(window.WK_DISPLAY.accents[0], 'green', '第一个就是默认那档');
 eq(window.WK_DISPLAY.accentLabel.amber, '琥珀', '每个色都有中文名（按钮上要写）');
+eq(window.WK_DISPLAY.accentLabel.red, '中国红', '中国红那一档的中文名就是"中国红"');
+eq(window.WK_DISPLAY.accents[6], 'red', '中国红排在最后一个（没插队改顺序）');
 
 var beforeAccent = __events.length;
 var afterAccent = window.WK_DISPLAY.set({ accent: 'violet' });

@@ -277,6 +277,14 @@ html[data-wk-accent="rose"] {
   --math-primary-foreground: #ffffff;
   --math-primary-strong: #9d174d;
 }
+/* 中国红：用户点名要的颜色（"都加上大红叫做中国红"）。
+   挑的是 #e60012 —— 常见的中系正红。它压在纯白上有 4.8:1，正好过"字与图标"那条线
+   （比它更亮的红，比如 #ff0000，压白只有 4.0:1，当文字就偏虚了）。 */
+html[data-wk-accent="red"] {
+  --math-primary: #e60012;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #b8000e;
+}
 
 html[data-wk-theme="dark"][data-wk-accent="blue"] {
   --math-primary: #93b4ff;
@@ -302,6 +310,11 @@ html[data-wk-theme="dark"][data-wk-accent="rose"] {
   --math-primary: #fda4d4;
   --math-primary-foreground: #000000;
   --math-primary-strong: #fbcfe8;
+}
+html[data-wk-theme="dark"][data-wk-accent="red"] {
+  --math-primary: #ff4d4f;
+  --math-primary-foreground: #000000;
+  --math-primary-strong: #ff8082;
 }
 
 /* ==========================================================================

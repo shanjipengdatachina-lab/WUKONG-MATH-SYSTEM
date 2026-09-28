@@ -102,6 +102,41 @@ issues << '给学段单加了一层节点（应该只是册上的一栏）' if t
   issues << "缺教材结构文件：#{f}" unless File.exist?(File.join(ROOT, f))
 end
 
-puts "左栏目录: 手写 #{body.scan(/class="ch-row"/).size} 行（应为 0）· 学段按钮 #{chips.size} 个（默认 初中）"
+# 10) 收起状态下"看着像选了别的学段" + 中间栏必须跟着学段走（用户报过）
+#     ① 左栏收起只剩 56px 时，四个 chip 横排会被裁到只剩第一个（小学）——
+#        于是看着像"选了小学、正文却是高中"。收起状态只留真选中的那一个。
+#     ② 换学段时中间栏必须跟着换：万一这个学段一条章都没有，要给明确说法，
+#        不能悄悄返回、把上一个学段那篇文章留在那儿。
+css = File.read(File.join(ROOT, 'assets/css/ide.css'), encoding: 'UTF-8')
+issues << '左栏收起时学段条会把第一个 chip 露成"当前学段"（收起时应只留真选中的那个）' unless
+  css[/\.reader-shell\[data-left="hidden"\] \.tree-stage__chip:not\(\.is-on\)\s*\{\s*display:\s*none/m]
+issues << 'reader-live.js 换学段没有兜底（数据空时中间栏会留着上一个学段的内容）' unless
+  live.include?('showStageEmpty')
+issues << 'showStageHome 走到底没有调兜底' unless
+  live[/function showStageHome\(\)[\s\S]{0,900}?\n\s*showStageEmpty\(\);/m]
+issues << 'showStageEmpty 没写进中间栏（只声明了函数）' unless
+  live[/function showStageEmpty\(\)[\s\S]{0,400}?art\.innerHTML/m]
+issues << '索引里缺这一章时会直接返回（中间栏仍然留着上一篇）' unless
+  live.include?('if (!chapterByNo[key]) continue;')
+
+# 11) 左右栏的开关只留"各自顶部"那一处（用户："左下角俩按钮在各自的顶部都有了可以去掉"）
+issues << '左栏里还挂着 #toggle-left（左栏顶部已经有收起按钮了）' if html.include?('id="toggle-left"')
+issues << '左栏里还挂着 #toggle-right（右栏顶部已经有收起按钮了）' if html.include?('id="toggle-right"')
+issues << '左栏顶部那份收起按钮丢了（那才是留下的那一处）' unless html.include?('id="tree-collapse"')
+issues << '右栏顶部那份收起按钮丢了' unless html.include?('id="side-collapse"')
+# 快捷键不能跟着按钮一起消失（删按钮时最容易顺手删掉 keydown）
+issues << 'ide-shell.js 的 ⌘/Ctrl+B 快捷键被连坐删掉了' unless shell.include?("event.code !== 'KeyB'")
+
+# 12) 数据来源的网址不再显示（用户："目录里所有的数据来源的那个网址 去掉即可；
+#     后期我们的数据都是自己后台上传的"）。注意：**数据里的 source 字段要留着** ——
+#     生成器拿它当必填项、校验还在，删了数据以后就得重新核一遍。
+issues << '正文里还渲染着"目录来源"那一行' if live.include?("'<p class=\"kp-source\">")
+issues << '图谱信息面板里还渲染着"目录来源"那一行' if mind.include?("'<p class=\"mm-source\">")
+issues << 'sourceHTML / 拼链接那套已经没人用（留着就是死代码）' if live.include?('function sourceHTML')
+issues << '正文里还留着 .kp-source 的样式（渲染撤了就是死样式）' if html.include?('.kp-source{')
+issues << '数据里 source 字段被删了（生成器拿它当必填项，删数据要重新核）' unless
+  tree.include?('source: "https://')
+
+puts '左栏目录: 手写 %d 行（应为 0）· 学段按钮 %d 个（默认 初中）' % [body.scan(/class="ch-row"/).size, chips.size]
 puts "册 / 板块: #{books} 册 + #{tracked} 个板块，全部带 stage 标记"
 puts issues.empty? ? '章节页体检全部通过 ✓' : issues.map { |i| "  ✗ #{i}" }.join("\n")

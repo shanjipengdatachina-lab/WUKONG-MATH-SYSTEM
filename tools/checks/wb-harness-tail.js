@@ -3,7 +3,7 @@
    ============================================================ */
 var WB = window.__WB__;
 assert(!!WB && !!WB.state, '引擎已初始化并暴露测试接口');
-assert(WB.COLORS.length === 6, '配色 6 种');
+assert(WB.COLORS.length === 7, '配色 7 种（六支原色 + 用户要的中国红）');
 assert(WB.WIDTHS.length === 3 && WB.ERASERS.length === 3, '笔粗与橡皮各 3 档');
 assert(WB.state.tool === 'pen', '默认工具是画笔');
 assert(WB.state.view.dpr === 2 && canvasEl.width === 2400, '按设备像素比放大画布（清晰不虚）');
@@ -874,9 +874,22 @@ for (var tk11 in T11) {
   for (var ni11 = 0; ni11 < need11.length; ni11++) {
     if (T11[tk11][need11[ni11]] === undefined) miss11.push(tk11 + '.' + need11[ni11]);
   }
-  if (!T11[tk11].colors || T11[tk11].colors.length !== 6) miss11.push(tk11 + '.colors 不是 6 支');
+  if (!T11[tk11].colors || T11[tk11].colors.length !== 7) miss11.push(tk11 + '.colors 不是 7 支（六支原色 + 中国红）');
 }
 assert(miss11.length === 0, '每套主题字段齐全（缺的是 ' + JSON.stringify(miss11) + '）');
+
+/* 中国红：用户点名要的（"画笔色盘和主体色盘都加上大红叫做中国红"）。
+   浅色板用中系正红 #e60012；黑板上换它的亮色版 —— #e60012 压纯黑只有 3.4:1，在黑板上太沉。 */
+function redOf11(tk, label) {
+  return (T11[tk].colors || []).filter(function (c) { return c.label === label; })[0];
+}
+['white', 'mid'].forEach(function (tk) {
+  var r = redOf11(tk, '中国红');
+  assert(!!r && r.value === '#e60012', tk + ' 板上有中国红 #e60012（实际 ' + (r && r.value) + '）');
+});
+var redDark11 = redOf11('dark', '中国红');
+assert(!!redDark11 && redDark11.value === '#ff4d4f', '黑板上是亮版中国红 #ff4d4f（实际 ' + (redDark11 && redDark11.value) + '）');
+assert(T11.white.colors[0].value === '#1f2937', '加了中国红也没动第一支（默认笔还是墨黑）');
 
 /* 深色板的字必须比板面亮，否则字会消失 —— 这条是"换板不是刷背景"的底线 */
 function lum11(hex) {

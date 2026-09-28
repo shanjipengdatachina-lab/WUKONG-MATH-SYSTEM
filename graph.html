@@ -459,8 +459,9 @@ body{padding-top:0}
   flex:none;margin-left:auto;padding:0 5px;border-radius:4px;
   background:var(--math-surface);font-size:calc(10.5px * var(--math-fs));line-height:1.6;color:var(--math-ink-3);
 }
-/* 信息面板里的"目录待核 / 目录来源"两行 */
-.mm-source{margin:6px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-4);word-break:break-all}
+/* 这里原有 .mm-source（信息面板里"目录来源：https://…"那一行）。
+   用户要求把数据来源的网址去掉（后期数据由自己后台上传），渲染那段已经撤了 ——
+   样式一起删掉，免得留下谁也看不见的死样式。待核那行（.mm-pending）还在。 */
 
 /* 节点信息面板：贴右侧；搜索面板：贴左上 */
 .mm-dock__label{min-width:26px;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-2);font-variant-numeric:tabular-nums}

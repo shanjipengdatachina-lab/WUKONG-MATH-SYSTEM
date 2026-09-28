@@ -707,12 +707,12 @@
     html.push('<h2 class="mm-panel__title">' + esc(node.name) + '</h2>');
 
     /* 目录待核的节点：如实说明为什么这里是空的。
-       空着不说会被当成"忘了做"，而有依据的空缺和没做是两件事。 */
+       空着不说会被当成"忘了做"，而有依据的空缺和没做是两件事。
+       **不再渲染"目录来源"那一行**（用户："目录里所有的数据来源的那个网址 去掉即可；
+       后期我们的数据都是自己后台上传的"）—— 数据里 source 字段仍留着（生成器当必填项用），
+       只是不把网址显示出来。 */
     if (node.pending) {
       html.push('<p class="mm-pending">目录待核：' + esc(node.pending) + '</p>');
-    }
-    if (node.source) {
-      html.push('<p class="mm-source">目录来源：' + esc(node.source) + '</p>');
     }
 
     // 定位路径（可点击逐级回跳）

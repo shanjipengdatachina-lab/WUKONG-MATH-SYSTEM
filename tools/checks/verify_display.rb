@@ -168,20 +168,20 @@ issues << '设置页的字号/配色按钮没有 aria-pressed（读屏看不出�
 issues << '设置页缺「阅读与显示」这一节' unless set.include?('阅读与显示')
 issues << '配色按钮缺预览色块（用户看不到那一档长什么样）' unless
   set.scan(/disp-dot disp-dot--(light|mid|dark)"/).size == 3
-issues << "高亮色按钮缺色块（应有 6 个，实际 #{set.scan(/disp-dot disp-dot--(green|blue|violet|amber|cyan|rose)"/).size} 个）" unless
-  set.scan(/disp-dot disp-dot--(green|blue|violet|amber|cyan|rose)"/).size == 6
+issues << "高亮色按钮缺色块（应有 7 个，实际 #{set.scan(/disp-dot disp-dot--(green|blue|violet|amber|cyan|rose|red)"/).size} 个）" unless
+  set.scan(/disp-dot disp-dot--(green|blue|violet|amber|cyan|rose|red)"/).size == 7
 
 # ---------- 6b. 高亮色：默认 Trae 绿，另外五色可选，每色 × 每配色都要过对比度 ----------
 # 用户原话："我的按钮的颜色是淡蓝色带一点紫色，我希望默认是 trae 的绿色；
 #           后台设置可以选择高亮颜色；给几个配色。"
-ACCENTS = %w[green blue violet amber cyan rose].freeze
+ACCENTS = %w[green blue violet amber cyan rose red].freeze
 issues << "默认主色不是松绿（应 #0e7a4f，实际 #{root_tokens['--math-primary']}）" unless
   root_tokens['--math-primary'].to_s.downcase == '#0e7a4f'
 # Trae 品牌绿本色 #32F08C 只压得住**深底**（压纯黑 14:1，压白只有 1.5:1），
 # 所以它出现在暗色那一包里 —— 这不是漏了，是它唯一站得住的地方。
 issues << '暗色里没用 Trae 品牌绿本色 #32f08c（默认那套得真的是 Trae 绿）' unless
   tokens_in(block_of(tokens, 'html[data-wk-theme="dark"]'))['--math-primary'].to_s.downcase == '#32f08c'
-%w[green blue violet amber cyan rose].each do |a|
+%w[green blue violet amber cyan rose red].each do |a|
   issues << "tokens.css 里缺高亮色「#{a}」" unless
     a == 'green' || tokens.include?(%(html[data-wk-accent="#{a}"]))
   # 每个色都要有**暗底那一套**：只有一个亮底值的话，暗色下会拿深色主色去压黑底，

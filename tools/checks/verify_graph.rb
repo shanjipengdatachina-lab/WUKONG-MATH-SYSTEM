@@ -207,7 +207,11 @@ issues << 'mindmap.js 丢了册级待核标记（bookEntries 里的「待核」�
 issues << 'mindmap.js 的节点面板丢了待核说明' unless mini.include?('mm-pending')
 issues << 'mindmap.js 的说明只报册级待核（章级那处会被吞掉）' unless
   mini.include?('章的小节待核')
-issues << '目录来源样式缺 .mm-source' unless graph.include?('.mm-source{')
+# 「目录来源」那一行已按用户要求撤掉（"目录里所有的数据来源的那个网址 去掉即可；
+# 后期我们的数据都是自己后台上传的"）—— 渲染与样式都不该再出现，
+# 但数据里的 source 字段要留着（生成器拿它当必填项）。
+issues << '信息面板里还在渲染"目录来源"那一行' if graph.include?('<p class="mm-source">')
+issues << '图谱里还留着 .mm-source 的样式（渲染撤了就是死样式）' if graph.include?('.mm-source{')
 issues << '学段 / 板块的样式跑进了共享区（重新生成样式时会被冲掉）' if
   shared.include?('--stage .mm-node__box') || shared.include?('.mm-flyout__note')
 issues << '说明里没提小学 / 竞赛（用户看不出这图覆盖四个学段）' unless

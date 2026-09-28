@@ -201,6 +201,14 @@ html[data-embed] .ide-rail { display: none; }
   .reader-shell[data-left="hidden"] .tree-collapse { margin-left: 0; }
   .reader-shell[data-left="hidden"] .tree-collapse__icon { transform: rotate(180deg); }
 
+  /* 目录收起时（左栏只剩 56px）：学段那一排**只留当前那一个**。
+     四个 chip 的 min-content 宽加起来约 218px，在 56px 的窄条里会被裁到只剩第一个 ——
+     露出来的正好是"小学"，于是看着像选中了小学、正文却是高中（用户报的就是这个：
+     "这里选中了小学的就出现小学的；选中了高中的就应该是高中的"）。
+     收起状态只显示真选中的那一段：名字是真的，也还认得出自己在哪一段。 */
+  .reader-shell[data-left="hidden"] .tree-stage { padding-left: 6px; padding-right: 6px; }
+  .reader-shell[data-left="hidden"] .tree-stage__chip:not(.is-on) { display: none; }
+
   .reader-shell[data-right="hidden"] .reader-side {
     overflow: hidden; border-left: 0; opacity: 0; pointer-events: none;
   }
