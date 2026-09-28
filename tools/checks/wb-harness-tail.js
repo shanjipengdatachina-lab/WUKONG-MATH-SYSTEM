@@ -866,58 +866,97 @@ WB.redraw();
 assert(__ctxCalls.clear >= 1, '每次重绘都铺一层板面色（不再靠 CSS 白底）');
 
 /* ============================================================
-   12. 题面上方三个按钮 / 右侧思路框 / 下方答案块 / 整块拖动
+   12. 题目前面三个按钮 / 右侧思路框 / 下方答案块 / 整块拖动
    ------------------------------------------------------------
    用户看过第一版（4~5 个可写的"台阶框"）后明确否掉了：
    「分析不用搞那么多台阶框……就直接出一个框，主体思路是一二三四五六七八，
     它目的就是看，就看看思路就行了」。
-   所以这一版是：三个小按钮（上传我的题 / 分析 / 答案）摆在题目**上方、左对齐**；
-   点「分析」→ 题目**右侧**一个**只读**的思路框，有几步就写几步；
-   点「答案」→ 标准答案直接写在题目**下方**，每步挂 AI 注释、注释可整块收起。
-   这一节守五件事：
-     1) 按钮排：有题才出现、压在题目上方左对齐、跟题面走、不误激活；
-     2) 思路框：一个、只读、有几步写几步；
-     3) 答案块：在题目下方、带注释、注释能收起；
-     4) 「分析」里不许出现答案（设计 §2 #6）；
-     5) 拖哪儿都整块动 —— 题、三按钮、思路、答案、转写共用一份位置。
+   按钮的位置也是用户定的：先放在题目上方，后来说「移到题面前面」——
+   现在是**同一行、在题目左边**（右边留给思路框、下面留给答案，只有前面不挡东西）。
+   这一节守六件事：
+     1) 按钮排：有题才出现、整排在题面**前面**、跟题面第一行对齐、跟题面走、不误激活；
+     2) 题面自己让地方（用户没亲手挪过时）：左边站不下就把题面往右让；
+     3) 思路框：一个、只读、有几步写几步；
+     4) 答案块：在题目下方、带注释、注释能收起；
+     5) 「分析」里不许出现答案（设计 §2 #6）；
+     6) 拖哪儿都整块动 —— 题、三按钮、思路、答案、转写共用一份位置。
    ============================================================ */
 
-/* ---- 按钮排：有题才出现，位置压在题目上方、左对齐 ---- */
+/* ---- 按钮排：有题才出现；位置在题面**前面**（同一行、题目左边） ---- */
 var acts12 = elById('wb-acts');
 WB.clearAll();
 WB.applyProblem(null);
 WB.redraw();
 eq2(acts12.hidden, true, '板上没题时，三个按钮不出现');
 
+/* 把题面按回初始位置、当作"用户还没挪过" → 它应该自己往右让出按钮的地方。
+   不让的话按钮只能压到题面上（左边根本没有 190 多像素可站）。 */
 WB.applyProblem('7a-01');
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
+WB.state.problemMoved = false;
 WB.redraw();
 eq2(acts12.hidden, false, '有题面时按钮出现');
 eq2(acts12.classList.contains('is-on'), false, '没点过时，三个按钮都不是激活态');
 
-/* 题面只在画布里按世界坐标画，所以浮层位置必须由世界坐标投影出来，不能写死像素 */
+var aw12 = acts12.offsetWidth || 150;
+var ah12 = acts12.offsetHeight || 25;
+var actsLeft12 = parseFloat(acts12.style.left);
+var actsTop12 = parseFloat(acts12.style.top);
 var boxBtn12 = WB.problemLayout();
-var vBtn12 = WB.state.view;
-var expTop12 = Math.max(4, vBtn12.y + boxBtn12.y * vBtn12.scale - (acts12.offsetHeight || 26) - 10);
-var gotTop12 = parseFloat(acts12.style.top);
-assert(Math.abs(gotTop12 - expTop12) < 1.5,
-  '按钮压在题目上方（期望 ' + expTop12.toFixed(1) + '，实际 ' + gotTop12 + '）');
-var expLeft12 = Math.max(4, vBtn12.x + boxBtn12.x * vBtn12.scale);
-assert(Math.abs(parseFloat(acts12.style.left) - expLeft12) < 1.5,
-  '按钮与题目左对齐（期望 ' + expLeft12.toFixed(1) + '，实际 ' + acts12.style.left + '）');
+var problemLeft12 = WB.boardToScreen(boxBtn12.x, boxBtn12.y).x;
+var problemMid12 = WB.boardToScreen(boxBtn12.x, boxBtn12.y + 28).y;
 
-/* 缩放变化 → 按钮位置按 scale 重算（写死像素的话这一步就不动了） */
+assert(WB.state.problemAt.x > 16,
+  '题面第一次上板会自己让出按钮的地方（题面 x 16 → ' + Math.round(WB.state.problemAt.x) + '）');
+assert(actsLeft12 + aw12 <= problemLeft12 + 0.5,
+  '三个按钮整排在题面**前面**、没压住题目（按钮右 ' + (actsLeft12 + aw12) + ' ≤ 题面左 ' + problemLeft12 + '）');
+assert(Math.abs((actsTop12 + ah12 / 2) - problemMid12) < 1.5,
+  '按钮跟题面第一行同一行（按钮中线 ' + (actsTop12 + ah12 / 2) + ' vs 第一行中线 ' + problemMid12 + '）');
+assert(actsLeft12 >= 4, '按钮没被挤到画布外面去（左 ' + actsLeft12 + '）');
+
+/* 用户亲手拖过之后就不再自动动题面（否则拖着走会被推回来，手感成"拖不动"） */
+WB.state.problemMoved = true;
+WB.state.problemAt.x = 40;
+WB.state.problemAt.y = 40;
+WB.redraw();
+eq2(Math.round(WB.state.problemAt.x), 40, '用户亲手挪过之后，题面位置不再被自动改（40 → ' + WB.state.problemAt.x + '）');
+var problemTop12 = WB.boardToScreen(WB.problemLayout().x, WB.problemLayout().y).y;
+eq2(parseFloat(acts12.style.top) + ah12 <= problemTop12 + 0.5, true,
+  '前面站不下时按钮退回题目上方（按钮底 ' + (parseFloat(acts12.style.top) + ah12) + ' ≤ 题面顶 ' + problemTop12 + '）');
+
+/* 缩放到 50% → 题面重新让开，按钮**屏幕位置不变**（它固定屏幕尺寸，不跟缩放走） */
+WB.state.problemMoved = false;
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
+WB.redraw();
 var leftBtn12 = parseFloat(acts12.style.left);
 WB.state.view.scale = 0.5;
 WB.redraw();
-assert(parseFloat(acts12.style.left) < leftBtn12,
-  '缩小后按钮靠左（按 scale 重算：' + leftBtn12 + ' → ' + acts12.style.left + '）');
+assert(Math.abs(parseFloat(acts12.style.left) - leftBtn12) < 1.5,
+  '缩到 50% 后按钮还在原来的屏幕位置（' + leftBtn12 + ' → ' + acts12.style.left + '）—— 按钮不跟缩放');
+assert(parseFloat(acts12.style.left) + aw12 <= WB.boardToScreen(WB.problemLayout().x, WB.problemLayout().y).x + 0.5,
+  '缩到 50% 后按钮依然在题面前面（题面被自动让开了）');
 WB.state.view.scale = 1;
+WB.state.problemMoved = false;
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
 WB.redraw();
+
+/* 题面被拖走 → 按钮跟着走（"整块动"的另一半） */
+WB.state.problemMoved = true;
+WB.state.problemAt.x = 260;
+WB.redraw();
+assert(parseFloat(acts12.style.left) > leftBtn12,
+  '题面右移后按钮跟着右移（' + leftBtn12 + ' → ' + acts12.style.left + '）');
 
 WB.clearAll();
 WB.applyProblem('7a-01');
 WB.setShowProblem(true);
 WB.state.view.scale = 1;
+WB.state.problemMoved = false;
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
 WB.state.analysis.open = false;
 WB.state.analysis.answerOpen = false;
 WB.state.analysis.showNotes = true;

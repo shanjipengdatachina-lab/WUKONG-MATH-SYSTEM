@@ -138,6 +138,17 @@
   var wrap = byId('wb-canvas-wrap') || canvas.parentNode;
 
   /* ---------- 状态 ---------- */
+
+  /* 题面前面那三个按钮（上传我的题 / 分析 / 答案）要占的地方，单位是**屏幕像素** ——
+     它们固定屏幕尺寸、不跟画布缩放，所以给题面留地方时要按 scale 折成世界坐标。 */
+  var ACTS_MARGIN = 16;      // 按钮的左边距（与 16px 的通用左边距同值，看着齐）
+  var ACTS_GAP = 10;         // 按钮与题面之间的距离
+  var ACTS_W_FALLBACK = 150; // 量不到宽度时按这个算（断言桩里没有布局）
+
+  /* 题面的初始位置（世界坐标）。左边要留得下那三个按钮，所以不能贴边 ——
+     但留多少跟按钮宽、当前缩放都有关，交给 layoutActs 在第一次上板时折出来。 */
+  var PROBLEM_AT_DEFAULT = { x: 16, y: 16 };
+
   var state = {
     tool: 'pen',                 // pen | highlighter | eraser | line | arrow | rect | ellipse
     groupLast: { draw: 'pen', shape: 'line' },   // 每个工具组格子上显示的那一个（PS 式的"上次用的"）
@@ -149,7 +160,10 @@
     gridSize: DEFAULT_GRID_SIZE,  // 网格疏密：20 | 40 | 80
     showProblem: true,
     problemId: null,
-    problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
+    /* 题面在板上的位置（世界坐标）。左边不贴边 —— 要给"题面前面那三个按钮"留地方；
+       具体留多少跟按钮宽度、当前缩放有关，第一次上板时由 layoutActs 折出来（见那里）。 */
+    problemAt: { x: PROBLEM_AT_DEFAULT.x, y: PROBLEM_AT_DEFAULT.y },
+    problemMoved: false,          // 用户是否亲手挪过题面：挪过就不再自动给它让地方（见 layoutActs）
     problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
     problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
     tipAt: null,                  // 笔尖 / 橡皮圆圈的位置（画布内 CSS 像素）；null = 不画
@@ -743,8 +757,21 @@
     layoutThink(ctx);
   }
 
-  /* 题目前面那三个按钮：**题目上方、左对齐**（用户定的位置）。
-     为什么不继续摆右边：右边那一列留给「思路」框 —— 一列"看思路"、一列"对答案"，各管一件事。 */
+  /* 题目前面那三个按钮：**同一行、在题目左边**（用户原话"移到题目前面"）。
+     右边那一列留给「思路」框、下面留给答案 —— 只有"前面"这一处不挡任何东西。
+     位置锚在题面左缘，所以题面往右挪按钮跟着走，还是"整块动"。 */
+  function actsWidth() {
+    var acts = byId('wb-acts');
+    return (acts && acts.offsetWidth) || ACTS_W_FALLBACK;
+  }
+
+  /* 题面左边要留出的世界宽度 —— 按钮是固定屏幕尺寸，折成世界坐标才跟缩放对得上
+     （所以 69% 缩放和 100% 缩放下，按钮离画布左缘的**屏幕**距离是一样的）。 */
+  function actsRoom() {
+    var v = state.view;
+    return (ACTS_MARGIN + actsWidth() + ACTS_GAP - v.x) / (v.scale || 1);
+  }
+
   function layoutActs(ctx) {
     var v = state.view;
     var acts = byId('wb-acts');
@@ -754,10 +781,33 @@
     syncActs();
     if (acts.hidden || !acts.style) return;
 
-    var aw = acts.offsetWidth || 132;
-    var ah = acts.offsetHeight || 26;
-    var at = boardToScreen(ctx.box.x, ctx.box.y);
-    var anchor = { x: at.x, y: at.y - ah - 10 };
+    var aw = actsWidth();
+    var ah = acts.offsetHeight || 25;
+
+    /* 题面还没被用户亲手挪过 → 每次重排都看一眼"左边站得下那三个按钮吗"，站不下就往右让。
+       用户一旦亲手拖过（problemMoved）就再也不自动动它 —— 拖着走的时候被推回来，
+       手感会变成"拖不动"。缩放变了也要重新让：按钮不跟缩放，需要的世界宽度跟着变。 */
+    if (!state.problemMoved) {
+      var room = actsRoom();
+      if (room > state.problemAt.x) {
+        state.problemAt.x = room;
+        /* 题面框画在画布上，得补一次重绘才跟得上。这一帧按钮已经按新位置摆了，
+           所以看到的是"题面下一帧到位"，而不是"按钮压在题面上"。 */
+        scheduleRedraw();
+      }
+    }
+
+    var at = boardToScreen(state.problemAt.x, state.problemAt.y);
+    /* 竖直方向跟题面**第一行**对齐：题面框里第一行的文字带在 y+14 … y+43
+       （见 drawProblemLayer 的 14 / tagH 22 / 行距 29），取它的中线 ——
+       换字号、改缩放都对得上，不是拍一个数。 */
+    var mid = boardToScreen(state.problemAt.x, state.problemAt.y + 28).y;
+    var left = at.x - aw - ACTS_GAP;
+    /* 前面站不下（把板面平移到很左边时就会这样）→ 退回题目上方：
+       宁可换一行，也不能让按钮压住题目 —— 压住了题目就看不清、按钮也点不准。 */
+    var anchor = left >= 4
+      ? { x: left, y: mid - ah / 2 }
+      : { x: at.x, y: at.y - ah - 10 };
     /* 压回可视区：宁可"不再贴着题面"，也不能让按钮跑出画布按不到 */
     var maxX = Math.max(4, (wrap.clientWidth || v.w) - aw - 4);
     var maxY = Math.max(4, (wrap.clientHeight || v.h) - ah - 4);
@@ -1021,6 +1071,8 @@
     var k = state.view.scale || 1;
     state.problemAt.x = groupDrag.ax + (e.clientX - groupDrag.sx) / k;
     state.problemAt.y = groupDrag.ay + (e.clientY - groupDrag.sy) / k;
+    /* 用户亲手挪过了 —— 此后不再自动给他让"前面那三个按钮"的地方（见 layoutActs） */
+    state.problemMoved = true;
     /* 位置改了要 redraw：题面矩形是画的时候算出来的，只重排浮层会慢一帧 */
     redraw();
     if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -1599,6 +1651,8 @@
       var pp = canvasPoint(e);
       state.problemAt.x = act.ax + (pp.sx - act.sx) / state.view.scale;
       state.problemAt.y = act.ay + (pp.sy - act.sy) / state.view.scale;
+      /* 用户亲手挪过了 —— 此后不再自动给他让"前面那三个按钮"的地方（见 layoutActs） */
+      state.problemMoved = true;
       /* 题面跟着手走，指针就一直在它里面 —— 拖动期间让那层底保持浮现，看得见自己搬的是什么 */
       setProblemHover(true);
       scheduleRedraw();
