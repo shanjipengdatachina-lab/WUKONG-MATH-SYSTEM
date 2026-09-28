@@ -143,6 +143,7 @@
     problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
     problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
     problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
+    eraserAt: null,               // 橡皮圆圈的位置（画布内 CSS 像素）；null = 不画
     external: null,              // 其它页面送来的内容 { text, tag, extra }
     analysis: {                   // 「分析 / 答案」这一层（DOM 浮层，不是画在板上的墨）
       open: false,                // 台阶框是否展开
@@ -227,6 +228,12 @@
         var i = state.strokes.indexOf(it.stroke);
         if (i >= 0) state.strokes.splice(i, 1);
       });
+    } else if (a.type === 'region') {
+      /* 区域擦除记的是"这一拖之前 / 之后，板上是哪些笔"。
+         之所以只存引用就够：擦除**不修改原来那一笔**（新笔都是新对象），
+         所以撤销就是把数组整个换回去，一笔都不会丢。 */
+      state.strokes.length = 0;
+      Array.prototype.push.apply(state.strokes, a.after);
     }
   }
   function unapplyAction(a) {
@@ -240,6 +247,9 @@
           state.strokes.splice(Math.min(it.index, state.strokes.length), 0, it.stroke);
         }
       });
+    } else if (a.type === 'region') {
+      state.strokes.length = 0;
+      Array.prototype.push.apply(state.strokes, a.before);
     }
   }
   function commitAction(a) {
@@ -392,19 +402,9 @@
       else ctx.rect(x, y, w, h);
       ctx.fillStyle = theme().tint;
       ctx.fill();
-      /* 这里原来还有一条左侧通高竖条，去掉了 ——
-         把手有两道短横已经说清"能抓"，多一条竖线反而像把题面框住了一半。 */
-      /* 把手纹：两道短横，压在左侧那条无字处。
-         只在这里出现 —— 平时题面就是一段字，不挂任何"控件"。
-         颜色跟着板面走：黑板上用浅色，否则蓝把手压在深蓝底上根本看不见。 */
-      var gy = y + h / 2;
-      ctx.fillStyle = state.problemGripHot ? theme().tagHot : theme().tag;
-      ctx.beginPath();
-      ctx.rect(x + 5, gy - 6.4, 13, 2.2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.rect(x + 5, gy + 4.2, 13, 2.2);
-      ctx.fill();
+      /* 这里原本有"一道通高竖条 + 两道短横"的把手纹，都去掉了。
+         用户看过真实效果后明确要求去掉那两道短横 —— 题面上不该挂任何记号。
+         抓取区还在（problemGrip），鼠标压上去光标仍是"可抓"，只是不再画东西了。 */
     }
 
     var tx = x + 20;
@@ -466,9 +466,7 @@
     if (state.problemHover === on) return;
     state.problemHover = on;
     /* 压在把手上时换成"可以抓"的光标 —— 整块都能拖的话这个提示就没意义了 */
-    if (canvas && canvas.style) {
-      canvas.style.cursor = on && state.problemGripHot ? 'grab' : '';
-    }
+    syncCursor();
     scheduleRedraw();
   }
 
@@ -477,9 +475,16 @@
     on = !!on;
     if (state.problemGripHot === on) return;
     state.problemGripHot = on;
-    if (canvas && canvas.style) {
-      canvas.style.cursor = state.problemHover && on ? 'grab' : '';
-    }
+    syncCursor();
+  }
+
+  /* 画布上的光标由两件事决定，集中在一处免得互相覆盖：
+     橡皮工具时**藏起来** —— 已经有那个圆圈了，再叠一个箭头反而看不清擦哪儿；
+     压到题面把手上时是"可抓"。 */
+  function syncCursor() {
+    if (!canvas || !canvas.style) return;
+    if (state.tool === 'eraser') { canvas.style.cursor = 'none'; return; }
+    canvas.style.cursor = (state.problemHover && state.problemGripHot) ? 'grab' : '';
   }
 
   function strokeWidthFor(s, p, q) {
@@ -528,15 +533,25 @@
     ctx.restore();
   }
 
-  function drawArrowHead(from, to, w) {
+  /* 箭头的两支头端点。抽出来是因为**橡皮也要知道头的几何** ——
+     否则箭头被擦一下，杆断成两截、头直接不见（那处改动会跟画的地方对不上）。 */
+  function arrowHeadPts(from, to, w) {
     var ang = Math.atan2(to.y - from.y, to.x - from.x);
-    var len = Math.max(10, w * 3.6);
+    var len = Math.max(10, (w || 3) * 3.6);
     var spread = Math.PI / 7;
+    return [
+      { x: to.x - len * Math.cos(ang - spread), y: to.y - len * Math.sin(ang - spread) },
+      { x: to.x - len * Math.cos(ang + spread), y: to.y - len * Math.sin(ang + spread) }
+    ];
+  }
+
+  function drawArrowHead(from, to, w) {
+    var h = arrowHeadPts(from, to, w);
     ctx.beginPath();
     ctx.moveTo(to.x, to.y);
-    ctx.lineTo(to.x - len * Math.cos(ang - spread), to.y - len * Math.sin(ang - spread));
+    ctx.lineTo(h[0].x, h[0].y);
     ctx.moveTo(to.x, to.y);
-    ctx.lineTo(to.x - len * Math.cos(ang + spread), to.y - len * Math.sin(ang + spread));
+    ctx.lineTo(h[1].x, h[1].y);
     ctx.lineWidth = w;
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -578,6 +593,23 @@
     ctx.restore();
   }
 
+  /* 橡皮的圆圈：跟在鼠标后面，表示"这一圈里的墨会被擦掉"。
+     画在**屏幕空间**（半径就是 state.eraser 像素），所以缩放板面时圈的大小不变 ——
+     它说的是手指底下多大范围，不是板上多大范围。 */
+  function drawEraserRing() {
+    if (state.tool !== 'eraser' || !state.eraserAt) return;
+    var v = state.view;
+    if (ctx.setTransform) ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
+    ctx.save();
+    ctx.beginPath();
+    if (typeof ctx.arc === 'function') ctx.arc(state.eraserAt.x, state.eraserAt.y, state.eraser, 0, Math.PI * 2);
+    ctx.lineWidth = 1.5;
+    /* 颜色跟着板面主题走：黑板上得用浅色，不然深底上根本看不见这个圈 */
+    ctx.strokeStyle = theme().tag;
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function drawStroke(s) {
     if (!s) return;
     /* 自己设世界变换 —— 这样无论从 redraw() 里批量画，还是从指针事件里单独画一笔，都对 */
@@ -610,6 +642,7 @@
     drawProblemLayer();
     for (var i = 0; i < state.strokes.length; i++) drawStroke(state.strokes[i]);
     ctx.restore();
+    drawEraserRing();
     /* 浮层（题面旁两个按钮 / 台阶框 / 答案块）都是 DOM，画布管不到它们；
        它们的位置全部由世界坐标投影出来，所以每次重绘后重排一次就跟着板走了。
        注意：必须放在**画完题面之后** —— drawProblemLayer 里才会算出最新的题面矩形，
@@ -751,16 +784,143 @@
     return false;
   }
 
-  function eraseAt(x, y, r, bucket) {
-    var removed = [];
-    for (var i = state.strokes.length - 1; i >= 0; i--) {
-      if (strokeHit(state.strokes[i], x, y, r)) removed.push({ index: i, stroke: state.strokes[i] });
+  /* ---------- 橡皮：圆圈擦到哪里，哪里才没 ---------- */
+
+  /* 一条线段被圆"吃掉"之后剩下什么，返回 0~2 段：
+     圆只咬在中间 → 剩两段；咬住一端 → 剩一段；整段都在圆里 → 什么都不剩。
+     这是"擦哪儿没哪儿"能干净切断的原因 —— **按几何切**，不是按点删。
+     按点删的话，一条只有两端的直线被圆咬中间时一个点都不在圆里，会完全擦不动。 */
+  function clipSegmentOut(ax, ay, bx, by, cx, cy, r) {
+    var dx = bx - ax, dy = by - ay;
+    var fx = ax - cx, fy = ay - cy;
+    var aa = dx * dx + dy * dy;
+    var bb = 2 * (fx * dx + fy * dy);
+    var cc = fx * fx + fy * fy - r * r;
+    if (aa < 1e-9) return (cc > 0) ? [{ ax: ax, ay: ay, bx: bx, by: by }] : [];
+    var disc = bb * bb - 4 * aa * cc;
+    if (disc <= 0) {
+      /* 与圆不相交：整段要么全在外、要么全在内，拿中点判一下 */
+      var mx = (ax + bx) / 2 - cx, my = (ay + by) / 2 - cy;
+      return (mx * mx + my * my > r * r) ? [{ ax: ax, ay: ay, bx: bx, by: by }] : [];
     }
-    if (!removed.length) return removed;
-    removed.sort(function (a, b) { return a.index - b.index; });
-    for (var j = removed.length - 1; j >= 0; j--) state.strokes.splice(removed[j].index, 1);
-    if (bucket) Array.prototype.push.apply(bucket, removed);
-    return removed;
+    var sq = Math.sqrt(disc);
+    var t1 = (-bb - sq) / (2 * aa);
+    var t2 = (-bb + sq) / (2 * aa);
+    /* 只在线段的延长线上相交，线段本身没进圆 */
+    if (t2 <= 0 || t1 >= 1) return [{ ax: ax, ay: ay, bx: bx, by: by }];
+    var in0 = Math.max(0, t1);
+    var in1 = Math.min(1, t2);
+    var out = [];
+    if (in0 > 1e-6) out.push({ ax: ax, ay: ay, bx: ax + dx * in0, by: ay + dy * in0 });
+    if (in1 < 1 - 1e-6) out.push({ ax: ax + dx * in1, ay: ay + dy * in1, bx: bx, by: by });
+    return out;
+  }
+
+  /* 一条折线被圆咬过之后剩下的一段一段。相邻的保留段首尾相接就并成一条，别把一笔碎成几十条。 */
+  function clipPolyline(pts, cx, cy, r) {
+    var runs = [], cur = null;
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = pts[i], b = pts[i + 1];
+      var kept = clipSegmentOut(a.x, a.y, b.x, b.y, cx, cy, r);
+      if (!kept.length) { cur = null; continue; }
+      if (cur) cur.push({ x: kept[0].bx, y: kept[0].by, p: b.p });
+      else cur = [{ x: kept[0].ax, y: kept[0].ay, p: a.p }, { x: kept[0].bx, y: kept[0].by, p: b.p }];
+      if (kept.length > 1) {
+        /* 圆咬在这一段的中间：当前这条到此为止，第二截另起一条 */
+        runs.push(cur);
+        cur = [{ x: kept[1].ax, y: kept[1].ay, p: a.p }, { x: kept[1].bx, y: kept[1].by, p: b.p }];
+      }
+    }
+    if (cur) runs.push(cur);
+    return runs.filter(function (rn) { return rn.length >= 2; });
+  }
+
+  /* 把一笔"看得见的墨"拆成若干条折线（世界坐标）。
+     手写笔迹本身就是一条折线；图形按**轮廓**拆 —— 箭头是"杆 + 两支头"，矩形是四条边，
+     椭圆是采样成的一圈。这样擦除对图形和手写用同一套算法，不用写两遍。 */
+  function strokePolylines(s) {
+    var pts = s.points || [];
+    if (pts.length < 2) return [];
+    if (!isShapeTool(s.type)) return [pts];
+    var a = pts[0], b = pts[1];
+    if (s.type === 'rect') {
+      var x1 = Math.min(a.x, b.x), x2 = Math.max(a.x, b.x);
+      var y1 = Math.min(a.y, b.y), y2 = Math.max(a.y, b.y);
+      return [
+        [{ x: x1, y: y1 }, { x: x2, y: y1 }],
+        [{ x: x2, y: y1 }, { x: x2, y: y2 }],
+        [{ x: x2, y: y2 }, { x: x1, y: y2 }],
+        [{ x: x1, y: y2 }, { x: x1, y: y1 }]
+      ];
+    }
+    if (s.type === 'ellipse') {
+      var cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+      var rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
+      var ring = [];
+      for (var k = 0; k <= 48; k++) {
+        var t = (k / 48) * Math.PI * 2;
+        ring.push({ x: cx + rx * Math.cos(t), y: cy + ry * Math.sin(t) });
+      }
+      return [ring];
+    }
+    var out = [[{ x: a.x, y: a.y }, { x: b.x, y: b.y }]];
+    if (s.type === 'arrow') {
+      var head = arrowHeadPts(a, b, s.width || 3);
+      out.push([{ x: b.x, y: b.y }, head[0]]);
+      out.push([{ x: b.x, y: b.y }, head[1]]);
+    }
+    return out;
+  }
+
+  /* 这一笔被圆咬过之后剩下的点列。
+     **没被咬到返回 null**（和"被吃光了返回 []"是两回事 —— 前者原样不动，后者整笔消失）。 */
+  function polylinesAfterErase(s, cx, cy, r) {
+    var polys = strokePolylines(s);
+    if (!polys.length) return null;
+    /* 笔有粗细：墨的范围是"中心线往外 w/2"，所以判定半径要把半个笔宽算进去 */
+    var tol = r + (s.width || 3) / 2;
+    var out = [];
+    var touched = false;
+    for (var i = 0; i < polys.length; i++) {
+      var pts = polys[i];
+      var hit = false;
+      for (var j = 0; j < pts.length - 1 && !hit; j++) {
+        if (distToSegmentSq(cx, cy, pts[j].x, pts[j].y, pts[j + 1].x, pts[j + 1].y) <= tol * tol) hit = true;
+      }
+      if (!hit) { out.push(pts.slice()); continue; }   // 这一条不在圆里，整条留着
+      touched = true;
+      var runs = clipPolyline(pts, cx, cy, tol);
+      for (var k = 0; k < runs.length; k++) out.push(runs[k]);
+    }
+    return touched ? out : null;
+  }
+
+  /* 区域擦除：圆圈擦到哪里，哪里才没。
+     和"碰到就整笔删掉"是两回事 —— 一笔被圆圈咬过之后会**断成两截**，
+     断口正好落在圆的边界上。返回"改了几笔"。 */
+  function eraseRegionAt(cx, cy, r) {
+    var changed = 0;
+    var next = [];
+    for (var i = 0; i < state.strokes.length; i++) {
+      var s = state.strokes[i];
+      var pieces = polylinesAfterErase(s, cx, cy, r);
+      if (pieces === null) { next.push(s); continue; }   // 没碰到：原样留着
+      changed++;
+      /* 一律造新对象，**绝不改原来那一笔** —— 撤销靠的就是"旧笔还完好" */
+      for (var k = 0; k < pieces.length; k++) {
+        if (pieces[k].length < 2) continue;
+        next.push({
+          color: s.color, width: s.width,
+          highlight: s.highlight, pressured: s.pressured,
+          points: pieces[k]
+        });
+      }
+    }
+    if (changed) {
+      state.strokes.length = 0;
+      Array.prototype.push.apply(state.strokes, next);
+    }
+    return changed;
   }
 
   /* ---------- 输入：鼠标 / 数位板 / 手指 ---------- */
@@ -852,8 +1012,9 @@
     }
 
     if (state.tool === 'eraser') {
-      state.active = { mode: 'erase', id: e.pointerId, bucket: [] };
-      eraseAt(pt.x, pt.y, state.eraser / state.view.scale, state.active.bucket);
+      /* 记下"这一拖之前板上有哪些笔"，松手时把前后两个数组一起交给撤销栈 */
+      state.active = { mode: 'erase', id: e.pointerId, before: state.strokes.slice(), changed: 0 };
+      state.active.changed += eraseRegionAt(pt.x, pt.y, state.eraser / state.view.scale);
       scheduleRedraw();
       syncUI();
       return;
@@ -914,6 +1075,12 @@
   }
 
   function onMove(e) {
+    /* 橡皮的圆圈要跟着鼠标走，无论有没有按下去 —— 所以这一步放在最前面，别被下面的分支挡住 */
+    if (state.tool === 'eraser') {
+      var sp = canvasPoint(e);
+      state.eraserAt = { x: sp.sx, y: sp.sy };
+      scheduleRedraw();
+    }
     var act = state.active;
     if (!act || act.id !== e.pointerId) {
       /* 没落笔时，pointermove 只负责两件事：底要不要浮现、光标要不要变成"可抓" */
@@ -958,7 +1125,7 @@
       for (var i = 0; i < events.length; i++) {
         var pe = pointFrom(events[i]);
         if (!pe) continue;
-        eraseAt(pe.x, pe.y, r, act.bucket);
+        act.changed += eraseRegionAt(pe.x, pe.y, r);
       }
       scheduleRedraw();
       syncUI();
@@ -1008,7 +1175,14 @@
       return;
     }
     if (act.mode === 'erase') {
-      if (act.bucket.length) commitAction({ type: 'erase', items: act.bucket, label: '擦除' });
+      /* 一拖算**一次**操作：松手时把"这一拖之前 / 之后"两个快照交给撤销栈，
+         所以撤销是整拖撤销，不会一格一格往回跳。 */
+      if (act.changed) {
+        commitAction({
+          type: 'region', label: '擦除',
+          before: act.before, after: state.strokes.slice()
+        });
+      }
       scheduleRedraw();
       syncUI();
       return;
@@ -1097,7 +1271,12 @@
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onUp);
     /* 鼠标离开画布时把题面那层底收掉，别留在板上 */
-    canvas.addEventListener('pointerleave', function () { setProblemGripHot(false); setProblemHover(false); });
+    canvas.addEventListener('pointerleave', function () {
+      setProblemGripHot(false);
+      setProblemHover(false);
+      /* 鼠标离开画布，橡皮那个圈也要收掉，别留在板边上 */
+      if (state.eraserAt) { state.eraserAt = null; scheduleRedraw(); }
+    });
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -1320,6 +1499,7 @@
   function setTool(tool) {
     if (tool !== 'pen' && tool !== 'highlighter' && tool !== 'eraser' && !isShapeTool(tool)) tool = 'pen';
     state.tool = tool;
+    syncCursor();
     closeFlyout();          // 从浮层里选完就把浮层收起来
     persist();
     syncUI();
@@ -1900,8 +2080,11 @@
     undo: undo,
     redo: redo,
     clearAll: clearAll,
-    eraseAt: eraseAt,
     strokeHit: strokeHit,
+    eraseRegionAt: eraseRegionAt,
+    polylinesAfterErase: polylinesAfterErase,
+    strokePolylines: strokePolylines,
+    clipSegmentOut: clipSegmentOut,
     strokeWidthFor: strokeWidthFor,
     setTool: setTool,
     groupOf: groupOf,

@@ -40,17 +40,27 @@ assert(WB.strokeWidthFor(WB.state.strokes[0], { p: 0 }, { p: 0 }) === WB.state.s
 draw([[500, 200], [540, 240]], { type: 'touch' });
 assert(WB.state.strokes.length === 3, '手指触控也能画（累计 3 笔）');
 
-/* ---------- 橡皮：整笔擦除 ---------- */
+/* ---------- 橡皮：圆圈擦到哪里，哪里才没（不是碰到就整笔删掉） ---------- */
 var before = WB.state.strokes.slice();
+/* 记下"擦之前"的样子来比对 —— 别写死坐标：屏幕坐标要经过视图换算才是世界坐标 */
+var origPts13a = before[0].points.map(function (p) { return p.x + ',' + p.y; }).join(' ');
+var origX13a = before[0].points[0].x;
 WB.setEraser(26);
 canvasEl._h.pointerdown(pe(110, 115));
 canvasEl._h.pointerup(pe(110, 115));
-assert(WB.state.strokes.length === 2, '橡皮擦掉被碰到的那一笔');
-assert(WB.state.strokes.indexOf(before[0]) < 0, '被擦掉的正是第 1 笔');
+assert(WB.state.strokes.length === 3,
+  '橡皮只吃掉被圆圈盖住的那一段，整笔还在（仍是 3 笔，实际 ' + WB.state.strokes.length + '）');
+assert(WB.state.strokes.indexOf(before[0]) < 0, '第 1 笔被换成"擦过之后"的新笔，原对象不再在板上');
+assert(before[0].points.map(function (p) { return p.x + ',' + p.y; }).join(' ') === origPts13a,
+  '原来那一笔的点一个都没被改（撤销靠它完好）');
+assert(WB.state.strokes[0].points[0].x > origX13a,
+  '第 1 笔的头被吃掉了，起点往后挪（原 x=' + origX13a.toFixed(1) +
+  '，现 ' + WB.state.strokes[0].points[0].x.toFixed(1) + '）');
+assert(WB.state.strokes[1] === before[1] && WB.state.strokes[2] === before[2], '另外两笔原样没动');
 WB.undo();
-assert(WB.state.strokes.length === 3, '撤销擦除后笔迹恢复');
+assert(WB.state.strokes.length === 3, '撤销擦除后仍是 3 笔');
 assert(WB.state.strokes[0] === before[0] && WB.state.strokes[1] === before[1] && WB.state.strokes[2] === before[2],
-  '恢复后笔迹顺序与原来完全一致');
+  '撤销后拿回的是原来那一整笔，顺序与原来完全一致');
 
 /* ---------- 命中判定 ---------- */
 var seg = { color: '#000', width: 4, points: [{ x: 0, y: 0 }, { x: 100, y: 0 }] };
@@ -532,8 +542,10 @@ var hoverFills = fillDelta(function () { WB.redraw(); });
 WB.setProblemHover(false);
 
 assert(idleFills === 0, '未悬停时题面不画底（填充增量应为 0，实际 ' + idleFills + '）');
-assert(hoverFills === 3,
-  '悬停时只浮现「浅底 + 两道短横」（填充增量应为 3，实际 ' + hoverFills + '）—— 那条通高竖条已去掉');
+/* 只有那层浅底是 fill；题面文字与标签走的是 fillText，不计入这里。
+   这个数字是"题面上还挂没挂记号"的总闸 —— 原来 3（浅底 + 两道短横），现在 1。 */
+assert(hoverFills === 1,
+  '悬停时只浮现那层浅底，题面上不再画任何记号（填充增量应为 1，实际 ' + hoverFills + '）');
 
 /* 命中判定：悬停和（后面的）拖动共用同一个谓词 */
 var hovBox = WB.problemLayout();
@@ -891,6 +903,94 @@ WB.redraw();
 /* 两个按钮是"很轻"的：静止不铺底色（结构由体检脚本守住，这里守住类名不跑偏） */
 assert(!acts12.classList.contains('is-on'),
   '没点过分析 / 答案时，两个按钮都不是激活态');
+
+WB.clearAll();
+WB.setTheme('white');
+WB.redraw();
+
+/* ============================================================
+   13. 橡皮：圆圈擦到哪里，哪里才没（不是碰到就整笔删掉）
+   ============================================================ */
+/* 一条横线，圆心正落在它的中点上：应断成两截，而且两头各自留一段 */
+var seg13 = { color: '#111', width: 2, points: [{ x: 0, y: 100, p: 0.5 }, { x: 200, y: 100, p: 0.5 }] };
+var cut13 = WB.polylinesAfterErase(seg13, 100, 100, 20);
+assert(cut13 && cut13.length === 2,
+  '横线被圆圈咬住中间 → 断成两截（实际 ' + (cut13 ? cut13.length : 'null') + ' 截）');
+assert(cut13[0][cut13[0].length - 1].x <= 81 && cut13[0][cut13[0].length - 1].x >= 79,
+  '左截的断口落在圆的左边界上（实际 x=' + (cut13 ? cut13[0][cut13[0].length - 1].x.toFixed(1) : '') + '）');
+assert(cut13[1][0].x >= 119 && cut13[1][0].x <= 121,
+  '右截的断口落在圆的右边界上（实际 x=' + (cut13 ? cut13[1][0].x.toFixed(1) : '') + '）');
+assert(cut13[0].length === 2 && cut13[1].length === 2, '每一截只有两个端点（几何切断，不是按点删）');
+
+/* 圆心远离这条线：一个点都不该动 —— 返回 null 表示"没碰到"，不是"擦光了" */
+assert(WB.polylinesAfterErase(seg13, 100, 400, 20) === null, '圆没碰到 → 返回 null（原样不动）');
+
+/* 圆正好压在端点上：只吃掉那一头，剩下一条完整的 */
+var cut13b = WB.polylinesAfterErase(seg13, 0, 100, 20);
+assert(cut13b && cut13b.length === 1 && cut13b[0][0].x >= 19 && cut13b[0][0].x <= 21,
+  '圆咬住左端点 → 只剩一条，断口在 x≈20（实际 ' + (cut13b && cut13b[0][0].x.toFixed(1)) + '）');
+
+/* 整条都在圆里：什么都不剩 */
+assert(WB.polylinesAfterErase(seg13, 100, 100, 300).length === 0, '整条都在圆里 → 什么都不剩');
+
+/* 矩形只被咬了左下角：另外三条边应当**整条留下** */
+var rect13 = { type: 'rect', color: '#111', width: 2, points: [{ x: 0, y: 0 }, { x: 100, y: 60 }] };
+var rectCut13 = WB.polylinesAfterErase(rect13, 0, 60, 12);
+assert(rectCut13 && rectCut13.length >= 3,
+  '矩形只被咬掉左下角，其余三条边还在（实际 ' + (rectCut13 ? rectCut13.length : 'null') + ' 条）');
+assert(WB.polylinesAfterErase(rect13, 50, 30, 8) === null, '圆落在矩形**内部**（没碰到边框）→ 不动它');
+
+/* 箭头：杆被咬中间，两支头还在（所以箭头不会因为擦一下就没头） */
+var arr13 = { type: 'arrow', color: '#111', width: 3, points: [{ x: 0, y: 0 }, { x: 200, y: 0 }] };
+var arrCut13 = WB.polylinesAfterErase(arr13, 100, 0, 20);
+assert(arrCut13 && arrCut13.length === 4,
+  '箭头杆断成两截 + 两支头仍在（实际 ' + (arrCut13 ? arrCut13.length : 'null') + ' 段）');
+
+/* 真擦：板上那一条被咬过之后，笔数变多（一截一条），并且原对象没被改 */
+WB.clearAll();
+var orig13 = { color: '#111', width: 2, points: [{ x: 0, y: 100, p: 0.5 }, { x: 200, y: 100, p: 0.5 }] };
+var origPts13 = JSON.stringify(orig13.points);
+WB.state.strokes.push(orig13);
+var changed13 = WB.eraseRegionAt(100, 100, 20);
+assert(changed13 === 1, '擦到 1 笔（实际 ' + changed13 + '）');
+assert(WB.state.strokes.length === 2, '板上变成两截（实际 ' + WB.state.strokes.length + ' 笔）');
+assert(JSON.stringify(orig13.points) === origPts13,
+  '原来那一笔**一个点都没被改**（撤销靠的就是它完好）');
+assert(WB.state.strokes[0].points[0].x === 0 && WB.state.strokes[1].points[1].x === 200,
+  '两截合起来仍覆盖原来的两端');
+
+/* 撤销：一次擦除整拖撤销，回到未擦之前 */
+WB.state.actions.length = 0;
+WB.state.redo.length = 0;
+WB.state.strokes.length = 0;
+WB.state.strokes.push(orig13);
+var before13 = WB.state.strokes.slice();
+WB.eraseRegionAt(100, 100, 20);
+WB.commitAction({ type: 'region', label: '擦除', before: before13, after: WB.state.strokes.slice() });
+assert(WB.state.strokes.length === 2, '前提：擦完是两截');
+WB.undo();
+assert(WB.state.strokes.length === 1 && WB.state.strokes[0] === orig13,
+  '撤销回到原来那一整条（实际 ' + WB.state.strokes.length + ' 笔）');
+WB.redo();
+assert(WB.state.strokes.length === 2, '重做又变回两截（实际 ' + WB.state.strokes.length + ' 笔）');
+WB.state.actions.length = 0;
+WB.state.redo.length = 0;
+
+/* 橡皮圆圈：跟着鼠标、跟着板面主题、离开画布就收掉 */
+WB.setTool('eraser');
+assert(WB.state.tool === 'eraser', '切到橡皮工具');
+canvasEl._h.pointermove(pe(300, 200));
+assert(WB.state.eraserAt && Math.abs(WB.state.eraserAt.x - 300) < 1 && Math.abs(WB.state.eraserAt.y - 200) < 1,
+  '橡皮圆圈跟着鼠标走（实际 ' + (WB.state.eraserAt ? WB.state.eraserAt.x + ',' + WB.state.eraserAt.y : 'null') + '）');
+assert(canvasEl.style.cursor === 'none',
+  '橡皮工具时把系统光标藏起来，只留那个圈（实际 ' + canvasEl.style.cursor + '）');
+WB.redraw();
+assert(__ctxCalls.stroke > 0, '圆圈画进了画布');
+WB.setTool('pen');
+assert(canvasEl.style.cursor === '', '切回画笔，光标恢复');
+WB.redraw();
+WB.setTool('eraser');
+WB.setTool('pen');
 
 WB.clearAll();
 WB.setTheme('white');
