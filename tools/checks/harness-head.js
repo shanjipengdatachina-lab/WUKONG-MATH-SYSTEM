@@ -107,6 +107,7 @@ var stageBarEl = {
 };
 var treeBodyEl = {
   _html: '',
+  scrollTop: 0,
   get innerHTML() { return this._html; },
   set innerHTML(v) { this._html = v; __capture.treeInner = v; },
   querySelector: function () { return null; }

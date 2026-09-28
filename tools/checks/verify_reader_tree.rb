@@ -37,6 +37,23 @@ issues << '默认没按在初中上（新用户第一次进来看到的是初中
   html =~ /class="tree-stage__chip is-on" data-stage="junior" aria-pressed="true"/
 issues << '学段条缺 aria-label' unless html.include?('aria-label="选学段"')
 
+# 3b) 目录头上头要留白、学段条的吸附位置要跟着目录头走（都是用户报过的问题）
+#     1. 原来 .tree-head 的 padding-top 是 0，标题紧贴窗口顶；收起态本来就是 18px，两态不一致
+#     2. 原来学段条 top:48px 是写死的 —— 目录头一改高度就错位，所以两处都改成同一个变量
+issues << '目录头贴着窗口顶（padding-top 必须留白，收起态都有 18px）' unless
+  html[/\.tree-head\{[^}]*padding:\s*(?!0)[\d.]+px\s+[\d.]+px\s+0/m]
+issues << '目录头的高度没有抽成变量（学段条要跟着它吸附）' unless html.include?('--tree-head-h:')
+issues << '学段条的吸附位置写死了（改目录头高度就会错位，应取 --tree-head-h）' unless
+  html[/\.tree-stage\{[^}]*top:\s*var\(--tree-head-h\)/m]
+issues << '目录头的高度没用同一个变量（两处迟早对不上）' unless
+  html[/\.tree-head\{[^}]*height:\s*var\(--tree-head-h\)/m]
+# 宽屏下真正的滚动容器是 .tree-body（外壳是 overflow:hidden）——
+# 换学段若不回到顶部，新名单的头几行就停在学段条底下（用户报的"内容被挡住"）
+issues << '换学段后左栏没有回到顶部（新名单会被压在学段条下面）' unless
+  live.include?('treeBody.scrollTop = 0')
+issues << '回到顶部量错了元素（宽屏下滚动容器是 .tree-body，不是外壳）' if
+  live.include?('treeEl.scrollTop = 0')
+
 # 4) 现建的契约：四个学段、默认初中、读原始 children
 %w[primary junior senior olympiad].each do |code|
   issues << "reader-live.js 里没登记学段 #{code}" unless live.include?("'#{code}'")

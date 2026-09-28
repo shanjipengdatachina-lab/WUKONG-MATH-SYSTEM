@@ -386,6 +386,8 @@
   max-width:none;
   margin:0;
 }.reader-shell > *{min-width:0}#chapter-tree{grid-column:1;grid-row:1}#knowledge-point{grid-column:2;grid-row:1}#related-quiz{grid-column:3;grid-row:1}.reader-tree{
+  /* 目录头的高度只声明这一次：学段条要吸附在它下面，两处各写一个数字迟早改一处忘一处 */
+  --tree-head-h:60px;
   position:sticky;
   top:0;
   height:100vh;
@@ -393,15 +395,17 @@
   background:var(--math-background);
   border-right:1px solid var(--math-border);
 }.tree-toggle{position:absolute;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}.tree-head{
-  position:sticky;top:0;z-index:2;
+  position:sticky;top:0;z-index:2;flex:none;
   display:flex;align-items:center;gap:8px;
-  height:48px;box-sizing:border-box;
-  padding:0 12px;
+  height:var(--tree-head-h);box-sizing:border-box;
+  /* 上头留白：原来 padding-top 是 0，标题紧贴窗口顶，看着像被切掉一刀；
+     收起态本来就是 18px，两态不一致。 */
+  padding:12px 12px 0;
   background:var(--math-background);
-}/* 学段条：吸附在目录头下面（48px 就是上头的高度，写死才不会随字体变化错位）。
+}/* 学段条：吸附在目录头下面。高度取上面那个变量，不再写死 48px。
    四个按钮固定在 HTML 里，不是按学段现建的 —— 换学段换的是下面的册与章。 */
 .tree-stage{
-  position:sticky;top:48px;z-index:2;
+  position:sticky;top:var(--tree-head-h);z-index:2;flex:none;
   display:flex;gap:6px;
   padding:6px 12px 10px;
   background:var(--math-background);

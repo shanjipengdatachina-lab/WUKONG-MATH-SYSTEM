@@ -284,6 +284,11 @@
   function mountTree() {
     if (!treeBody) return;
     treeBody.innerHTML = treeHTML(currentStage);
+    /* 重建之后回到顶部。宽屏下左栏是「目录头 / 学段条固定 + 中间那条名单自己滚」
+       （见 reader.html 的 `@media (min-width:1024px)`：.tree-body 才是滚动容器），
+       换学段时若留着上一条的 scrollTop，新名单的头几行就停在学段条底下 ——
+       用户看到的是"点一下学段，第一册被挡掉半截"。换一套名单就是重看一遍，从头上开始。 */
+    if (typeof treeBody.scrollTop === 'number') treeBody.scrollTop = 0;
     var api = window.MathSite;
     if (api && api.icons) api.icons();
     if (treeBound && api && api.initReaderTree) api.initReaderTree();

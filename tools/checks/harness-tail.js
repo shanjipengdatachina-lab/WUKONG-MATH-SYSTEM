@@ -118,8 +118,13 @@ __capture.artInner = '';
 clickRow(firstOfEighth);
 assert(__capture.artInner.indexOf('四年级下册') !== -1, '点第八册的第一个单元，翻到的就是第八册');
 
+/* 换学段要回到顶部。宽屏下左栏是「目录头 / 学段条固定 + 名单自己滚」——
+   .tree-body 才是滚动容器（外壳是 overflow:hidden，量它是量不到的）。
+   留着上一条的 scrollTop，新名单的头几行就停在学段条底下 —— 用户报的"内容被挡住"。 */
+treeBodyEl.scrollTop = 40;
 pickStage(2);
 var treeS = __capture.treeInner;
+assert(treeBodyEl.scrollTop === 0, '换学段后名单回到顶部（第一册不会被压在学段条下面）');
 assert(countIn(treeS, /class="tree-volume"/g) === 5, '高中五册');
 assert(countIn(treeS, /class="ch-row"/g) === 22, '高中 22 章');
 assert(treeS.indexOf('data-chapter="01"') === -1, '高中必修 / 选必各自从 01 排，章号不能当键');
