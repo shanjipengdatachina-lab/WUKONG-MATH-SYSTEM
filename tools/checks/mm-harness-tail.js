@@ -228,5 +228,128 @@ var chapCls = classesOf(chapNode2.id);
 assert(!!chapCls && chapCls.indexOf('is-text') === -1, '有底色板的章节节点不该被标成纯文字');
 MM.level.set(2);
 
+/* ============================================================
+   15. 分法切换：年级教材 / 几何代数
+   ------------------------------------------------------------
+   用户要的是"上面加个 tab，默认按年级教材分，还可以按几何代数分，
+   点几何代数就出几个体系"。所以这里守三件事：
+     a) 两栏名单各就各位，默认停在年级教材；
+     b) 点一个体系 → 图里就以它为根，章是真的章（不是新造的节点）；
+     c) 范围落在哪一栏，打开浮层就亮哪一栏（否则"我选的东西在看不见的那一栏里"）。
+   ============================================================ */
+MM.scope.set('');
+MM.axis.set('book');
+
+var FIELDS = MM.fields();
+eq(FIELDS.length, 3, '数据里有三个课标领域（实际 ' + FIELDS.length + ' 个）');
+eq(FIELDS.join(' / '), '图形与几何 / 数与代数 / 统计与概率', '体系顺序是几何在前（用户说的就是"几何代数"）');
+eq(MM.fieldOf('平行四边形'), '图形与几何', '章带着自己的领域（平行四边形 → 图形与几何）');
+eq(MM.fieldOf('有理数'), '数与代数', '数与代数那边也对得上');
+eq(MM.fieldOf('概率初步'), '统计与概率', '统计与概率那三章也在（不然它们会掉出所有体系）');
+
+/* 每一章都得有领域，且三个体系加起来正好是全部 —— 不重不漏 */
+var allChapters = [], noField = [], byField = {};
+MM.each(function (n) {
+  if (n.kind !== 'chapter') return;
+  allChapters.push(n.id);
+  if (!n.field) noField.push(n.name);
+  byField[n.field] = (byField[n.field] || 0) + 1;
+});
+eq(noField.length, 0, '每一章都登记了领域（漏的：' + (noField.join('、') || '没有') + '）');
+eq(allChapters.length, 29, '一共 29 章');
+eq([byField['图形与几何'], byField['数与代数'], byField['统计与概率']].join('+'),
+   '13+13+3', '三个体系的章数加起来正好是 29，不重不漏（实际 ' +
+  [byField['图形与几何'], byField['数与代数'], byField['统计与概率']].join('+') + '）');
+
+/* 默认停在"年级教材"那一栏 */
+eq(MM.axis.get(), 'book', '默认分法是年级教材');
+eq(axisPanes[0].hidden, false, '默认露出来的是册那一栏');
+eq(axisPanes[1].hidden, true, '体系那一栏默认收着');
+eq(axisItems[0].getAttribute('aria-pressed'), 'true', '年级教材那一格是选中态');
+eq(axisItems[0]._classes['is-on'], true, '选中态眼睛也看得见（is-on），不只是读屏知道');
+
+/* 切到几何代数：只换名单，图不动 */
+var nodesBefore = MM.visible().length;
+fire(axisItems[1], 'click');
+eq(MM.axis.get(), 'field', '点「几何代数」切到体系那一栏');
+eq(axisPanes[1].hidden, false, '体系那一栏露出来了');
+eq(axisPanes[0].hidden, true, '册那一栏收起来了');
+eq(MM.scope.get(), '', '切分法本身不动图 —— 范围还是总览');
+eq(MM.visible().length, nodesBefore, '切分法前后图里的节点数一样（切的是名单，不是范围）');
+eq(window.localStorage.getItem('wkmath.graph.axis'), 'field', '分法记在本机');
+
+/* 点一个体系 → 它成为根 */
+fire(fieldItems[1], 'click');       // 图形与几何
+eq(MM.scope.get(), '图形与几何', '点「图形与几何」→ 只看这个体系');
+eq(bookLabelEl.textContent, '几何', '工具条上写短名（图里仍用课标全称）');
+var fScope = MM.rootScope();
+eq(fScope.kind, 'field', '体系是一个"体系"节点，不是册（类型徽标才不会写错）');
+eq(fScope.kids.length, 13, '图形与几何底下 13 章');
+eq(fScope.kids.every(function (k) { return k.kind === 'chapter'; }), true, '底下的孩子都是真章');
+eq(fScope.kids.every(function (k) { return k.field === '图形与几何'; }), true, '没有别的体系的章混进来');
+eq(MM.visible()[0].name, '图形与几何', '图的第一列就是它');
+eq(MM.visible().length, 1 + 13, '可见 = 体系 + 13 章（默认收起到章）');
+assert(MM.visible().filter(function (n) { return n.kind === 'chapter'; })
+  .every(function (n) { return ['七', '八', '九'].indexOf(n.name.charAt(0)) < 0; }),
+  '章的节点上没有挂册名（说好保持干净）');
+
+/* 章的短名 / 状态 */
+eq(MM.shortOf('图形与几何'), '几何', '体系在名单与工具条上用短名');
+eq(MM.shortOf(''), '总览', '空串仍是总览');
+eq(MM.shortOf('八年级（上）'), '八上', '册的短名没被改动');
+assert(bookBtnEl.getAttribute('data-mm-tip').indexOf('几何') >= 0,
+  '工具条提示跟上当前体系（实际 ' + bookBtnEl.getAttribute('data-mm-tip') + '）');
+assert(scopeNoteEl.textContent.indexOf('图形与几何') >= 0 && scopeNoteEl.textContent.indexOf('13') >= 0,
+  '说明里写清"现在看的是图形与几何、共 13 章"（实际 ' + scopeNoteEl.textContent + '）');
+
+/* 三个体系各点一遍：章数对得上，而且互不串台 */
+[['图形与几何', 13], ['数与代数', 13], ['统计与概率', 3]].forEach(function (pair) {
+  MM.scope.set(pair[0]);
+  eq(MM.rootScope().kids.length, pair[1], pair[0] + ' 底下 ' + pair[1] + ' 章');
+});
+MM.scope.set('图形与几何');
+eq(MM.visible()[0].name, '图形与几何', '切范围后根的显示名字也就位了');
+
+/* 分法跟着范围走：范围是体系时，重新读一次存储也该落在体系那一栏 */
+eq(MM.axis.get(), 'field', '范围是体系时，分法自动落在几何代数那一栏');
+window.localStorage.setItem('wkmath.graph.scope', '数与代数');
+eq(MM.axis.initial(), 'field', '刷新回来仍是体系那一栏（范围能说明是哪一栏）');
+eq(MM.scope.initial(), '数与代数', '刷新回来范围也在');
+window.localStorage.setItem('wkmath.graph.scope', '八年级（上）');
+eq(MM.axis.initial(), 'book', '范围是册时，分法落在年级教材那一栏');
+eq(MM.scope.initial(), '八年级（上）', '册也记得住');
+window.localStorage.setItem('wkmath.graph.scope', '八年级（上）上');   // 认不出来的值
+eq(MM.scope.initial(), '', '存了个认不出来的范围 → 当没存（否则工具条会写个假名字）');
+
+/* 两个分法各有自己的"总览"，都指向同一个范围（互不干扰的选中态） */
+MM.scope.set('');
+MM.axis.set('field');
+eq(fieldItems[0].getAttribute('aria-pressed'), 'true', '体系那一栏的"总览·全部体系"亮着');
+eq(bookItems[0].getAttribute('aria-pressed'), 'false',
+  '册那一栏的"总览·六册"不再亮（两栏各有各的选中态，不互相点亮）');
+MM.scope.set('八年级（上）');
+eq(MM.axis.get(), 'book', '选了册 → 分法自动切回年级教材那一栏');
+eq(bookItems[3].getAttribute('aria-pressed'), 'true', '八上亮着');
+eq(fieldItems[1].getAttribute('aria-pressed'), 'false', '体系那一栏没有被误点亮');
+
+/* 定位：同体系的章不该把筛选清掉，别体系的章才清（这是合成根最容易漏的地方） */
+MM.scope.set('图形与几何');
+var inField = null, outField = null;
+MM.each(function (n) {
+  if (n.kind !== 'chapter') return;
+  if (n.field === '图形与几何' && !inField) inField = n;
+  if (n.field === '数与代数' && !outField) outField = n;
+});
+eq(MM.scopeContains(MM.rootScope(), inField), true, '同体系的章算"在范围内"（沿父链走不到合成根，靠孩子索引补上）');
+eq(MM.scopeContains(MM.rootScope(), outField), false, '别体系的章算"在范围外"');
+MM.locate(inField.id);
+eq(MM.scope.get(), '图形与几何', '在范围内定位 → 筛选不动');
+MM.locate(outField.id);
+eq(MM.scope.get(), '', '定位到别体系的章才放开筛选（回总览，否则目标看不见）');
+
+/* 收尾：回到默认（总览 + 年级教材），免得影响后面的检查 */
+MM.scope.set('');
+MM.axis.set('book');
+
 out('----');
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

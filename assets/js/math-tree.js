@@ -1,5 +1,5 @@
 /* ==========================================================================
-   悟空数学知识网络 —— 脑图数据
+   初中数学知识网络 —— 脑图数据
    --------------------------------------------------------------------------
    本文件由 tools/build-math-tree.rb 自动生成，请勿手工编辑。
    数据源：人教版初中数学知识结构.md（本站自己的教材结构资料）
@@ -8,7 +8,7 @@
 
 window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "七年级（上）", kind: "book", children: [
-{ name: "有理数", kind: "chapter", no: "01", cn: "一", children: [
+{ name: "有理数", kind: "chapter", no: "01", field: "数与代数", cn: "一", children: [
 { name: "知识速查", kind: "section", no: "1.1", children: [
 { name: "正数和负数", kind: "point", no: "1" },
 { name: "正数与负数的定义", kind: "point", no: "2" },
@@ -52,7 +52,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "运算顺序出错", kind: "error", no: "4" }
         ] }
       ] },
-{ name: "整式的加减", kind: "chapter", no: "02", cn: "二", children: [
+{ name: "整式的加减", kind: "chapter", no: "02", field: "数与代数", cn: "二", children: [
 { name: "整式", kind: "section", no: "2.1", children: [
 { name: "用含字母的式子表示数", kind: "point", no: "1" },
 { name: "单项式", kind: "point", no: "2" },
@@ -79,7 +79,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "整式的加减", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "一元一次方程", kind: "chapter", no: "03", cn: "三", children: [
+{ name: "一元一次方程", kind: "chapter", no: "03", field: "数与代数", cn: "三", children: [
 { name: "从算式到方程", kind: "section", no: "3.1", children: [
 { name: "方程的概念", kind: "point", no: "1" },
 { name: "等式的性质", kind: "point", no: "2" },
@@ -111,7 +111,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "一元一次方程的应用", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "几何图形初步", kind: "chapter", no: "04", cn: "四", children: [
+{ name: "几何图形初步", kind: "chapter", no: "04", field: "图形与几何", cn: "四", children: [
 { name: "几何图形", kind: "section", no: "4.1", children: [
 { name: "几何图形", kind: "point", no: "1" },
 { name: "立体图形", kind: "point", no: "2" },
@@ -156,7 +156,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
       ] }
     ] },
 { name: "七年级（下）", kind: "book", children: [
-{ name: "相交线与平行线", kind: "chapter", no: "05", cn: "五", children: [
+{ name: "相交线与平行线", kind: "chapter", no: "05", field: "图形与几何", cn: "五", children: [
 { name: "相交线", kind: "section", no: "5.1", children: [
 { name: "邻补角与对顶角", kind: "point", no: "1" },
 { name: "垂线及其性质", kind: "point", no: "2" },
@@ -192,7 +192,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "平行线的性质", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "实数", kind: "chapter", no: "06", cn: "六", children: [
+{ name: "实数", kind: "chapter", no: "06", field: "数与代数", cn: "六", children: [
 { name: "平方根", kind: "section", no: "6.1", children: [
 { name: "算术平方根", kind: "point", no: "1" },
 { name: "用计算器求一个正数的算术平方根", kind: "point", no: "2" },
@@ -231,7 +231,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "实数", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "平面直角坐标系", kind: "chapter", no: "07", cn: "七", children: [
+{ name: "平面直角坐标系", kind: "chapter", no: "07", field: "图形与几何", cn: "七", children: [
 { name: "平面直角坐标系", kind: "section", no: "7.1", children: [
 { name: "有序数对", kind: "point", no: "1" },
 { name: "平面直角坐标系", kind: "point", no: "2" },
@@ -256,7 +256,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "坐标方法的简单应用", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "二元一次方程组", kind: "chapter", no: "08", cn: "八", children: [
+{ name: "二元一次方程组", kind: "chapter", no: "08", field: "数与代数", cn: "八", children: [
 { name: "二元一次方程组", kind: "section", no: "8.1", children: [
 { name: "二元一次方程", kind: "point", no: "1" },
 { name: "二元一次方程组的定义", kind: "point", no: "2" },
@@ -292,7 +292,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "实际问题与二元一次方程", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "不等式与不等式组", kind: "chapter", no: "09", cn: "九", children: [
+{ name: "不等式与不等式组", kind: "chapter", no: "09", field: "数与代数", cn: "九", children: [
 { name: "不等式", kind: "section", no: "9.1", children: [
 { name: "不等式", kind: "point", no: "1" },
 { name: "不等式的解", kind: "point", no: "2" },
@@ -325,7 +325,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "一元一次不等式组", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "数据的收集、整理与描述", kind: "chapter", no: "10", cn: "十", children: [
+{ name: "数据的收集、整理与描述", kind: "chapter", no: "10", field: "统计与概率", cn: "十", children: [
 { name: "统计调查", kind: "section", no: "10.1", children: [
 { name: "数据的收集与整理", kind: "point", no: "1" },
 { name: "描述数据的方法", kind: "point", no: "2" },
@@ -354,7 +354,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
       ] }
     ] },
 { name: "八年级（上）", kind: "book", children: [
-{ name: "三角形", kind: "chapter", no: "11", cn: "十一", children: [
+{ name: "三角形", kind: "chapter", no: "11", field: "图形与几何", cn: "十一", children: [
 { name: "与三角形有关的线段", kind: "section", no: "11.1", children: [
 { name: "三角形的边", kind: "point", no: "1" },
 { name: "三角形的高、中线与角平分线", kind: "point", no: "2" },
@@ -385,7 +385,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "多边形及其内角和、外角和", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "全等三角形", kind: "chapter", no: "12", cn: "十二", children: [
+{ name: "全等三角形", kind: "chapter", no: "12", field: "图形与几何", cn: "十二", children: [
 { name: "全等三角形", kind: "section", no: "12.1", children: [
 { name: "全等形的概念", kind: "point", no: "1" },
 { name: "全等三角形的概念和表示方法", kind: "point", no: "2" },
@@ -418,7 +418,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "角的平分线的应用", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "轴对称", kind: "chapter", no: "13", cn: "十三", children: [
+{ name: "轴对称", kind: "chapter", no: "13", field: "图形与几何", cn: "十三", children: [
 { name: "轴对称", kind: "section", no: "13.1", children: [
 { name: "轴对称图形", kind: "point", no: "1" },
 { name: "轴对称", kind: "point", no: "2" },
@@ -453,7 +453,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "等腰三角形", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "整式的乘法与因式分解", kind: "chapter", no: "14", cn: "十四", children: [
+{ name: "整式的乘法与因式分解", kind: "chapter", no: "14", field: "数与代数", cn: "十四", children: [
 { name: "整式的乘法", kind: "section", no: "14.1", children: [
 { name: "同底数幂的乘法", kind: "point", no: "1" },
 { name: "幂的乘方", kind: "point", no: "2" },
@@ -490,7 +490,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "因式分解", kind: "exam", no: "4" }
         ] }
       ] },
-{ name: "分式", kind: "chapter", no: "15", cn: "十五", children: [
+{ name: "分式", kind: "chapter", no: "15", field: "数与代数", cn: "十五", children: [
 { name: "分式", kind: "section", no: "15.1", children: [
 { name: "分式的概念", kind: "point", no: "1" },
 { name: "分式的基本性质", kind: "point", no: "2" },
@@ -520,7 +520,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
       ] }
     ] },
 { name: "八年级（下）", kind: "book", children: [
-{ name: "二次根式", kind: "chapter", no: "16", cn: "十六", children: [
+{ name: "二次根式", kind: "chapter", no: "16", field: "数与代数", cn: "十六", children: [
 { name: "二次根式", kind: "section", no: "16.1", children: [
 { name: "二次根式的概念", kind: "point", no: "1" },
 { name: "二次根式的性质", kind: "point", no: "2" },
@@ -551,7 +551,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "二次根式的运算", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "勾股定理", kind: "chapter", no: "17", cn: "十七", children: [
+{ name: "勾股定理", kind: "chapter", no: "17", field: "图形与几何", cn: "十七", children: [
 { name: "勾股定理", kind: "section", no: "17.1", children: [
 { name: "勾股定理", kind: "point", no: "1" },
 { name: "勾股定理的证明", kind: "point", no: "2" },
@@ -578,7 +578,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "勾股定理的逆定理", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "平行四边形", kind: "chapter", no: "18", cn: "十八", children: [
+{ name: "平行四边形", kind: "chapter", no: "18", field: "图形与几何", cn: "十八", children: [
 { name: "平行四边形", kind: "section", no: "18.1", children: [
 { name: "平行四边形的相关概念", kind: "point", no: "1" },
 { name: "平行四边形的性质", kind: "point", no: "2" },
@@ -607,7 +607,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "特殊的平行四边形", kind: "exam", no: "2" }
         ] }
       ] },
-{ name: "一次函数", kind: "chapter", no: "19", cn: "十九", children: [
+{ name: "一次函数", kind: "chapter", no: "19", field: "数与代数", cn: "十九", children: [
 { name: "函数", kind: "section", no: "19.1", children: [
 { name: "变量和常量", kind: "point", no: "1" },
 { name: "函数的定义", kind: "point", no: "2" },
@@ -644,7 +644,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "一次函数的实际应用", kind: "exam", no: "3" }
         ] }
       ] },
-{ name: "数据的分析", kind: "chapter", no: "20", cn: "二十", children: [
+{ name: "数据的分析", kind: "chapter", no: "20", field: "统计与概率", cn: "二十", children: [
 { name: "数据的集中趋势", kind: "section", no: "20.1", children: [
 { name: "平均数", kind: "point", no: "1" },
 { name: "中位数和众数", kind: "point", no: "2" }
@@ -675,7 +675,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
       ] }
     ] },
 { name: "九年级（上）", kind: "book", children: [
-{ name: "一元二次方程", kind: "chapter", no: "21", cn: "二十一", children: [
+{ name: "一元二次方程", kind: "chapter", no: "21", field: "数与代数", cn: "二十一", children: [
 { name: "一元二次方程", kind: "section", no: "21.1", children: [
 { name: "一元二次方程", kind: "point", no: "1" },
 { name: "一元二次方程的解(根)", kind: "point", no: "2" }
@@ -709,7 +709,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
 { name: "一元二次方程", kind: "exam", no: "1" }
         ] }
       ] },
-{ name: "二次函数", kind: "chapter", no: "22", cn: "二十二", children: [
+{ name: "二次函数", kind: "chapter", no: "22", field: "数与代数", cn: "二十二", children: [
 { name: "二次函数的图象和性质", kind: "section", no: "22.1", children: [
 { name: "二次函数的概念", kind: "point", no: "1" },
 { name: "二次函数y=ax²+k的图象和性质", kind: "point", no: "2" },
@@ -747,7 +747,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] },
-{ name: "旋转", kind: "chapter", no: "23", cn: "二十三", children: [
+{ name: "旋转", kind: "chapter", no: "23", field: "图形与几何", cn: "二十三", children: [
 { name: "图形的旋转", kind: "section", no: "23.1", children: [
 { name: "旋转的相关概念", kind: "point", no: "1" },
 { name: "旋转的性质", kind: "point", no: "2" },
@@ -778,7 +778,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] },
-{ name: "圆", kind: "chapter", no: "24", cn: "二十四", children: [
+{ name: "圆", kind: "chapter", no: "24", field: "图形与几何", cn: "二十四", children: [
 { name: "圆的有关性质", kind: "section", no: "24.1", children: [
 { name: "圆的概念", kind: "point", no: "1" },
 { name: "与圆有关的概念", kind: "point", no: "2" },
@@ -836,7 +836,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
       ] }
     ] },
 { name: "九年级（下）", kind: "book", children: [
-{ name: "概率初步", kind: "chapter", no: "25", cn: "二十五", children: [
+{ name: "概率初步", kind: "chapter", no: "25", field: "统计与概率", cn: "二十五", children: [
 { name: "随机事件与概率", kind: "section", no: "25.1", children: [
 { name: "随机事件、不可能事件、随机事件", kind: "point", no: "1" },
 { name: "事件发生的可能性大小", kind: "point", no: "2" },
@@ -866,7 +866,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] },
-{ name: "反比例函数", kind: "chapter", no: "26", cn: "二十六", children: [
+{ name: "反比例函数", kind: "chapter", no: "26", field: "数与代数", cn: "二十六", children: [
 { name: "反比例函数", kind: "section", no: "26.1", children: [
 { name: "反比例函数的概念", kind: "point", no: "1" },
 { name: "反比例函数的图象和性质", kind: "point", no: "2" }
@@ -890,7 +890,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] },
-{ name: "相似", kind: "chapter", no: "27", cn: "二十七", children: [
+{ name: "相似", kind: "chapter", no: "27", field: "图形与几何", cn: "二十七", children: [
 { name: "图形的相似", kind: "section", no: "27.1", children: [
 { name: "相似图形", kind: "point", no: "1" },
 { name: "比例线段", kind: "point", no: "2" },
@@ -928,7 +928,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] },
-{ name: "锐角三角函数", kind: "chapter", no: "28", cn: "二十八", children: [
+{ name: "锐角三角函数", kind: "chapter", no: "28", field: "图形与几何", cn: "二十八", children: [
 { name: "锐角三角函数", kind: "section", no: "28.1", children: [
 { name: "锐角三角函数", kind: "point", no: "1" },
 { name: "30°，45°，60°角的锐角三角函数值", kind: "point", no: "2" },
@@ -955,7 +955,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] },
-{ name: "投影与视图", kind: "chapter", no: "29", cn: "二十九", children: [
+{ name: "投影与视图", kind: "chapter", no: "29", field: "图形与几何", cn: "二十九", children: [
 { name: "投影", kind: "section", no: "29.1", children: [
 { name: "平行投影", kind: "point", no: "1" },
 { name: "中心投影", kind: "point", no: "2" },

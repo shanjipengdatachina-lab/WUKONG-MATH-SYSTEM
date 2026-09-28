@@ -52,6 +52,51 @@ GROUP_KINDS = {
   '真题速练' => 'exam'
 }.freeze
 
+# 章 -> 课标领域。图谱要能"按几何代数分"，而源文件里没有这一栏 ——
+# 所以在这里显式登记，生成时写进每一个章节点。
+# 判定按人教社 / 课标的三个领域走；「平面直角坐标系」归图形与几何
+# （课标把"图形与坐标"放在几何里），这是唯一容易被觉得"应该算代数"的一章。
+FIELDS = {
+  '有理数' => '数与代数',
+  '整式的加减' => '数与代数',
+  '一元一次方程' => '数与代数',
+  '实数' => '数与代数',
+  '二元一次方程组' => '数与代数',
+  '不等式与不等式组' => '数与代数',
+  '整式的乘法与因式分解' => '数与代数',
+  '分式' => '数与代数',
+  '二次根式' => '数与代数',
+  '一次函数' => '数与代数',
+  '一元二次方程' => '数与代数',
+  '二次函数' => '数与代数',
+  '反比例函数' => '数与代数',
+
+  '几何图形初步' => '图形与几何',
+  '相交线与平行线' => '图形与几何',
+  '平面直角坐标系' => '图形与几何',
+  '三角形' => '图形与几何',
+  '全等三角形' => '图形与几何',
+  '轴对称' => '图形与几何',
+  '勾股定理' => '图形与几何',
+  '平行四边形' => '图形与几何',
+  '旋转' => '图形与几何',
+  '圆' => '图形与几何',
+  '相似' => '图形与几何',
+  '锐角三角函数' => '图形与几何',
+  '投影与视图' => '图形与几何',
+
+  '数据的收集、整理与描述' => '统计与概率',
+  '数据的分析' => '统计与概率',
+  '概率初步' => '统计与概率'
+}.freeze
+
+# 领域在图谱里的短名（列表与工具条上用它，图里的节点名仍用课标全称）
+FIELD_SHORT = {
+  '数与代数' => '代数',
+  '图形与几何' => '几何',
+  '统计与概率' => '统计与概率'
+}.freeze
+
 root = { 'name' => '初中数学', 'kind' => 'root', 'children' => [] }
 books = []
 warnings = []
@@ -69,10 +114,21 @@ File.foreach(SOURCE, chomp: true).with_index(1) do |line, lineno|
     end
     no = cn_to_int(Regexp.last_match(1))
     no = 0 if no.zero?
+    name = Regexp.last_match(2)
+    field = FIELDS[name]
+    # 新加一章却忘了登记领域 -> 直接停下，不要生成一份"有一章按领域分不出来"的数据。
+    # 图谱的"几何代数"那一栏就是靠这个字段分组，漏一章会安静地少一块。
+    unless field
+      abort(<<~MSG)
+        第 #{lineno} 行：「#{name}」没有登记课标领域。
+        请在 tools/build-math-tree.rb 的 FIELDS 表里补一行（数与代数 / 图形与几何 / 统计与概率）。
+      MSG
+    end
     chapter = {
-      'name' => Regexp.last_match(2),
+      'name' => name,
       'kind' => 'chapter',
       'no' => format('%02d', no),
+      'field' => field,
       'cn' => Regexp.last_match(1),
       'children' => []
     }
@@ -130,6 +186,11 @@ end
 depth_counts = {}
 walk(root, 0, depth_counts)
 
+# 三个课标领域各多少章（按 FIELDS 里登记的顺序输出，不按出现顺序）
+field_counts = collect(root, 'chapter').group_by { |c| c['field'] }
+                          .transform_values(&:size)
+                          .sort_by { |name, _| [FIELDS.values.index(name) || 99, name] }.to_h
+
 # 同一父节点下的重名子节点（源文件里存在的重复列举）
 duplicates = []
 def scan_duplicates(node, duplicates)
@@ -150,6 +211,7 @@ def dump(node, indent)
   lines << %(name: "#{node['name']}")
   lines << %(kind: "#{node['kind']}")
   lines << %(no: "#{node['no']}") if node['no']
+  lines << %(field: "#{node['field']}") if node['field']
   lines << %(cn: "#{node['cn']}") if node['cn']
   lines << %(tone: "#{node['tone']}") if node['tone']
   children = node['children']
@@ -179,6 +241,7 @@ puts "  节/栏目 : #{collect(root, 'section').size + collect(root, 'group').si
 puts "  末级条目: #{collect(root, 'point').size + collect(root, 'method').size + collect(root, 'error').size + collect(root, 'exam').size}"
 puts "    其中知识点 #{collect(root, 'point').size} · 方法 #{collect(root, 'method').size} · 易错 #{collect(root, 'error').size} · 考点 #{collect(root, 'exam').size}"
 puts "  各层节点数: #{depth_counts.sort.to_h.map { |k, v| "L#{k}=#{v}" }.join(' ')}"
+puts "  课标领域: #{field_counts.map { |k, v| "#{k} #{v} 章（#{FIELD_SHORT[k]}）" }.join(' · ')}"
 puts "  文件大小: #{(File.size(TARGET) / 1024.0).round(1)} KB"
 
 unless warnings.empty?

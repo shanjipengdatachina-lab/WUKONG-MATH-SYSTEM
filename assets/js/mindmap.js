@@ -53,11 +53,11 @@
   };
 
   var KIND_LABEL = {
-    root: '总览', book: '册', chapter: '章', section: '节', group: '栏目',
+    root: '总览', book: '册', field: '体系', chapter: '章', section: '节', group: '栏目',
     point: '知识点', method: '方法', error: '易错点', exam: '考点'
   };
 
-  var BOXED = { root: 1, book: 1, chapter: 1 };
+  var BOXED = { root: 1, book: 1, field: 1, chapter: 1 };
   var DOTTED = { point: 1, method: 1, error: 1, exam: 1 };
 
   /* ------------------------------------------------------------------ *
@@ -128,15 +128,92 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 3. 按册筛选
+   * 3. 筛选范围：按册（年级教材）或按课标领域（几何 / 代数 / 统计与概率）
    * ------------------------------------------------------------------ */
 
-  var bookFilter = '';
+  /* scopeKey 是"当前只看哪一块"：'' 是总览，册名或领域名。
+     两个分法共用这一个变量 —— 它本身就是可判别的（册名 vs 领域名），
+     不需要再造一个"当前是哪个分法"的开关去跟它同步。 */
+  var scopeKey = '';
+
+  /* 领域名 → 图里那个合成根。体系是"看法"，不是真的父节点：
+     章的真实父节点还是册，所以信息面板里的路径照实显示
+     「初中数学 / 八年级（下） / 平行四边形」—— 这里不编造层级。 */
+  var FIELD_SCOPES = {};
+  /* 列表与工具条上用短名，图里的节点名仍用课标全称（和"册"一致：
+     名单里写「七年级（上）」，工具条上写「七上」） */
+  var FIELD_SHORT = { '数与代数': '代数', '图形与几何': '几何', '统计与概率': '统计与概率' };
+  /* 固定顺序：几何在前（用户说的就是"几何代数"） */
+  var FIELD_ORDER = ['图形与几何', '数与代数', '统计与概率'];
+
+  function fieldScope(name) {
+    if (FIELD_SCOPES[name]) return FIELD_SCOPES[name];
+    var kids = [];
+    DATA.kids.forEach(function (book) {
+      (book.kids || []).forEach(function (ch) { if (ch.field === name) kids.push(ch); });
+    });
+    if (!kids.length) return null;
+    var agg = { chapter: 0, section: 0, group: 0, point: 0, method: 0, error: 0, exam: 0 };
+    kids.forEach(function (ch) {
+      Object.keys(ch.agg || {}).forEach(function (k) { agg[k] += ch.agg[k]; });
+    });
+    agg.chapter = kids.length;
+    var node = {
+      id: 'f:' + name,
+      name: name,
+      kind: 'field',
+      /* 与"册"同层（depth 1），所以列位置、字号、盒子这些全都不用特判 */
+      depth: 1,
+      parent: null,
+      kids: kids,
+      children: kids,
+      hasChildren: true,
+      agg: agg,
+      /* 自己孩子的索引。locate() 判断"目标在不在当前范围里"是沿着父链往上走，
+         而章的真实父节点是册、永远走不到这个合成节点上 ——
+         没有这张表，在「几何」范围内定位「平行四边形」（明明就在眼前）会被
+         误判成"在别处"，然后把筛选清掉。 */
+      kidsSet: kids.reduce(function (m, ch) { m[ch.id] = true; return m; }, {})
+    };
+    FIELD_SCOPES[name] = node;
+    return node;
+  }
+
+  /* 数据里出现过的领域名（按 FIELD_ORDER 排，未知的排在最后） */
+  function fieldNames() {
+    var seen = {}, out = [];
+    DATA.kids.forEach(function (book) {
+      (book.kids || []).forEach(function (ch) {
+        if (ch.field && !seen[ch.field]) { seen[ch.field] = true; out.push(ch.field); }
+      });
+    });
+    out.sort(function (a, b) {
+      var ai = FIELD_ORDER.indexOf(a), bi = FIELD_ORDER.indexOf(b);
+      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+    });
+    return out;
+  }
+
+  function isFieldScope(key) {
+    return !!key && fieldNames().indexOf(key) >= 0;
+  }
 
   function rootScope() {
-    if (!bookFilter) return DATA;
-    var book = DATA.kids.filter(function (b) { return b.name === bookFilter; })[0];
-    return book || DATA;
+    if (!scopeKey) return DATA;
+    var book = DATA.kids.filter(function (b) { return b.name === scopeKey; })[0];
+    if (book) return book;
+    return fieldScope(scopeKey) || DATA;
+  }
+
+  /* 目标在不在当前范围里。除了沿父链，还要看合成根那张孩子索引 —— 见 kidsSet 的说明。 */
+  function scopeContains(scope, node) {
+    var cur = node;
+    while (cur) {
+      if (cur === scope) return true;
+      if (scope.kidsSet && scope.kidsSet[cur.id]) return true;
+      cur = cur.parent;
+    }
+    return false;
   }
 
   /* ------------------------------------------------------------------ *
@@ -476,7 +553,7 @@
     var rows = [];
     var leafKinds = node.kind === 'point' || node.kind === 'method' || node.kind === 'error' || node.kind === 'exam';
 
-    if (node.kind === 'root' || node.kind === 'book') {
+    if (node.kind === 'root' || node.kind === 'book' || node.kind === 'field') {
       rows.push(['章', agg.chapter]);
     }
     if (node.kind !== 'section' && node.kind !== 'group' && !leafKinds) {
@@ -617,16 +694,11 @@
   function locate(id, options) {
     var node = byId[id];
     if (!node) return;
-    // 筛选状态下目标可能在别册，先放开筛选
-    if (bookFilter) {
+    // 筛选状态下目标可能在范围之外，先放开筛选
+    if (scopeKey) {
       var scope = rootScope();
-      var inside = false;
-      var cur = node;
-      while (cur) { if (cur === scope) { inside = true; break; } cur = cur.parent; }
-      if (!inside && node !== DATA) {
-        bookFilter = '';
-        writeStore(SCOPE_KEY, '');
-        syncScope();
+      if (!scopeContains(scope, node) && node !== DATA) {
+        setBookFilter('');                 // 顺带把 scopeKey 与存储、界面一起归位
       }
     }
     expandTo(node);
@@ -898,6 +970,9 @@
   var scopeNote = qs('#mm-scope-note');
 
   var SCOPE_KEY = 'wkmath.graph.scope';
+  var AXIS_KEY = 'wkmath.graph.axis';
+  var AXES = ['book', 'field'];
+  var axis = 'book';            // 当前浮层里看的是哪一栏：book | field
   var BOOK_SHORT = {
     '': '总览',
     '七年级（上）': '七上', '七年级（下）': '七下',
@@ -928,11 +1003,42 @@
     return '七年级（下）';
   }
 
-  // 默认聚焦：看过哪册就记哪册；没记过就按学生当前年级；未登录给总览
+  // 默认聚焦：看过哪册 / 哪个体系就记哪个；没记过就按学生当前年级；未登录给总览
   function initialScope() {
     var saved = readStore(SCOPE_KEY);
-    if (saved !== null) return saved;
+    if (saved !== null && saved !== '') {
+      /* 存的是册名或领域名 —— 不认识的值一律当没存（旧数据 / 手改过的存储），
+         否则 rootScope() 会落到总览，而工具条上却写着那个不认识的名字。 */
+      if (BOOK_SHORT[saved] || isFieldScope(saved)) return saved;
+      return '';
+    }
+    if (saved === '') return '';
     return signedIn() ? studentGrade() : '';
+  }
+
+  /* 当前范围落在哪一栏。范围本身就能说明：册名 → 年级教材，领域名 → 几何代数。
+     这样不会出现"选中的那一项在看不见的那一栏里"。
+     参数可传一个范围进去 —— 启动时要用"存储里那个范围"来算，
+     不能只看现场的 scopeKey（那一刻还没赋值）。 */
+  function axisOfScope(key) {
+    var k = (key === undefined) ? scopeKey : (key || '');
+    if (!k) return '';
+    if (isFieldScope(k)) return 'field';
+    return BOOK_SHORT[k] ? 'book' : '';
+  }
+
+  /* 启动时的那一栏：先看范围属于哪一栏；范围是总览时用记着的那一栏，最后兜到年级教材。
+     这里刻意从 initialScope() 现算 —— 它等价于"刷新一次页面会落在哪一栏"。 */
+  function initialAxis() {
+    var derived = axisOfScope(initialScope());
+    if (derived) return derived;
+    var saved = readStore(AXIS_KEY);
+    return AXES.indexOf(saved) >= 0 ? saved : 'book';
+  }
+
+  /* 范围在工具条与列表上的短名 */
+  function scopeShort() {
+    return BOOK_SHORT[scopeKey] || FIELD_SHORT[scopeKey] || '总览';
   }
 
   /* aria-pressed 给读屏，is-on 给眼睛：两个都要设。
@@ -944,13 +1050,44 @@
     else el.classList.remove('is-on');
   }
 
+  /* 分法切换：只换名单，不动图 —— 图要等你点具体某一项才变。
+     这和"点开浮层只是看看"是一致的。 */
+  function setAxis(next) {
+    if (AXES.indexOf(next) < 0) return false;
+    axis = next;
+    writeStore(AXIS_KEY, next);
+    syncScope();
+    return true;
+  }
+
   function syncScope() {
     var bookLabel = qs('#mm-book-label');
     var levelLabel = qs('#mm-level-label');
-    if (bookLabel) bookLabel.textContent = BOOK_SHORT[bookFilter] || '总览';
+    if (bookLabel) bookLabel.textContent = scopeShort();
     if (levelLabel) levelLabel.textContent = LEVEL_SHORT[levelDepth] || '到章';
+
+    /* 分法条 */
+    qsa('#mm-axis [data-axis]').forEach(function (item) {
+      var on = (item.getAttribute('data-axis') || '') === axis;
+      item.setAttribute('aria-pressed', String(on));
+      markOn(item, on);
+    });
+    /* 两栏名单：一次只露一栏 */
+    qsa('#mm-book-menu [data-axis-pane]').forEach(function (pane) {
+      var on = (pane.getAttribute('data-axis-pane') || '') === axis;
+      if (on) { if (pane.removeAttribute) pane.removeAttribute('hidden'); pane.hidden = false; }
+      else { if (pane.setAttribute) pane.setAttribute('hidden', ''); pane.hidden = true; }
+    });
+
+    /* 册那一栏 */
     qsa('#mm-book-menu [data-book]').forEach(function (item) {
-      var on = (item.getAttribute('data-book') || '') === bookFilter;
+      var on = (item.getAttribute('data-book') || '') === scopeKey && axis === 'book';
+      item.setAttribute('aria-pressed', String(on));
+      markOn(item, on);
+    });
+    /* 体系那一栏 */
+    qsa('#mm-book-menu [data-field]').forEach(function (item) {
+      var on = (item.getAttribute('data-field') || '') === scopeKey && axis === 'field';
       item.setAttribute('aria-pressed', String(on));
       markOn(item, on);
     });
@@ -959,11 +1096,15 @@
       item.setAttribute('aria-pressed', String(on));
       markOn(item, on);
     });
-    if (bookBtn) bookBtn.setAttribute('data-mm-tip', '只看某一册 · 当前 ' + (BOOK_SHORT[bookFilter] || '总览'));
+    if (bookBtn) bookBtn.setAttribute('data-mm-tip', '只看某一册或某一体系 · 当前 ' + scopeShort());
     if (levelBtn) levelBtn.setAttribute('data-mm-tip', '显示到哪一层 · 当前 ' + (LEVEL_SHORT[levelDepth] || '到章'));
     if (scopeNote) {
-      if (bookFilter) {
-        scopeNote.textContent = '当前按 ' + bookFilter + ' 聚焦' + (signedIn() ? '（学生当前年级）' : '') + '；点工具条第一个按钮可换册。';
+      if (isFieldScope(scopeKey)) {
+        var node = fieldScope(scopeKey);
+        scopeNote.textContent = '当前按「' + FIELD_SHORT[scopeKey] + '」体系看，共 ' + node.kids.length +
+          ' 章（课标名：' + scopeKey + '）；点工具条第一个按钮可换分法。';
+      } else if (scopeKey) {
+        scopeNote.textContent = '当前按 ' + scopeKey + ' 聚焦' + (signedIn() ? '（学生当前年级）' : '') + '；点工具条第一个按钮可换册。';
       } else if (signedIn()) {
         scopeNote.textContent = '已登录：默认聚焦学生当前年级（' + studentGrade() + '），这里看的是总览。';
       } else {
@@ -974,14 +1115,17 @@
 
   function setBookFilter(name) {
     var next = name || '';
-    bookFilter = next;
+    scopeKey = next;
+    /* 选了哪一栏的项，就把那一栏亮出来 —— 否则"我选的东西在看不见的那一栏里" */
+    if (next && axisOfScope()) axis = axisOfScope();
     writeStore(SCOPE_KEY, next);
     syncScope();
     render({ fit: true });
-    toast(next ? '只看 ' + next : '显示全部六册', 'info', 1600);
+    toast(next ? '只看 ' + (FIELD_SHORT[next] || next) : '显示全部六册', 'info', 1600);
   }
 
-  bookFilter = initialScope();
+  scopeKey = initialScope();
+  axis = initialAxis();
 
   /* ---- 浮层：一次只开一个 ---- */
   function menuPairs() {
@@ -1005,9 +1149,22 @@
   if (levelBtn) levelBtn.addEventListener('click', function () { toggleMenu(levelBtn, levelMenu); });
   if (helpBtn) helpBtn.addEventListener('click', function () { toggleMenu(helpBtn, helpMenu); });
 
+  /* 分法切换条 */
+  qsa('#mm-axis [data-axis]').forEach(function (item) {
+    item.addEventListener('click', function () { setAxis(item.getAttribute('data-axis')); });
+  });
+
   qsa('#mm-book-menu [data-book]').forEach(function (item) {
     item.addEventListener('click', function () {
       setBookFilter(item.getAttribute('data-book'));
+      closeMenus();
+    });
+  });
+
+  /* 体系那一栏：和册一样，选了就收起浮层 */
+  qsa('#mm-book-menu [data-field]').forEach(function (item) {
+    item.addEventListener('click', function () {
+      setBookFilter(item.getAttribute('data-field'));
       closeMenus();
     });
   });
@@ -1125,12 +1282,26 @@
 
   /* 自查与测试用的接口 */
   window.__MM__ = {
-    scope: { get: function () { return bookFilter; }, set: setBookFilter, initial: initialScope },
+    scope: { get: function () { return scopeKey; }, set: setBookFilter, initial: initialScope },
+    axis: { get: function () { return axis; }, set: setAxis, initial: initialAxis, keys: AXES },
+    fields: fieldNames,
+    fieldScope: fieldScope,
+    fieldShort: function (name) { return FIELD_SHORT[name || ''] || name || ''; },
+    fieldOf: function (chapterName) {
+      var hit = null;
+      DATA.kids.forEach(function (book) {
+        (book.kids || []).forEach(function (ch) { if (ch.name === chapterName) hit = ch; });
+      });
+      return hit ? hit.field : null;
+    },
+    scopeContains: scopeContains,
+    rootScope: rootScope,
+    each: function (fn) { eachNode(DATA, fn); },
     level: { get: function () { return levelDepth; }, set: setFold },
     signedIn: signedIn,
     studentGrade: studentGrade,
     books: DATA.kids.map(function (book) { return book.name; }),
-    shortOf: function (name) { return BOOK_SHORT[name || ''] || '总览'; },
+    shortOf: function (name) { return name ? (BOOK_SHORT[name] || FIELD_SHORT[name] || name) : '总览'; },
     syncScope: syncScope,
     setBookFilter: setBookFilter,
     closeMenus: closeMenus,

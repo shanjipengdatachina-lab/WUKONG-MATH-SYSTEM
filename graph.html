@@ -122,34 +122,57 @@
 
         <div class="mm-dock__group">
           <button type="button" class="mm-dock__btn mm-dock__btn--group" id="mm-book-btn"
-                  aria-haspopup="true" aria-expanded="false" aria-controls="mm-book-menu"
-                  data-mm-tip="只看某一册" aria-label="按册筛选">
+                  aria-expanded="false" aria-controls="mm-book-menu"
+                  data-mm-tip="只看某一册或某一体系" aria-label="筛选范围">
             <i data-lucide="layers"></i>
             <span class="mm-dock__label" id="mm-book-label">总览</span>
             <span class="mm-dock__caret" aria-hidden="true"></span>
           </button>
-          <div class="mm-flyout" id="mm-book-menu" role="menu" aria-label="按册筛选" hidden>
-            <button type="button" class="mm-flyout__item" data-book="" aria-pressed="true">
-              <i data-lucide="layout-grid"></i><span class="mm-flyout__label">总览 · 六册</span>
-            </button>
-            <button type="button" class="mm-flyout__item" data-book="七年级（上）" aria-pressed="false">
-              <i data-lucide="book"></i><span class="mm-flyout__label">七年级（上）</span>
-            </button>
-            <button type="button" class="mm-flyout__item" data-book="七年级（下）" aria-pressed="false">
-              <i data-lucide="book"></i><span class="mm-flyout__label">七年级（下）</span>
-            </button>
-            <button type="button" class="mm-flyout__item" data-book="八年级（上）" aria-pressed="false">
-              <i data-lucide="book"></i><span class="mm-flyout__label">八年级（上）</span>
-            </button>
-            <button type="button" class="mm-flyout__item" data-book="八年级（下）" aria-pressed="false">
-              <i data-lucide="book"></i><span class="mm-flyout__label">八年级（下）</span>
-            </button>
-            <button type="button" class="mm-flyout__item" data-book="九年级（上）" aria-pressed="false">
-              <i data-lucide="book"></i><span class="mm-flyout__label">九年级（上）</span>
-            </button>
-            <button type="button" class="mm-flyout__item" data-book="九年级（下）" aria-pressed="false">
-              <i data-lucide="book"></i><span class="mm-flyout__label">九年级（下）</span>
-            </button>
+          <!-- 这块浮层里既有"选范围"的一列按钮，又有一条分法切换，
+               所以它是 role=group 而不是 role=menu —— 菜单里必须放 menuitem
+               并实现方向键语义，这里两样都没有，写成菜单是假的。 -->
+          <div class="mm-flyout" id="mm-book-menu" role="group" aria-label="筛选范围" hidden>
+            <div class="mm-axis" id="mm-axis" role="group" aria-label="按什么分">
+              <button type="button" class="mm-axis__btn" data-axis="book" aria-pressed="true">年级教材</button>
+              <button type="button" class="mm-axis__btn" data-axis="field" aria-pressed="false">几何代数</button>
+            </div>
+            <div class="mm-axis__pane" data-axis-pane="book">
+              <button type="button" class="mm-flyout__item" data-book="" aria-pressed="true">
+                <i data-lucide="layout-grid"></i><span class="mm-flyout__label">总览 · 六册</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-book="七年级（上）" aria-pressed="false">
+                <i data-lucide="book"></i><span class="mm-flyout__label">七年级（上）</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-book="七年级（下）" aria-pressed="false">
+                <i data-lucide="book"></i><span class="mm-flyout__label">七年级（下）</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-book="八年级（上）" aria-pressed="false">
+                <i data-lucide="book"></i><span class="mm-flyout__label">八年级（上）</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-book="八年级（下）" aria-pressed="false">
+                <i data-lucide="book"></i><span class="mm-flyout__label">八年级（下）</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-book="九年级（上）" aria-pressed="false">
+                <i data-lucide="book"></i><span class="mm-flyout__label">九年级（上）</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-book="九年级（下）" aria-pressed="false">
+                <i data-lucide="book"></i><span class="mm-flyout__label">九年级（下）</span>
+              </button>
+            </div>
+            <div class="mm-axis__pane" data-axis-pane="field" hidden>
+              <button type="button" class="mm-flyout__item" data-field="" aria-pressed="false">
+                <i data-lucide="layout-grid"></i><span class="mm-flyout__label">总览 · 全部体系</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-field="图形与几何" aria-pressed="false">
+                <i data-lucide="shapes"></i><span class="mm-flyout__label">图形与几何</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-field="数与代数" aria-pressed="false">
+                <i data-lucide="sigma"></i><span class="mm-flyout__label">数与代数</span>
+              </button>
+              <button type="button" class="mm-flyout__item" data-field="统计与概率" aria-pressed="false">
+                <i data-lucide="chart-column"></i><span class="mm-flyout__label">统计与概率</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -207,7 +230,7 @@
           </button>
           <div class="mm-flyout mm-flyout--wide" id="mm-help-menu" role="dialog" aria-label="说明与提示" hidden>
             <p class="mm-help__title">知识图谱</p>
-            <p class="mm-help__text">六册 · 二十九章 · <span class="num" data-mm-total>780</span> 个节点，一张可以随便拖放的平面网。</p>
+            <p class="mm-help__text">六册 · 二十九章 · <span class="num" data-mm-total>780</span> 个节点，一张可以随便拖放的平面网。<br>同一张网有两种看法：<b>年级教材</b>（按六册）与<b>几何代数</b>（按课标体系：图形与几何 / 数与代数 / 统计与概率），在工具条第一个按钮里切。</p>
             <p class="mm-help__label">操作</p>
             <ul class="mm-help__list">
               <li><kbd>拖动</kbd> 空白处平移整张图</li>
@@ -220,6 +243,7 @@
             <ul class="mm-help__legend">
               <li><span class="lg lg--root"></span>总览</li>
               <li><span class="lg lg--book"></span>册</li>
+              <li><span class="lg lg--field"></span>体系</li>
               <li><span class="lg lg--chapter"></span>章</li>
               <li><span class="lg lg--dot"></span>知识点</li>
               <li><span class="lg lg--method"></span>方法</li>
@@ -405,6 +429,23 @@ body{padding-top:0}
 #mm-book-menu .mm-flyout__label,
 #mm-level-menu .mm-flyout__label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* ---------- 筛选浮层顶部的分法切换（年级教材 / 几何代数） ----------
+   两格切换 + 两栏名单，一次只露一栏。切换只换名单，不动图 ——
+   图要等你点具体某一项才变，这跟"点开浮层只是看看"是一致的。 */
+.mm-axis{display:flex;gap:4px;padding:1px 1px 5px;margin-bottom:5px;border-bottom:1px solid var(--math-border)}
+.mm-axis__btn{flex:1 1 auto;height:24px;padding:0 10px;border:1px solid transparent;border-radius:6px;
+  background:none;font-family:inherit;font-size:12px;line-height:1;color:var(--math-ink-3);cursor:pointer;
+  transition:background-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}
+.mm-axis__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
+.mm-axis__btn.is-on{background:var(--math-primary-tint);color:var(--math-primary);font-weight:600}
+.mm-axis__btn:focus-visible{outline:2px solid var(--math-ring);outline-offset:1px}
+.mm-axis__pane[hidden]{display:none}
+
+/* 体系节点：它此刻就是这一屏的根，所以用根那套视觉权重（和"总览"一致）。
+   类型徽标写「体系」—— 不写成"册"，它确实不是某本教材。 */
+.mm-node--field .mm-node__box{fill:var(--math-primary);stroke:var(--math-primary)}
+.mm-node--field .mm-label{fill:var(--math-primary-foreground);font-weight:600}
+
 /* 节点信息面板：贴右侧；搜索面板：贴左上 */
 .mm-dock__label{min-width:26px;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums}
 .mm-dock__btn--group[aria-expanded="true"] .mm-dock__label{color:var(--math-foreground)}
@@ -441,6 +482,7 @@ body{padding-top:0}
 .mm-help__legend .lg{flex:none;width:12px;height:12px;border-radius:3px;border:1px solid var(--math-border)}
 .lg--root{background:var(--math-primary);border-color:var(--math-primary)}
 .lg--book{background:var(--math-primary-soft);border-color:var(--math-primary-soft)}
+.lg--field{background:var(--math-primary);border-color:var(--math-primary)}
 .lg--chapter{background:var(--math-background);border-color:var(--math-line-strong)}
 .lg--dot{width:7px;height:7px;border-radius:999px;background:var(--math-ink-4);border:0}
 .lg--method{width:7px;height:7px;border-radius:999px;background:var(--math-primary-300);border:0}

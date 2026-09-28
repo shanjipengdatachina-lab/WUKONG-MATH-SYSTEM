@@ -152,6 +152,34 @@ qsaMap['#mm-book-menu [data-book]'] = bookItems;
 qsaMap['#mm-level-menu [data-fold]'] = levelItems;
 qsaMap[', .segmented__item'] = [];
 
+/* 分法切换条 + 两栏名单（与真实 HTML 一一对应）。
+   桩的 qsa 是按"选择器字符串"精确取数组的，所以这里必须把名字写全。 */
+var axisEl = elById('mm-axis');
+var axisItems = ['book', 'field'].map(function (key) {
+  var item = mkEl('button');
+  item.setAttribute('data-axis', key);
+  item.setAttribute('aria-pressed', 'false');
+  axisEl.appendChild(item);
+  return item;
+});
+var axisPanes = ['book', 'field'].map(function (key) {
+  var pane = mkEl('div');
+  pane.setAttribute('data-axis-pane', key);
+  if (key !== 'book') pane.setAttribute('hidden', '');
+  return pane;
+});
+/* 体系那一栏：总览 + 三个课标领域（与 graph.html 里的四项一致） */
+var FIELD_NAMES = ['', '图形与几何', '数与代数', '统计与概率'];
+var fieldItems = FIELD_NAMES.map(function (name) {
+  var item = mkEl('button');
+  item.setAttribute('data-field', name);
+  item.setAttribute('aria-pressed', 'false');
+  return item;
+});
+qsaMap['#mm-axis [data-axis]'] = axisItems;
+qsaMap['#mm-book-menu [data-axis-pane]'] = axisPanes;
+qsaMap['#mm-book-menu [data-field]'] = fieldItems;
+
 /* ---- DOM 骨架：给浮层挂上类名和父链 ----
    真实页面里节点面板、定位面板、工具条都是 .mm-canvas 的子元素，事件会冒泡到画布。
    桩里也要还原这层关系，否则"浮层里按下却把画布带跑了"这类问题根本表达不出来。 */

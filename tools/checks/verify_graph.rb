@@ -7,6 +7,9 @@ graph = File.read(File.join(ROOT, 'graph.html'), encoding: 'UTF-8')
 mini  = File.read(File.join(ROOT, 'assets/js/mindmap.js'), encoding: 'UTF-8')
 shell = File.read(File.join(ROOT, 'assets/js/ide-shell.js'), encoding: 'UTF-8')
 wb    = File.read(File.join(ROOT, 'whiteboard.html'), encoding: 'UTF-8')
+# 共享样式区（从白板生成、改名抄到图谱的那一段）。
+# 页面自己的修正必须写在它之外，否则下次重新生成样式就被冲掉。
+shared = graph[/\/\* MM-SHARED-BEGIN \*\/(.*?)\/\* MM-SHARED-END \*\//m, 1].to_s
 
 # ---------- 1. 满屏骨架：去掉页头，画布独占 ----------
 issues << '还能看到旧的页头 .mm-head' if graph.include?('class="mm-head"')
@@ -62,6 +65,61 @@ end
 %w[mm-frame mm-full .mm-fold__btn .segmented__item mm-panel__empty].each do |stale|
   issues << "mindmap.js 还引用已删除的 #{stale}" if mini.include?(stale)
 end
+
+# ---------- 5b. 筛选范围的分法切换（年级教材 / 几何代数） ----------
+# 数据那边：每一章都得带课标领域，而且三个体系加起来正好是全部 29 章（不重不漏）。
+# 漏一章不会报错、只会安静地少一块，所以必须在这里守着。
+tree = File.read(File.join(ROOT, 'assets/js/math-tree.js'), encoding: 'UTF-8')
+chap_lines = tree.scan(/kind: "chapter"[^}]*/)
+issues << "math-tree.js 里章数不是 29（实际 #{chap_lines.size}）" unless chap_lines.size == 29
+missing_field = chap_lines.reject { |l| l.include?('field: "') }
+issues << "有 #{missing_field.size} 章没带课标领域（图谱的体系那一栏会少一块）" unless missing_field.empty?
+# 本机 Ruby 是 2.6（系统自带），没有 Hash#tally，手数一遍
+field_counts = Hash.new(0)
+chap_lines.each { |l| field_counts[l[/field: "([^"]+)"/, 1]] += 1 }
+issues << "课标领域不止三个（实际 #{field_counts.keys.join('、')}）" unless field_counts.size == 3
+issues << "领域章数不是 13 / 13 / 3，加起来对不上 29（实际 #{field_counts.map { |k, v| "#{k}:#{v}" }.join(' ')}）" unless
+  field_counts['图形与几何'] == 13 && field_counts['数与代数'] == 13 && field_counts['统计与概率'] == 3
+
+# 页面那边：分法条 + 两栏名单
+issues << '筛选浮层里没有分法切换条 #mm-axis' unless graph.include?('id="mm-axis"')
+issues << '分法只有一格（应有"年级教材"与"几何代数"两格）' unless
+  graph.scan(/data-axis="/).size == 2
+%w[book field].each do |key|
+  issues << "分法缺 data-axis=\"#{key}\" 这一格" unless graph.include?(%(data-axis="#{key}"))
+end
+issues << '分法条的两格没有 aria-pressed（读屏看不出当前按哪种分法）' unless
+  graph[/id="mm-axis"[\s\S]{0,600}?aria-pressed/]
+issues << '两栏名单缺 data-axis-pane' unless graph.scan(/data-axis-pane="/).size == 2
+issues << '体系那一栏默认该收着（hidden）' unless
+  graph[/data-axis-pane="field"[^>]*hidden/]
+fields_in_page = graph.scan(/data-field="([^"]*)"/).flatten
+issues << "体系那一栏应有 4 项（总览 + 三个体系），实际 #{fields_in_page.size}" unless fields_in_page.size == 4
+%w[图形与几何 数与代数 统计与概率].each do |name|
+  issues << "体系那一栏少了「#{name}」" unless fields_in_page.include?(name)
+end
+issues << '体系那一栏缺「总览 · 全部体系」' unless fields_in_page.include?('')
+issues << '图例里没有「体系」这一行' unless graph.include?('lg--field')
+issues << '推理节点样式缺 .mm-node--field' unless graph.include?('.mm-node--field .mm-node__box')
+issues << '分法切换的样式跑进了共享区（重新生成样式时会被冲掉）' if
+  shared.include?('.mm-axis{') || shared.include?('--field .mm-node__box')
+issues << '分法把浮层标成 role=menu（菜单里必须放 menuitem，这里放不下分法条与两栏）' if
+  graph[/id="mm-book-menu"[^>]*role="menu"/]
+
+# mindmap.js 这边：合成根与它的接线
+{
+  '体系合成根 fieldScope' => 'function fieldScope(',
+  '体系反查 scopeContains' => 'function scopeContains(',
+  '孩子的索引 kidsSet' => 'kidsSet:',
+  '分法切换 setAxis' => 'function setAxis(',
+  '分法记忆 AXIS_KEY' => "AXIS_KEY = 'wkmath.graph.axis'",
+  '分法条监听' => "qsa('#mm-axis [data-axis]')",
+  '体系项监听' => "qsa('#mm-book-menu [data-field]')"
+}.each do |label, needle|
+  issues << "mindmap.js 缺#{label}" unless mini.include?(needle)
+end
+issues << '没有把课标领域也认作合法范围（initialScope 会把它当坏数据丢掉）' unless
+  mini.include?('isFieldScope(saved)')
 
 # ---------- 6. 会话（登录后按学生年级） ----------
 {
@@ -135,16 +193,23 @@ issues << '浮层行高没拉开（26px 装 12.5px 中文偏挤）' unless
   graph.include?('height:28px;padding:0 8px;gap:9px')
 
 # 反面：这些修正必须写在共享区之外，否则下次重新生成样式就被冲掉
-shared = graph[/\/\* MM-SHARED-BEGIN \*\/(.*?)\/\* MM-SHARED-END \*\//m, 1].to_s
 issues << '工具条修正被写进了共享区（重新生成样式时会被覆盖）' if
   shared.include?('width:max-content') || shared.include?('--group{width:auto')
 
 # ---------- 9. 浮层里的"提示"必须是真话 ----------
 # 册筛选原来挂了一排 0~6 的快捷键徽标，但 0~6 并没有绑定任何键 —— 说了做不到，已删。
 # 层级浮层的 ⇧2 / ⇧3 / ⇧4 是真绑定的，必须留着。
-book_menu = graph[/<div class="mm-flyout" id="mm-book-menu".*?<\/div>/m].to_s
+# 注意：这里不能用 `<div ...>.*?</div>` —— 浮层里现在有嵌套的 div（分法条 + 两栏），
+# 非贪婪匹配会停在第一个 </div> 上，于是"扫全盘"悄悄变成"只扫开头"，
+# 底下那条"不许出现假快捷键徽标"的守线就名存实亡了。
+book_i = graph.index('id="mm-book-menu"')
+next_group_i = book_i ? graph.index('<div class="mm-dock__group">', book_i) : nil
+book_menu = book_i ? graph[book_i...(next_group_i || graph.length)].to_s : ''
 issues << '图谱里找不到册筛选浮层' if book_menu.empty?
 issues << '册筛选里又出现了快捷键徽标（0~6 并未绑定任何键）' if book_menu.include?('<kbd>')
+# 正面：捕获必须扫到浮层最后一项 —— 否则上面那条守线只是看着还在
+issues << '册筛选浮层的捕获没扫到最后一个册（守线范围被截断了）' unless
+  book_menu.include?('九年级（下）')
 
 level_menu = graph[/<div class="mm-flyout" id="mm-level-menu".*?<\/div>/m].to_s
 issues << '层级浮层的快捷键徽标被误删了（⇧2 / ⇧3 / ⇧4 是真绑定的，要留）' unless
