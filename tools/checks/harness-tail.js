@@ -98,13 +98,14 @@ function pickStage(code) {
 pickStage(0);
 var treeP = __capture.treeInner;
 assert(countIn(treeP, /class="tree-volume"/g) === 12, '小学换成十二册');
-assert(countIn(treeP, /class="ch-row"/g) === 88, '小学 88 章全在树上');
+assert(countIn(treeP, /class="ch-row"/g) === 104, '小学 104 章全在树上');
 assert(treeP.indexOf('七年级') === -1, '小学这棵树里不该混进初中的册');
 assert(treeP.indexOf('data-chapter="b0c0"') !== -1, '小学章号每册从 01 重来，键改用「册·章」序号');
 assert(treeP.indexOf('data-chapter="01"') === -1, '小学不该出现裸章号作键（会串册）');
-assert(countIn(treeP, /class="tree-note"/g) === 2, '二年级下册 / 三年级下册 还没核到，如实写一行');
-assert(treeP.indexOf('新版目录') !== -1, '待核那句话写明了原因');
-assert(treeMetaEl.textContent === '12 册 · 88 章 · 2 待核', '目录头跟着换成小学的账（含两个待核）');
+assert(countIn(treeP, /class="tree-note"/g) === 0, '二下 / 三下的新版目录核到了，不该再有「还没收录」那行');
+assert(countIn(treeP, /class="ch-row__warn"/g) === 1, '只剩三下「生活中的运动现象」一处章级待核，标在树上');
+assert(treeP.indexOf('待核') !== -1, '待核那处写明了原因（鼠标悬停可见）');
+assert(treeMetaEl.textContent === '12 册 · 104 章 · 1 待核', '目录头跟着换成小学的账（册级与章级待核都算）');
 assert(__capture.rebind === 1, '重建之后补绑了一次折叠逻辑（不然册点不开）');
 assert(document.title === '数学游戏 · 章节阅读', '中栏落到小学第一册第一章');
 assert(__capture.artInner.indexOf('在校园里找一找') !== -1, '正文里是那一章的小节');

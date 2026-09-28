@@ -46,6 +46,9 @@ issues << 'reader-live.js 没有读原始 children（math-tree.js 里没有 kids
   live.include?('.kids')
 issues << 'reader-live.js 没有按学段过滤册' unless live.include?('book.stage === code')
 issues << 'reader-live.js 没有给章算一个学段内唯一的键' unless live.include?("'b' + bi + 'c' + ci")
+# 待核分两级（册 / 章）。章级那处要能在树里看见，不然只剩"数据里有、界面上没有"。
+issues << 'reader-live.js 只数册级待核（章级那处会被吞掉）' unless live.include?('function pendingCount(')
+issues << '现建的树里没有章级待核标记' unless live.include?('ch-row__warn')
 
 # 5) 与图谱共用同一个记忆键（两边记住的是同一件事）
 key = 'wkmath.graph.stage'

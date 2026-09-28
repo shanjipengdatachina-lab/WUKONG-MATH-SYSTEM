@@ -241,10 +241,21 @@
     return html;
   }
 
+  /* 待核按两级数：册级（整册目录没核到）和章级（小节没核到）。
+     只数册级会把"章还标着待核"的小学显示成完全核过，所以两级都要算。 */
+  function pendingCount(code) {
+    var n = 0;
+    booksOf(code).forEach(function (book) {
+      if (book.pending) n += 1;
+      (book.children || []).forEach(function (ch) { if (ch.pending) n += 1; });
+    });
+    return n;
+  }
+
   function metaText(code) {
     var layout = layoutOf(code);
     var info = stageInfo(code) || {};
-    var pending = layout.books.filter(function (book) { return book.pending; }).length;
+    var pending = pendingCount(code);
     return layout.books.length + ' ' + (info.word || '册') + ' · ' +
       layout.chapters + ' 章' + (pending ? ' · ' + pending + ' 待核' : '');
   }

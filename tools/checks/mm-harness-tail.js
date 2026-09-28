@@ -13,7 +13,7 @@ assert(!!TREE && (TREE.kids || []).length > 0, '知识树有内容');
    数错不会崩，只会让某一屏安静地少一块 —— 所以按学段分别对账。
    下面的期望值来自核对过的教材目录，改动会被立刻发现。 */
 var STAGE_BOOKS = { primary: 12, junior: 6, senior: 5, olympiad: 4 };
-var STAGE_CHAPTERS = { primary: 88, junior: 29, senior: 22, olympiad: 30 };
+var STAGE_CHAPTERS = { primary: 104, junior: 29, senior: 22, olympiad: 30 };
 var stageTally = {};
 TREE.kids.forEach(function (b) {
   stageTally[b.stage] = stageTally[b.stage] || { books: 0, chapters: 0 };
@@ -27,17 +27,27 @@ Object.keys(STAGE_BOOKS).forEach(function (code) {
 eq(TREE.kids.length, 27, '四学段合计 27 册 / 板块');
 var chapters = 0;
 TREE.kids.forEach(function (b) { chapters += (b.children || []).length; });
-eq(chapters, 169, '四学段合计 169 章');
+eq(chapters, 185, '四学段合计 185 章');
 assert(TREE.kids.every(function (b) { return b.stage && b.source; }),
   '每册都带学段与目录来源（缺一个就不该生成出来）');
 var noSource = TREE.kids.filter(function (b) { return !b.source; }).map(function (b) { return b.name; });
 eq(noSource.length, 0, '没有缺来源的册（缺的：' + (noSource.join('、') || '没有') + '）');
-/* 待核的册：必须有 pending 且没有子节点 —— 不许悄悄留空 */
+/* 待核：分两级看 —— 册级（整册目录没核到，只能留空）和章级（章核到了、小节没核到）。
+   2026 秋把二下 / 三下的新版目录核到之后，册级待核清零；章级只剩一处，如实标着。 */
 var pendBad = TREE.kids.filter(function (b) { return !b.pending && !(b.children || []).length; })
   .map(function (b) { return b.name; });
 eq(pendBad.length, 0, '空着的册必须写明"待核"（否则会被当成忘了填；实际 ' + (pendBad.join('、') || '没有') + '）');
-var pending = TREE.kids.filter(function (b) { return b.pending; }).map(function (b) { return b.name; });
-eq(pending.length, 2, '小学二下 / 三下的新版目录还没核到，如实标着两个待核（实际 ' + pending.join('、') + '）');
+var pendingBooks = TREE.kids.filter(function (b) { return b.pending; }).map(function (b) { return b.name; });
+eq(pendingBooks.length, 0, '册级待核已清零（二下 / 三下的新版目录核到了；实际 ' + (pendingBooks.join('、') || '没有') + '）');
+var pendingChapters = [];
+TREE.kids.forEach(function (b) {
+  (b.children || []).forEach(function (c) {
+    if (c.pending) pendingChapters.push(b.name + '·' + c.name);
+  });
+});
+eq(pendingChapters.length, 1, '章级待核只剩一处，写明原因（实际 ' + (pendingChapters.join('、') || '没有') + '）');
+eq(pendingChapters[0], '三年级下册·生活中的运动现象',
+  '那一处是三下「生活中的运动现象」——课本站只列到单元名与"剪纸"，不猜');
 /* 竞赛只到"章"一级 */
 var olympiadSections = 0;
 TREE.kids.filter(function (b) { return b.stage === 'olympiad'; }).forEach(function (b) {
@@ -463,17 +473,18 @@ eq(MM.bookItems()[1].getAttribute('data-book'), '代数', '第一个板块是代
 eq(MM.stageBooksWord(), '板块', '竞赛里不说"册"，说"板块"');
 eq(MM.visible().length, 1 + 4 + 30, '竞赛默认可见：学段根 + 四板块 + 30 章');
 
-/* 小学：四个领域，且有"待核"的册 */
+/* 小学：四个领域，12 册都进了名单，且名单里没有不该有的"待核" */
 MM.stage.set('primary');
 eq(MM.axisTitle().book, '教材册次', '小学第一栏叫「教材册次」');
 eq(MM.axisTitle().field, '四大领域', '小学第二栏叫「四大领域」');
 eq(MM.fields().length, 4, '小学有四个领域（多了「综合与实践」）');
 eq(MM.bookItems().length, 1 + 12, '小学那一栏是"总览 + 12 册"');
-var pendingItem = MM.bookItems().filter(function (el) {
-  return el.getAttribute('data-book') === '二年级下册';
-})[0];
-assert(pendingItem && String(pendingItem.innerHTML).indexOf('待核') >= 0,
-  '目录还没核到的那两册在名单里标着「待核」（空着不说会被当成忘了填）');
+/* 二下 / 三下的新版目录在 2026 秋核到了，册不再是空的 —— 所以名单里不该再挂「待核」。
+   待核机制本身还在（写在章上就标在章上），反向守住"不许乱挂"。 */
+var wrongPending = MM.bookItems().filter(function (el) {
+  return String(el.innerHTML).indexOf('待核') >= 0;
+});
+eq(wrongPending.length, 0, '册名单里没有残留的「待核」（实际 ' + wrongPending.length + ' 个）');
 
 /* 跨学段重名：小学和初中都有「数与代数」，不许串台 */
 MM.scope.set('数与代数');

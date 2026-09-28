@@ -12,7 +12,7 @@
    ========================================================================== */
 
 window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
-{ name: "一年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4534.html", children: [
+{ name: "一年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.com/books/rjb/shuxue/xs1s_2024/001.htm", children: [
 { name: "数学游戏", kind: "chapter", field: "综合与实践", children: [
 { name: "在校园里找一找", kind: "section" },
 { name: "在操场上玩一玩", kind: "section" },
@@ -39,7 +39,11 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "加、减混合", kind: "section" },
 { name: "整理和复习", kind: "section" }
       ] },
-{ name: "认识立体图形", kind: "chapter", pending: "新版这一单元的小节没核到（来源页只列到单元名）", no: "03", field: "图形与几何", cn: "三", unit: true },
+{ name: "认识立体图形", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
+{ name: "认识立体图形", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "拼一拼", kind: "section" }
+      ] },
 { name: "11~20的认识", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
 { name: "10的再认识", kind: "section" },
 { name: "11~20的认识", kind: "section" },
@@ -57,8 +61,13 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "应用提升", kind: "section" }
       ] }
     ] },
-{ name: "一年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4535.html", children: [
-{ name: "认识平面图形", kind: "chapter", pending: "新版这一单元的小节没核到", no: "01", field: "图形与几何", cn: "一", unit: true },
+{ name: "一年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.com/books/rjb/shuxue/xs1x_2025/001.htm", children: [
+{ name: "认识平面图形", kind: "chapter", no: "01", field: "图形与几何", cn: "一", unit: true, children: [
+{ name: "认识平面图形", kind: "section" },
+{ name: "图形的拼组", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
 { name: "20以内的退位减法", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
 { name: "十几减9", kind: "section" },
 { name: "十几减8、7、6", kind: "section" },
@@ -82,7 +91,12 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "笔算减法", kind: "section" },
 { name: "整理和复习", kind: "section" }
       ] },
-{ name: "数量间的加减关系", kind: "chapter", pending: "新版这一单元的小节没核到", no: "06", field: "数与代数", cn: "六", unit: true },
+{ name: "数量间的加减关系", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "解决求两数相差几的实际问题", kind: "section" },
+{ name: "求比一个数多（或少）几的数是多少", kind: "section" },
+{ name: "含相差数量关系的连续两问的问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
 { name: "欢乐购物街", kind: "chapter", field: "综合与实践", children: [
 { name: "认识人民币", kind: "section" },
 { name: "买卖我做主", kind: "section" },
@@ -93,8 +107,12 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "应用提升", kind: "section" }
       ] }
     ] },
-{ name: "二年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4536.html", children: [
-{ name: "分类与整理", kind: "chapter", pending: "新版这一单元的小节没核到", no: "01", field: "统计与概率", cn: "一", unit: true },
+{ name: "二年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.com/books/rjb/shuxue/xs2s_2025/001.htm", children: [
+{ name: "分类与整理", kind: "chapter", no: "01", field: "统计与概率", cn: "一", unit: true, children: [
+{ name: "按给定标准分类", kind: "section" },
+{ name: "自选标准分类", kind: "section" },
+{ name: "逐层分类", kind: "section" }
+      ] },
 { name: "1~6的表内乘法", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
 { name: "乘法的初步认识", kind: "section" },
 { name: "5的乘法口诀", kind: "section" },
@@ -114,7 +132,13 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "校园小导游", kind: "section" },
 { name: "小讲堂", kind: "section" }
       ] },
-{ name: "厘米和米", kind: "chapter", pending: "新版这一单元的小节没核到", no: "04", field: "图形与几何", cn: "四", unit: true },
+{ name: "厘米和米", kind: "chapter", no: "04", field: "图形与几何", cn: "四", unit: true, children: [
+{ name: "认识厘米及用厘米量", kind: "section" },
+{ name: "认识米及用米量", kind: "section" },
+{ name: "认识线段", kind: "section" },
+{ name: "用估量解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
 { name: "身体上的尺子", kind: "chapter", field: "综合与实践", children: [
 { name: "身体上的长度", kind: "section" },
 { name: "身体上的尺子", kind: "section" },
@@ -130,10 +154,61 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "应用提升", kind: "section" }
       ] }
     ] },
-{ name: "二年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4537.html", pending: "2024 新版目录未核到。旧版目录与现行新版对不上，填了等于给错书，所以先留空" },
-{ name: "三年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4538.html", children: [
-{ name: "观察物体", kind: "chapter", pending: "新版这一单元的小节没核到", no: "01", field: "图形与几何", cn: "一", unit: true },
-{ name: "混合运算", kind: "chapter", pending: "新版这一单元的小节没核到", no: "02", field: "数与代数", cn: "二", unit: true },
+{ name: "二年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.com/books/rjb/shuxue/xs2x_2026/001.htm", children: [
+{ name: "时间在哪里", kind: "chapter", field: "综合与实践", children: [
+{ name: "认识时间", kind: "section" },
+{ name: "我与时间的故事", kind: "section" },
+{ name: "我的时间小书", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "有余数的除法", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "有余数的除法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "数量间的乘除关系", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "数量间的乘除关系", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "万以内数的认识", kind: "chapter", no: "03", field: "数与代数", cn: "三", unit: true, children: [
+{ name: "1000以内数的认识", kind: "section" },
+{ name: "10000以内数的认识", kind: "section" },
+{ name: "简单的加、减法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "万以内的加法和减法", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "加法", kind: "section" },
+{ name: "减法", kind: "section" },
+{ name: "加减法各部分间的关系", kind: "section" },
+{ name: "数独游戏", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "数学连环画", kind: "chapter", field: "综合与实践", children: [
+{ name: "连环画分享会", kind: "section" },
+{ name: "我是小画家", kind: "section" },
+{ name: "小小故事会", kind: "section" }
+      ] },
+{ name: "复习与关联", kind: "chapter", no: "05", field: "综合与实践", cn: "五", unit: true, children: [
+{ name: "整理复习", kind: "section" },
+{ name: "数与运算", kind: "section" },
+{ name: "数量关系", kind: "section" },
+{ name: "应用提升", kind: "section" }
+      ] }
+    ] },
+{ name: "三年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.com/books/rjb/shuxue/xs3s_2025/001.htm", children: [
+{ name: "观察物体", kind: "chapter", no: "01", field: "图形与几何", cn: "一", unit: true, children: [
+{ name: "观察简单的立体积木", kind: "section" },
+{ name: "根据直观图猜测积木形状", kind: "section" },
+{ name: "长方体纸盒的展开", kind: "section" }
+      ] },
+{ name: "混合运算", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "同级运算", kind: "section" },
+{ name: "两级运算", kind: "section" },
+{ name: "含有小括号的两级运算", kind: "section" },
+{ name: "解决问题（同级运算）", kind: "section" },
+{ name: "解决问题（两级计算）", kind: "section" },
+{ name: "解决问题（两种思路）", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
 { name: "毫米、分米和千米", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
 { name: "毫米、分米的认识", kind: "section" },
 { name: "千米的认识", kind: "section" },
@@ -168,11 +243,60 @@ window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
 { name: "整理和复习", kind: "section" }
       ] },
 { name: "复习与关联", kind: "chapter", no: "07", field: "综合与实践", cn: "七", unit: true, children: [
+{ name: "数与运算", kind: "section" },
+{ name: "数量关系", kind: "section" },
+{ name: "图形的认识与测量", kind: "section" }
+      ] },
+{ name: "数学广角—搭配问题", kind: "chapter", field: "综合与实践" }
+    ] },
+{ name: "三年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.com/books/rjb/shuxue/xs3x_2026/001.htm", children: [
+{ name: "生活中的运动现象", kind: "chapter", pending: "课本站这一单元只列了单元名与\"剪纸\"（轴对称 / 平移 / 旋转 可能放在例题里），未与教材原书目录逐字核对", no: "01", field: "图形与几何", cn: "一", unit: true, children: [
+{ name: "生活中的运动现象", kind: "section" },
+{ name: "剪纸", kind: "section" }
+      ] },
+{ name: "除数是一位数的除法", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "口算除法", kind: "section" },
+{ name: "笔算除法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "长方形和正方形", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
+{ name: "多边形", kind: "section" },
+{ name: "周长", kind: "section" },
+{ name: "拼图游戏", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "图形的面积", kind: "chapter", no: "04", field: "图形与几何", cn: "四", unit: true, children: [
+{ name: "面积和面积单位", kind: "section" },
+{ name: "长方形和正方形的面积", kind: "section" },
+{ name: "面积单位间的进率", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "数据的收集与整理", kind: "chapter", no: "05", field: "统计与概率", cn: "五", unit: true, children: [
+{ name: "数据的收集与整理", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "年、月、日的秘密", kind: "chapter", field: "综合与实践", children: [
+{ name: "年历中的秘密", kind: "section" },
+{ name: "作息时间表中的秘密", kind: "section" },
+{ name: "年历设计师", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "小数的初步认识", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "认识小数", kind: "section" },
+{ name: "小数的大小比较", kind: "section" },
+{ name: "简单的小数加、减法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "复习与关联", kind: "chapter", no: "07", field: "综合与实践", cn: "七", unit: true, children: [
 { name: "整理复习", kind: "section" },
+{ name: "数与运算", kind: "section" },
+{ name: "数量关系", kind: "section" },
+{ name: "图形的认识与测量", kind: "section" },
+{ name: "数据的收集、整理与表达", kind: "section" },
+{ name: "常见的量", kind: "section" },
 { name: "应用提升", kind: "section" }
       ] }
     ] },
-{ name: "三年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4539.html", pending: "2024 新版目录未核到。旧版目录与现行新版对不上，先留空" },
 { name: "四年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4540.html", children: [
 { name: "大数的认识", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
 { name: "亿以内数的认识", kind: "section" },

@@ -1355,11 +1355,20 @@
       } else {
         var books = booksOf(currentStage);
         var chs = books.reduce(function (n, b) { return n + (b.kids || []).length; }, 0);
+        /* 待核分两级：整册目录没核到（册上标着），以及章核到了、小节没核到（章上标着）。
+           只报册级会让"章还标着待核"的那一学段看着像全核过了。 */
         var pend = books.filter(function (b) { return b.pending; }).length;
+        var pendCh = 0;
+        books.forEach(function (b) {
+          (b.kids || []).forEach(function (c) { if (c.pending) pendCh += 1; });
+        });
         var scope = stageScope(currentStage);
+        var pendText = [];
+        if (pend) pendText.push(pend + ' 本目录待核');
+        if (pendCh) pendText.push(pendCh + ' 章的小节待核');
         scopeNote.textContent = '当前看' + st.short + '：' + books.length + ' ' + stageBooksWord() + ' · ' +
           chs + ' 章 · ' + countNodes(scope) + ' 个节点' +
-          (pend ? '（其中 ' + pend + ' 本目录待核，名单里标着）' : '') +
+          (pendText.length ? '（其中 ' + pendText.join('、') + '，节点上标着）' : '') +
           '；点工具条第一个按钮可换学段。' +
           /* 按年级默认聚焦这件事只发生在初中（别的学段没有"学生当前年级"这回事） */
           (currentStage === 'junior'

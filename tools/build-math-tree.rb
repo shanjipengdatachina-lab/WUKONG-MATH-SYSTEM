@@ -280,18 +280,25 @@ end
 scan_duplicates(root, duplicates)
 
 # ---------- 输出 ----------
+# 字符串一律走 JSON.generate：源文件里的中文引号、半角引号、反斜杠都能安全落地。
+# （这里踩过一次：待核说明里写了半角双引号，直接把生成的 JS 字符串截断，
+#   整个 math-tree.js 语法报错 —— 生成器必须替数据兜住这件事。）
+def js_str(value)
+  JSON.generate(value.to_s)
+end
+
 def dump(node, indent)
   lines = []
-  lines << %(name: "#{node['name']}")
-  lines << %(kind: "#{node['kind']}")
-  lines << %(stage: "#{node['stage']}") if node['stage']
-  lines << %(source: "#{node['source']}") if node['source']
-  lines << %(pending: "#{node['pending']}") if node['pending']
-  lines << %(no: "#{node['no']}") if node['no']
-  lines << %(field: "#{node['field']}") if node['field']
-  lines << %(cn: "#{node['cn']}") if node['cn']
-  lines << %(unit: true) if node['unit']
-  lines << %(tone: "#{node['tone']}") if node['tone']
+  lines << "name: #{js_str(node['name'])}"
+  lines << "kind: #{js_str(node['kind'])}"
+  lines << "stage: #{js_str(node['stage'])}" if node['stage']
+  lines << "source: #{js_str(node['source'])}" if node['source']
+  lines << "pending: #{js_str(node['pending'])}" if node['pending']
+  lines << "no: #{js_str(node['no'])}" if node['no']
+  lines << "field: #{js_str(node['field'])}" if node['field']
+  lines << "cn: #{js_str(node['cn'])}" if node['cn']
+  lines << 'unit: true' if node['unit']
+  lines << "tone: #{js_str(node['tone'])}" if node['tone']
   children = node['children']
   if children && !children.empty?
     inner = children.map { |child| dump(child, indent + 1) }.join(",\n")

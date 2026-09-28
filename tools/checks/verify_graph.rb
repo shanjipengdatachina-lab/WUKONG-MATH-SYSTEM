@@ -103,14 +103,14 @@ end
 
 # 四个学段的账。对不上就是数据被动过 —— 要么改数据，要么把这里一起改。
 EXPECT_BOOKS = { 'primary' => 12, 'junior' => 6, 'senior' => 5, 'olympiad' => 4 }.freeze
-EXPECT_CHAPTERS = { 'primary' => 88, 'junior' => 29, 'senior' => 22, 'olympiad' => 30 }.freeze
+EXPECT_CHAPTERS = { 'primary' => 104, 'junior' => 29, 'senior' => 22, 'olympiad' => 30 }.freeze
 EXPECT_BOOKS.each do |code, n|
   issues << "#{code} 的册 / 板块数不是 #{n}（实际 #{stage_books[code]}）" unless stage_books[code] == n
   issues << "#{code} 的章数不是 #{EXPECT_CHAPTERS[code]}（实际 #{stage_chapters[code]}）" unless
     stage_chapters[code] == EXPECT_CHAPTERS[code]
 end
-issues << "四个学段加起来不是 27 册 / 169 章（实际 #{stage_books.values.sum} 册 / #{stage_chapters.values.sum} 章）" unless
-  stage_books.values.sum == 27 && stage_chapters.values.sum == 169
+issues << "四个学段加起来不是 27 册 / 185 章（实际 #{stage_books.values.sum} 册 / #{stage_chapters.values.sum} 章）" unless
+  stage_books.values.sum == 27 && stage_chapters.values.sum == 185
 
 # 领域：小学 4 个、初中 3 个、高中 5 个；竞赛不带领域。
 EXPECT_FIELDS = {
@@ -200,6 +200,13 @@ end
 issues << '学段节点样式缺 .mm-node--stage' unless graph.include?('.mm-node--stage .mm-node__box')
 issues << '板块节点样式缺 .mm-node--track' unless graph.include?('.mm-node--track .mm-node__box')
 issues << '待核提示样式缺 .mm-flyout__note' unless graph.include?('.mm-flyout__note{')
+# 待核分两级（册 / 章）。现在数据里只剩章级那一处，册级那条路径没有数据走到 ——
+# 所以册级的接线要静态守住，别哪天顺手删了。
+issues << 'mindmap.js 丢了册级待核标记（bookEntries 里的「待核」）' unless
+  mini.include?("b.pending ? '待核'")
+issues << 'mindmap.js 的节点面板丢了待核说明' unless mini.include?('mm-pending')
+issues << 'mindmap.js 的说明只报册级待核（章级那处会被吞掉）' unless
+  mini.include?('章的小节待核')
 issues << '目录来源样式缺 .mm-source' unless graph.include?('.mm-source{')
 issues << '学段 / 板块的样式跑进了共享区（重新生成样式时会被冲掉）' if
   shared.include?('--stage .mm-node__box') || shared.include?('.mm-flyout__note')
