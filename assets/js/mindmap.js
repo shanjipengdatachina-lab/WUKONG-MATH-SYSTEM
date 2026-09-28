@@ -922,16 +922,29 @@
     return signedIn() ? studentGrade() : '';
   }
 
+  /* aria-pressed 给读屏，is-on 给眼睛：两个都要设。
+     只设 aria-pressed 的话，视觉上打开浮层看不出当前选的是哪一册 / 哪一档。
+     .mm-flyout__item.is-on 的样式是从白板共享过来的，白板那边一直这么用。 */
+  function markOn(el, on) {
+    if (!el || !el.classList) return;
+    if (on) el.classList.add('is-on');
+    else el.classList.remove('is-on');
+  }
+
   function syncScope() {
     var bookLabel = qs('#mm-book-label');
     var levelLabel = qs('#mm-level-label');
     if (bookLabel) bookLabel.textContent = BOOK_SHORT[bookFilter] || '总览';
     if (levelLabel) levelLabel.textContent = LEVEL_SHORT[levelDepth] || '到章';
     qsa('#mm-book-menu [data-book]').forEach(function (item) {
-      item.setAttribute('aria-pressed', String((item.getAttribute('data-book') || '') === bookFilter));
+      var on = (item.getAttribute('data-book') || '') === bookFilter;
+      item.setAttribute('aria-pressed', String(on));
+      markOn(item, on);
     });
     qsa('#mm-level-menu [data-fold]').forEach(function (item) {
-      item.setAttribute('aria-pressed', String(Number(item.getAttribute('data-fold')) === levelDepth));
+      var on = Number(item.getAttribute('data-fold')) === levelDepth;
+      item.setAttribute('aria-pressed', String(on));
+      markOn(item, on);
     });
     if (bookBtn) bookBtn.setAttribute('data-mm-tip', '只看某一册 · 当前 ' + (BOOK_SHORT[bookFilter] || '总览'));
     if (levelBtn) levelBtn.setAttribute('data-mm-tip', '显示到哪一层 · 当前 ' + (LEVEL_SHORT[levelDepth] || '到章'));

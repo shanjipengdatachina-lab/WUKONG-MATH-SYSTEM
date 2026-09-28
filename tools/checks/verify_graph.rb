@@ -135,6 +135,21 @@ shared = graph[/\/\* MM-SHARED-BEGIN \*\/(.*?)\/\* MM-SHARED-END \*\//m, 1].to_s
 issues << '工具条修正被写进了共享区（重新生成样式时会被覆盖）' if
   shared.include?('width:max-content') || shared.include?('--group{width:auto')
 
+# ---------- 9. 浮层里的"提示"必须是真话 ----------
+# 册筛选原来挂了一排 0~6 的快捷键徽标，但 0~6 并没有绑定任何键 —— 说了做不到，已删。
+# 层级浮层的 ⇧2 / ⇧3 / ⇧4 是真绑定的，必须留着。
+book_menu = graph[/<div class="mm-flyout" id="mm-book-menu".*?<\/div>/m].to_s
+issues << '图谱里找不到册筛选浮层' if book_menu.empty?
+issues << '册筛选里又出现了快捷键徽标（0~6 并未绑定任何键）' if book_menu.include?('<kbd>')
+
+level_menu = graph[/<div class="mm-flyout" id="mm-level-menu".*?<\/div>/m].to_s
+issues << '层级浮层的快捷键徽标被误删了（⇧2 / ⇧3 / ⇧4 是真绑定的，要留）' unless
+  level_menu.scan('<kbd>⇧').size == 3
+
+# 当前选中的那一册 / 那一档，视觉上必须看得出来
+issues << '浮层项没有被标上 is-on（选中态只有读屏知道，眼睛看不到）' unless
+  mini.include?("classList.add('is-on')")
+
 puts "图谱页体检：#{issues.empty? ? '通过' : '发现问题'}"
 puts "  与白板逐条比对的样式：#{compared} 条"
 unless issues.empty?
