@@ -50,6 +50,19 @@ def rename(sel)
   out
 end
 
+# 声明体里也有一处必须改：`content:attr(data-wb-tip)` 引用的是**属性名**。
+# 只改选择器、不改这里的话，气泡的内容永远是空字符串 ——
+# 图谱底部一排按钮鼠标滑过去一条提示都看不见（真出过这个 bug）。
+BODY_TOKENS = {
+  'attr(data-wb-tip)' => 'attr(data-mm-tip)'
+}
+
+def rename_body(body)
+  out = body.dup
+  BODY_TOKENS.each { |from, to| out = out.gsub(from, to) }
+  out
+end
+
 # 只保留与目标类名相关的规则；其余（画布、笔迹、题库列表等）不要
 def pick(body)
   split_blocks(body).map { |head, inner| [head, inner] }
@@ -64,12 +77,12 @@ split_blocks(css).each do |head, body|
     next if inner.empty?
     lines << "#{head}{"
     inner.each do |h, b|
-      lines << "  #{rename(h)}{#{b.strip}}"
+      lines << "  #{rename(h)}{#{rename_body(b.strip)}}"
       picked << h.strip
     end
     lines << '}'
   elsif wanted?(head)
-    lines << "#{rename(head)}{#{body.strip}}"
+    lines << "#{rename(head)}{#{rename_body(body.strip)}}"
     picked << head.strip
   end
 end

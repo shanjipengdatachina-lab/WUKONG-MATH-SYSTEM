@@ -692,7 +692,10 @@ assert(WB.state.problemGripHot === true, '压在把手上 → 把手亮起');
 assert(canvasEl.style.cursor === 'grab', '压在把手上 → 光标变可抓（实际 ' + canvasEl.style.cursor + '）');
 canvasEl._h.pointermove(pe(onBody.x, onBody.y));
 assert(WB.state.problemGripHot === false, '压到正文上 → 把手不再亮');
-assert(canvasEl.style.cursor === '', '压到正文上 → 光标恢复十字（实际 ' + canvasEl.style.cursor + '）');
+/* 笔 / 荧光笔 / 橡皮现在都把系统光标藏起来、改画圆圈，所以这里不再是十字（空值）而是 none。
+   题面上照样能落笔 —— 只有把手那一小条是拖动区。 */
+assert(canvasEl.style.cursor === 'none',
+  '压到正文上 → 笔类工具仍是"只留圆圈"（实际 ' + canvasEl.style.cursor + '）');
 
 /* ============================================================
    9. 增量绘制必须自己带世界变换
@@ -976,21 +979,54 @@ assert(WB.state.strokes.length === 2, '重做又变回两截（实际 ' + WB.sta
 WB.state.actions.length = 0;
 WB.state.redo.length = 0;
 
-/* 橡皮圆圈：跟着鼠标、跟着板面主题、离开画布就收掉 */
+/* 笔尖 / 橡皮的圆圈：跟着鼠标、按工具藏起系统光标、半径算得对 */
 WB.setTool('eraser');
 assert(WB.state.tool === 'eraser', '切到橡皮工具');
 canvasEl._h.pointermove(pe(300, 200));
-assert(WB.state.eraserAt && Math.abs(WB.state.eraserAt.x - 300) < 1 && Math.abs(WB.state.eraserAt.y - 200) < 1,
-  '橡皮圆圈跟着鼠标走（实际 ' + (WB.state.eraserAt ? WB.state.eraserAt.x + ',' + WB.state.eraserAt.y : 'null') + '）');
+assert(WB.state.tipAt && Math.abs(WB.state.tipAt.x - 300) < 1 && Math.abs(WB.state.tipAt.y - 200) < 1,
+  '圆圈跟着鼠标走（实际 ' + (WB.state.tipAt ? WB.state.tipAt.x + ',' + WB.state.tipAt.y : 'null') + '）');
 assert(canvasEl.style.cursor === 'none',
   '橡皮工具时把系统光标藏起来，只留那个圈（实际 ' + canvasEl.style.cursor + '）');
+__ctxCalls.arcs.length = 0;
 WB.redraw();
-assert(__ctxCalls.stroke > 0, '圆圈画进了画布');
+assert(__ctxCalls.arcs.length === 1, '画了一个圈（实际 ' + __ctxCalls.arcs.length + ' 个）');
+var ringE13 = __ctxCalls.arcs.length ? __ctxCalls.arcs[0] : null;
+assert(ringE13 && Math.abs(ringE13.r - WB.state.eraser) < 0.01,
+  '橡皮圈的半径就是橡皮大小（' + (ringE13 ? ringE13.r : '没画圈') + ' vs ' + WB.state.eraser + '）—— 屏幕像素，不跟缩放');
+assert(ringE13 && Math.abs(ringE13.x - 300) < 1 && Math.abs(ringE13.y - 200) < 1,
+  '圈画在鼠标位置');
+
+/* 画笔也一样：圆圈代替十字（原来 #wb-canvas 上是 cursor:crosshair） */
 WB.setTool('pen');
-assert(canvasEl.style.cursor === '', '切回画笔，光标恢复');
+assert(canvasEl.style.cursor === 'none',
+  '画笔工具也藏起系统光标（实际 ' + canvasEl.style.cursor + '）');
+WB.setWidth(6);
+WB.state.view.scale = 2;
+__ctxCalls.arcs.length = 0;
 WB.redraw();
-WB.setTool('eraser');
+var ringP13 = __ctxCalls.arcs.length ? __ctxCalls.arcs[0] : null;
+assert(ringP13 && Math.abs(ringP13.r - 6) < 0.01,
+  '粗笔在 2 倍缩放下圈半径 = 6×2/2 = 6（实际 ' + (ringP13 ? ringP13.r : '没画圈') + '）');
+WB.setWidth(2.2);
+__ctxCalls.arcs.length = 0;
+WB.redraw();
+var ringT13 = __ctxCalls.arcs.length ? __ctxCalls.arcs[0] : null;
+assert(ringT13 && Math.abs(ringT13.r - 3) < 0.01,
+  '细笔的真实笔尖只有 2.2×2/2 = 2.2px 半径，会看不见，落到 3px 的下限（实际 ' + (ringT13 ? ringT13.r : '没画圈') + '）');
+assert(canvasEl.style.cursor === 'none', '细笔时仍然不显示十字');
+
+/* 图形工具保持十字：画框要的是准，不是笔粗 —— 所以不画圈、光标交回 CSS 的 crosshair */
+WB.setTool('rect');
+assert(canvasEl.style.cursor === '', '图形工具交回 CSS 光标（空值 → #wb-canvas 的 crosshair）');
+WB.state.view.scale = 1;
+__ctxCalls.arcs.length = 0;
+WB.redraw();
+assert(__ctxCalls.arcs.length === 0, '图形工具不画笔尖圈（实际 ' + __ctxCalls.arcs.length + ' 个）');
+
+/* 鼠标离开画布，圈收掉 */
 WB.setTool('pen');
+canvasEl._h.pointerleave();
+assert(WB.state.tipAt === null, '鼠标离开画布，笔尖圈收掉');
 
 WB.clearAll();
 WB.setTheme('white');

@@ -112,10 +112,14 @@ pairs.each do |wb_sel, mm_sel|
   end
 end
 
-# 悬浮提示的气泡：同样要一致
+# 悬浮提示的气泡：同样要一致，但**允许且仅允许一处不同** —— 属性的名字。
+# 图谱上挂的是 data-mm-tip，白板上挂的是 data-wb-tip，所以两边读的 attr(...) 本来就该不一样；
+# 其余（位置、底色、圆角、出现动画）必须逐字一致，免得两边气泡长得不一样。
 tip_a = wb[/\[data-wb-tip\]::after\{([^}]*)\}/m, 1].to_s.gsub(/\s+/, ' ').strip
 tip_b = graph[/\[data-mm-tip\]::after\{([^}]*)\}/m, 1].to_s.gsub(/\s+/, ' ').strip
-issues << '悬浮提示气泡与白板不一致' unless tip_a == tip_b && !tip_a.empty?
+tip_b_cmp = tip_b.gsub('attr(data-mm-tip)', 'attr(data-wb-tip)')
+issues << '悬浮提示气泡与白板不一致（除 attr() 里的属性名之外应逐字相同）' unless tip_a == tip_b_cmp && !tip_a.empty?
+issues << '图谱的提示气泡没有读 data-mm-tip（会显示成空白）' unless tip_b.include?('attr(data-mm-tip)')
 compared += 1
 
 # ---------- 8. 工具条尺寸：组按钮要装得下文字，浮层不能被书名挤爆 ----------
@@ -172,6 +176,19 @@ issues << 'insideOverlay 没把浮层类名列全（应含 .mm-card / .mm-dock /
   mini.include?("'.mm-card, .mm-dock, .mm-flyout'")
 issues << '拖浮窗时没有阻止事件冒泡（stopPropagation）' unless
   mini.include?('if (event.stopPropagation) event.stopPropagation();')
+
+# 提示气泡：生成器只改选择器、不改声明体里的属性名，会让 content 变成空串 ——
+# 表现就是"鼠标滑过底部按钮，一条提示都看不见"（真出过这个 bug）。
+# 这里盯死：图谱里不许再出现 wb- 前缀的属性引用，且提示规则必须读 data-mm-tip。
+issues << '提示气泡读的还是 data-wb-tip（生成器漏改声明体，气泡会空着）' if
+  graph.include?('attr(data-wb-tip)')
+issues << '提示气泡规则不见了（[data-mm-tip]::after 应为 content:attr(data-mm-tip)）' unless
+  graph[/\[data-mm-tip\]::after\{[^}]*content:attr\(data-mm-tip\)/m]
+# 底部每个按钮都要挂上提示，别再出现"一排按钮只有一半有名字"
+# （按整份文件数：mm-dock__btn / mm-dock__level 都算工具条按钮，data-mm-tip 只挂在它们身上）
+btn_count = graph.scan(/class="mm-dock__btn/).size + graph.scan(/class="mm-dock__level"/).size
+tip_count = graph.scan(/data-mm-tip="/).size
+issues << "底部按钮只有 #{tip_count} 个挂了提示（工具条上有 #{btn_count} 个按钮）" if tip_count < btn_count
 
 puts "图谱页体检：#{issues.empty? ? '通过' : '发现问题'}"
 puts "  与白板逐条比对的样式：#{compared} 条"

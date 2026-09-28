@@ -10,7 +10,7 @@ function assert(ok, label) {
   if (!ok) __fail = true;
 }
 var __fail = false;
-var __ctxCalls = { stroke: 0, fill: 0, clear: 0, fillText: 0, texts: [], strokeTfs: [] };
+var __ctxCalls = { stroke: 0, fill: 0, clear: 0, fillText: 0, texts: [], strokeTfs: [], arcs: [] };
 
 function mkEl(tag) {
   var self = {
@@ -56,8 +56,11 @@ var ctx = {
   save: function () { __tfStack.push(tfNow()); },
   restore: function () { if (__tfStack.length) __tf = __tfStack.pop(); },
   beginPath: function () {}, moveTo: function () {}, lineTo: function () {},
-  quadraticCurveTo: function () {}, arc: function () {},
-  rect: function () {}, roundRect: function () {}, ellipse: function () {},
+  quadraticCurveTo: function () {}, ellipse: function () {},
+  /* arc 要记下来：笔尖 / 橡皮那个圈的半径就藏在这里，不记就只能数"画了几笔"，
+     量不到"圈有多大"（而圈的大小正是这个功能唯一要守住的东西）。 */
+  arc: function (x, y, r) { __ctxCalls.arcs.push({ x: x, y: y, r: r }); },
+  rect: function () {}, roundRect: function () {},
   fill: function () { __ctxCalls.fill++; __ctxCalls.fillTf = tfNow(); },
   stroke: function () { __ctxCalls.stroke++; __ctxCalls.strokeTf = tfNow(); __ctxCalls.strokeTfs.push(tfNow()); },
   measureText: function (t) { return { width: String(t).length * 9 }; },

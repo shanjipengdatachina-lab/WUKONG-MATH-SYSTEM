@@ -143,7 +143,7 @@
     problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
     problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
     problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
-    eraserAt: null,               // 橡皮圆圈的位置（画布内 CSS 像素）；null = 不画
+    tipAt: null,                  // 笔尖 / 橡皮圆圈的位置（画布内 CSS 像素）；null = 不画
     external: null,              // 其它页面送来的内容 { text, tag, extra }
     analysis: {                   // 「分析 / 答案」这一层（DOM 浮层，不是画在板上的墨）
       open: false,                // 台阶框是否展开
@@ -478,13 +478,17 @@
     syncCursor();
   }
 
-  /* 画布上的光标由两件事决定，集中在一处免得互相覆盖：
-     橡皮工具时**藏起来** —— 已经有那个圆圈了，再叠一个箭头反而看不清擦哪儿；
-     压到题面把手上时是"可抓"。 */
+  /* 画布上的光标由两件事决定，集中在一处免得互相覆盖。
+     **题面把手优先于笔尖**：题面在任何工具下都能拖，压在把手上时必须让人看出"可抓"，
+     否则用着笔的时候路过把手，光标被藏掉、圈又画在那里，"能抓"这件事就完全看不出来了。 */
   function syncCursor() {
     if (!canvas || !canvas.style) return;
-    if (state.tool === 'eraser') { canvas.style.cursor = 'none'; return; }
-    canvas.style.cursor = (state.problemHover && state.problemGripHot) ? 'grab' : '';
+    if (state.problemHover && state.problemGripHot) { canvas.style.cursor = 'grab'; return; }
+    if (state.tool === 'pen' || state.tool === 'highlighter' || state.tool === 'eraser') {
+      canvas.style.cursor = 'none';
+      return;
+    }
+    canvas.style.cursor = '';
   }
 
   function strokeWidthFor(s, p, q) {
@@ -593,17 +597,32 @@
     ctx.restore();
   }
 
-  /* 橡皮的圆圈：跟在鼠标后面，表示"这一圈里的墨会被擦掉"。
-     画在**屏幕空间**（半径就是 state.eraser 像素），所以缩放板面时圈的大小不变 ——
-     它说的是手指底下多大范围，不是板上多大范围。 */
-  function drawEraserRing() {
-    if (state.tool !== 'eraser' || !state.eraserAt) return;
+  /* 笔尖 / 橡皮的圆圈：跟在鼠标后面，表示"这一圈就是这一下会画（或擦）到的范围"。
+     画在**屏幕空间**：橡皮的半径本来就是屏幕像素；笔尖则按 scale 换算，
+     所以圈的大小始终等于"手上这支笔在屏幕上多粗"。
+
+     为什么要用圆圈换掉十字光标：十字只告诉你"点在哪"，圆圈还告诉你"会画多粗"。
+     笔细的时候真实笔尖只有 1px 半径，画出来等于看不见，所以给一个最小半径兜底。 */
+  var TIP_MIN_R = 3;
+  function drawTipRing() {
+    var at = state.tipAt;
+    if (!at || !ctx) return;
+    /* 压在题面把手上时不画圈 —— 那时光标是"可抓"，两个提示叠在一起会互相打架 */
+    if (state.problemHover && state.problemGripHot) return;
     var v = state.view;
+    var r = 0, lw = 1.2;
+    if (state.tool === 'eraser') {
+      r = state.eraser;
+      lw = 1.5;
+    } else if (state.tool === 'pen' || state.tool === 'highlighter') {
+      r = Math.max(TIP_MIN_R, (state.tool === 'highlighter' ? HIGHLIGHT_WIDTH : state.width) * v.scale / 2);
+    }
+    if (!r) return;   // 图形工具仍用十字：画框时要的是准，不是笔粗
     if (ctx.setTransform) ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
     ctx.save();
     ctx.beginPath();
-    if (typeof ctx.arc === 'function') ctx.arc(state.eraserAt.x, state.eraserAt.y, state.eraser, 0, Math.PI * 2);
-    ctx.lineWidth = 1.5;
+    if (typeof ctx.arc === 'function') ctx.arc(at.x, at.y, r, 0, Math.PI * 2);
+    ctx.lineWidth = lw;
     /* 颜色跟着板面主题走：黑板上得用浅色，不然深底上根本看不见这个圈 */
     ctx.strokeStyle = theme().tag;
     ctx.stroke();
@@ -642,7 +661,7 @@
     drawProblemLayer();
     for (var i = 0; i < state.strokes.length; i++) drawStroke(state.strokes[i]);
     ctx.restore();
-    drawEraserRing();
+    drawTipRing();
     /* 浮层（题面旁两个按钮 / 台阶框 / 答案块）都是 DOM，画布管不到它们；
        它们的位置全部由世界坐标投影出来，所以每次重绘后重排一次就跟着板走了。
        注意：必须放在**画完题面之后** —— drawProblemLayer 里才会算出最新的题面矩形，
@@ -1075,12 +1094,11 @@
   }
 
   function onMove(e) {
-    /* 橡皮的圆圈要跟着鼠标走，无论有没有按下去 —— 所以这一步放在最前面，别被下面的分支挡住 */
-    if (state.tool === 'eraser') {
-      var sp = canvasPoint(e);
-      state.eraserAt = { x: sp.sx, y: sp.sy };
-      scheduleRedraw();
-    }
+    /* 笔尖 / 橡皮的圆圈要跟着鼠标走，无论有没有按下去 —— 所以这一步放在最前面，
+       别被下面的分支挡住（按着笔拖的时候也要跟）。 */
+    var sp = canvasPoint(e);
+    state.tipAt = { x: sp.sx, y: sp.sy };
+    if (state.tool === 'pen' || state.tool === 'highlighter' || state.tool === 'eraser') scheduleRedraw();
     var act = state.active;
     if (!act || act.id !== e.pointerId) {
       /* 没落笔时，pointermove 只负责两件事：底要不要浮现、光标要不要变成"可抓" */
@@ -1274,8 +1292,8 @@
     canvas.addEventListener('pointerleave', function () {
       setProblemGripHot(false);
       setProblemHover(false);
-      /* 鼠标离开画布，橡皮那个圈也要收掉，别留在板边上 */
-      if (state.eraserAt) { state.eraserAt = null; scheduleRedraw(); }
+      /* 鼠标离开画布，笔尖那个圈也要收掉，别留在板边上 */
+      if (state.tipAt) { state.tipAt = null; scheduleRedraw(); }
     });
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });

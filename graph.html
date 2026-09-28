@@ -325,7 +325,7 @@ body{padding-top:0}
 .mm-dock__level:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
 /* ---------- 悬浮提示：自绘小气泡，替掉系统那层灰框气泡 ---------- */
 [data-mm-tip]{position:relative}
-[data-mm-tip]::after{content:attr(data-wb-tip);
+[data-mm-tip]::after{content:attr(data-mm-tip);
   position:absolute;left:50%;bottom:calc(100% + 16px);z-index:9;
   transform:translateX(-50%) translateY(2px);
   padding:4px 8px;
