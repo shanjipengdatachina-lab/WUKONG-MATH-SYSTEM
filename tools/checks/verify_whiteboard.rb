@@ -300,7 +300,37 @@ else
     html[/\.wb-side\{[^}]*flex-direction:column/m]
   issues << '竖条挂在最右边会压住别的东西 —— 它得留在画布容器里、靠右浮着' unless
     html[/\.wb-side\{[^}]*right:\d+px/m] && html[/\.wb-side\{[^}]*position:absolute/m]
+
+  # 分析那颗图标：用户要求换掉灯泡（"白板右侧第一个按钮分析图标换一下"）。
+  # 选 sparkles 的两个理由：① 这个按钮出的是 **AI 给的分析**，灯泡读起来是"灵感/点子"；
+  # ② 站内 sparkles 已经是"AI 生成"的意思（通知页在用），换个地方用同一支，读者不用重新学。
+  analysis_btn = side_html[/id="wb-act-analysis"[\s\S]{0,260}?<\/button>/m].to_s
+  issues << '分析按钮的图标不是 sparkles（用户要求换掉原来那个灯泡）' unless
+    analysis_btn.include?('data-lucide="sparkles"')
+  issues << '分析按钮还挂着 lightbulb' if analysis_btn.include?('data-lucide="lightbulb"')
+  # 提示语只写"分析"两个字（用户："含答案标注去掉即可"）——
+  # 那半句是给做产品的人看的，点开就在里面，不必在提示里提前解释。
+  issues << '分析按钮的提示语不只是「分析」（"含答案"那半句该去掉）' unless
+    analysis_btn.include?('data-wb-tip="分析"')
+  # 只看所有提示语里有没有这三个字 —— 不能拿整页去搜：
+  # 上面那段解释"为什么去掉含答案"的注释里就有这三个字，整页搜索会被自己的注释顶红
+  # （这个坑这个项目踩过两次了，规则写进文档了：查"页面上还有没有某句话"要先剥注释、或只看属性值）。
+  tips = html.scan(/data-wb-tip="([^"]*)"/).flatten
+  issues << "「含答案」这几个字还在某条提示语里（#{tips.select { |t| t.include?('含答案') }.join('、')}）" if
+    tips.any? { |t| t.include?('含答案') }
 end
+
+# 自绘提示的位置：横排工具条是"上方居中"，**右侧竖条上必须改到左边** ——
+# 竖排时"上方居中"正好盖住上面那颗按钮，用户看提示的时候下一个按钮被挡着。
+# （用户原话："鼠标滑动出现的提示词应该在图标的左侧显示，避免挡住按钮"）
+side_tip = html[/\.wb-side \[data-wb-tip\]::after\{[^}]*\}/m].to_s
+issues << '右侧竖条上没有"提示改到左边"这条规则（还是会挡住上面那颗按钮）' if side_tip.empty?
+issues << '竖条上的提示没挂到按钮左侧（right:calc(100% + 8px)）' unless
+  side_tip.include?('right:calc(100% + 8px)')
+issues << '竖条上的提示没把默认的"居中偏左"让开（少了 left:auto）' unless
+  side_tip.include?('left:auto')
+issues << '竖条上的提示没有纵向对中（会跑偏）' unless
+  html[/\.wb-side \[data-wb-tip\]:hover::after[\s\S]{0,120}?transform:translateY\(-50%\)/m]
 
 # 「上传我的题」必须在**底部那条**工具条上（用户原话："这个上传。这个按钮要放在底部"）
 dock_html = html[/<div class="wb-dock".*?<div class="wb-pop"/m].to_s

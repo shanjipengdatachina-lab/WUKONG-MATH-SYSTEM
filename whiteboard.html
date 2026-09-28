@@ -182,6 +182,16 @@
 /* 工具组浮层已经展开时不再弹提示，免得两块叠在一起 */
 [data-wb-tip][aria-expanded="true"]::after{display:none}
 
+/* 右侧竖工具条上的提示改到**按钮左边**：默认那条是"上方居中"，
+   在一条竖排按钮里它正好盖住上面那颗 —— 用户看提示的时候，下一个要点的按钮被挡着。
+   只改这一个容器里的提示；底部那条横排工具条仍是"上方居中"（横排上方不挡东西）。 */
+.wb-side [data-wb-tip]::after{
+  left:auto;right:calc(100% + 8px);bottom:auto;top:50%;
+  transform:translateY(-50%) translateX(2px);
+}
+.wb-side [data-wb-tip]:hover::after,
+.wb-side [data-wb-tip]:focus-visible::after{transform:translateY(-50%) translateX(0)}
+
 /* ---------- 工具组（仿 PS：同类工具合成一个格子，点开再选） ---------- */
 .wb-dock__group{position:relative;display:inline-flex;align-items:center}
 /* 格子里同时放着这一组的图标，只有当前那个露出来 */
@@ -681,11 +691,15 @@
 
           <!-- 右侧竖工具条：对"**这道题**"做的事（底部那条是画板自己的工具）。
                用户定的：题目周围要干干净净，所以这些动作一个都不挂在题目上。
-               三个按钮：分析（里面带答案两个 tab）/ 转译 / 保存。图标用的还是这一套。 -->
+               三个按钮：分析（里面带答案两个 tab）/ 转译 / 保存。图标用的还是这一套。
+               分析那颗用 sparkles 而不是 lightbulb：这个按钮出的是 AI 给的分析，
+               灯泡读起来是"灵感 / 点子"；而站内 sparkles 已经是"AI 生成"的意思（通知页在用）。
+               提示语只有"分析"两个字 —— 原来写着"分析（含答案）"，那半句是给做产品的人看的，
+               点开就在里面，不必提前解释。 -->
           <div class="wb-side" id="wb-side" role="toolbar" aria-label="对这道题做什么">
             <button type="button" class="wb-side__btn" id="wb-act-analysis" aria-pressed="false"
-                    aria-controls="wb-panel" data-wb-tip="分析（含答案）" aria-label="分析这道题">
-              <i data-lucide="lightbulb"></i>
+                    aria-controls="wb-panel" data-wb-tip="分析" aria-label="分析这道题">
+              <i data-lucide="sparkles"></i>
             </button>
             <button type="button" class="wb-side__btn" id="wb-act-transcribe" aria-pressed="false"
                     aria-controls="wb-ink-text" data-wb-tip="转译手写" aria-label="把手写思路转成电子文字">
