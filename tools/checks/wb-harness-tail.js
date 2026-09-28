@@ -8,6 +8,14 @@ assert(WB.WIDTHS.length === 3 && WB.ERASERS.length === 3, '笔粗与橡皮各 3 
 assert(WB.state.tool === 'pen', '默认工具是画笔');
 assert(WB.state.view.dpr === 2 && canvasEl.width === 2400, '按设备像素比放大画布（清晰不虚）');
 
+/* 光标归位在"启动"这一刻就得对：默认工具是画笔，画笔要把系统十字换成圆圈。
+   只把 syncCursor 挂在 setTool 上的话，刚打开页面、还没点过任何工具按钮时
+   `#wb-canvas{cursor:crosshair}` 依然生效 —— 用户看到的还是十字（真机上复现过：
+   localStorage 里没有记录、工具取默认值，此时没有任何一步会去调 setTool）。
+   所以光标由 syncUI 统一归位，而 syncUI 在启动末尾必然走一遍。 */
+assert(canvasEl.style.cursor === 'none',
+  '一打开页面（没点过任何工具）画笔就不该显示系统十字（实际 "' + canvasEl.style.cursor + '" —— 空值意味着 CSS 的 crosshair 生效）');
+
 /* ---------- 题库 ---------- */
 var P = window.WB_PROBLEMS || [];
 assert(P.length >= 40, '题库至少 40 题（实际 ' + P.length + ' 题）');

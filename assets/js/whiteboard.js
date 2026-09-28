@@ -480,7 +480,10 @@
 
   /* 画布上的光标由两件事决定，集中在一处免得互相覆盖。
      **题面把手优先于笔尖**：题面在任何工具下都能拖，压在把手上时必须让人看出"可抓"，
-     否则用着笔的时候路过把手，光标被藏掉、圈又画在那里，"能抓"这件事就完全看不出来了。 */
+     否则用着笔的时候路过把手，光标被藏掉、圈又画在那里，"能抓"这件事就完全看不出来了。
+
+     调用点只有 syncUI 一处（外加下面两个 hover 设置器）—— 收口在一个函数里，
+     才不会出现"某条改工具的路径忘了同步光标"的事。 */
   function syncCursor() {
     if (!canvas || !canvas.style) return;
     if (state.problemHover && state.problemGripHot) { canvas.style.cursor = 'grab'; return; }
@@ -1517,10 +1520,9 @@
   function setTool(tool) {
     if (tool !== 'pen' && tool !== 'highlighter' && tool !== 'eraser' && !isShapeTool(tool)) tool = 'pen';
     state.tool = tool;
-    syncCursor();
     closeFlyout();          // 从浮层里选完就把浮层收起来
     persist();
-    syncUI();
+    syncUI();               // 光标由 syncUI 收口，这里不用再单独调一次
   }
   function setColor(value) {
     var hit = COLORS.filter(function (c) { return c.value === value; })[0];
@@ -1738,6 +1740,13 @@
     var stat = byId('wb-stat');
     if (stat) stat.textContent = '笔画 ' + state.strokes.length + ' · 可撤销 ' + state.actions.length;
     zoomLabel();
+
+    /* 光标归位放这里，不放在 setTool 里 ——
+       `#wb-canvas` 的 CSS 是 `cursor:crosshair`，只要没人把它显式改成 none，
+       十字就一直生效。而"刚打开页面、还没点过任何工具按钮"这一刻根本不会走 setTool
+       （工具是从存储恢复或取默认值），于是画笔选着、十字却挂在屏幕上。
+       syncUI 在启动末尾和每次状态变化后都会走一遍，挂这儿才能保证不漏。 */
+    syncCursor();
   }
 
   /* 某个颜色在给定配色里是第几支；不在里面返回 -1 */
