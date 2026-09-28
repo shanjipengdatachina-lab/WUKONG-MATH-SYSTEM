@@ -302,6 +302,16 @@
     return false;
   }
 
+  /* 这个节点是哪个学段的。学段不是树上的一层，而是册 / 板块身上的一个字段，
+     所以拿"哪一段的范围里能看见它"反查 —— 用的就是上面那套判断，不另立规矩。 */
+  function stageOfNode(node) {
+    for (var i = 0; i < STAGE_CODES.length; i++) {
+      var scope = stageScope(STAGE_CODES[i]);
+      if (scope && scopeContains(scope, node)) return STAGE_CODES[i];
+    }
+    return '';
+  }
+
   /* ------------------------------------------------------------------ *
    * 4. 度量与布局
    * ------------------------------------------------------------------ */
@@ -408,6 +418,11 @@
   var MAX_K = 2.5;
 
   function applyView() {
+    /* 最后一道闸：view 里只要有一个不是有限数，这条 transform 就是非法的。
+       浏览器会把整条属性丢掉（图瞬移回左上角），而且之后每次写入还是 NaN ——
+       表现就是"图不能放大缩小也不能拖"。宁可不写，也不要把画面写死。
+       注意这只是兜底：真出了 NaN，断言里那条 isFinite 照样会红，藏不住。 */
+    if (!isFinite(view.tx) || !isFinite(view.ty) || !isFinite(view.k)) return;
     world.setAttribute('transform', 'translate(' + view.tx + ',' + view.ty + ') scale(' + view.k + ')');
     if (zoomLabel) zoomLabel.textContent = Math.round(view.k * 100) + '%';
     /* 这里原来还有两行：把画布的点阵底纹按 view.k / view.tx 重设一遍，
@@ -461,6 +476,10 @@
   }
 
   function centerOn(node) {
+    /* 兜底：节点没被布局过时 x / y / w 是 undefined，直接算出来就是 NaN，
+       而 NaN 会顺着 view 传给下面每一次拖动和缩放（见 locate 里的说明）。
+       宁可不居中，也不写一个把画面变成死的数。 */
+    if (!node || typeof node.x !== 'number' || typeof node.y !== 'number' || typeof node.w !== 'number') return;
     var size = canvasSize();
     view.tx = size.w / 2 - (node.x + node.w / 2) * view.k;
     view.ty = size.h / 2 - node.y * view.k;
@@ -806,6 +825,14 @@
   function locate(id, options) {
     var node = byId[id];
     if (!node) return;
+    /* 目标可能在**别的学段**里：白板上的题是初中的，图谱却可能正停在小学
+       （学段跟册一样是记在本机的，"上次看过哪一段"就停在哪一段）。
+       不改学段的话，它在当前范围里压根不进布局 —— x/y/w 全是 undefined，
+       紧接着的 centerOn 就会算出 NaN，transform 写成 translate(NaN,NaN)，
+       浏览器把整条属性丢掉：之后拖也不动、滚也不缩（用户报的就是这个）。
+       所以定位的第一步，是先把学段搬到它所在的那一段。 */
+    var home = stageOfNode(node);
+    if (home && home !== currentStage) setStage(home);
     // 筛选状态下目标可能在范围之外，先放开筛选
     if (scopeKey) {
       var scope = rootScope();

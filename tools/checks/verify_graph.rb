@@ -375,6 +375,21 @@ btn_count = graph.scan(/class="mm-dock__btn/).size + graph.scan(/class="mm-dock_
 tip_count = graph.scan(/data-mm-tip="/).size
 issues << "底部按钮只有 #{tip_count} 个挂了提示（工具条上有 #{btn_count} 个按钮）" if tip_count < btn_count
 
+# ---------- 12. 点名定位必须先把学段搬对（"回到知识点之后图不能放大缩小也不能拖"） ----------
+# 白板上的题是初中的，图谱却可能正停在小学（学段跟册一样记在本机）。
+# 目标不在当前学段里 → 它不进布局（x/y/w 都是 undefined）→ centerOn 一算就是 NaN →
+# transform 被写成 translate(NaN,NaN)，浏览器把整条属性丢掉，之后拖也不动、滚也不缩。
+# 三层都要在：① 定位时搬学段（治根）② centerOn 不拿没布局过的节点算（挡住源头）
+# ③ applyView 不写非法 transform（最后一道闸，别的 NaN 来源也一起兜住）。
+issues << '定位时没有按目标所在学段搬过去（照旧会算出 NaN，把图拖死）' unless
+  mini[/function locate\([\s\S]*?stageOfNode\(node\)[\s\S]*?\n  \}/]
+issues << '没有 stageOfNode：反查节点属于哪个学段（学段不是树上的一层，只能这么找）' unless
+  mini[/function stageOfNode\(node\)\{?[\s\S]*?scopeContains\(scope, node\)/]
+issues << 'centerOn 没挡"节点没被布局过"（undefined 会算出 NaN，把 view 带坏）' unless
+  mini[/function centerOn\(node\)\{?[\s\S]*?typeof node\.x !== 'number'[\s\S]*?typeof node\.w !== 'number'/]
+issues << 'applyView 没有拦非法的 transform（NaN 会写进属性，画面就死了）' unless
+  mini[/function applyView\(\)\{?[\s\S]*?isFinite\(view\.tx\)[\s\S]*?isFinite\(view\.k\)/]
+
 puts "图谱页体检：#{issues.empty? ? '通过' : '发现问题'}"
 puts "  与白板逐条比对的样式：#{compared} 条"
 unless issues.empty?

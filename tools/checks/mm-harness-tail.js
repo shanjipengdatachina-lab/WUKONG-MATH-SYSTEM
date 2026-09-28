@@ -217,6 +217,54 @@ eq(searchResultsEl.hasAttribute('hidden'), false, '提示区保持可见');
 has(searchResultsEl.innerHTML, '没有匹配的条目', '给出"没有匹配"的说明');
 window.location.search = '';
 
+/* ---- 12b. 点名点进了**别的学段**（用户报的："回到知识点之后图不能放大缩小也不能拖"）----
+   白板上的题是初中的，图谱却可能正停在小学（学段是记在本机的，上次看过哪段就停在哪段）。
+   原来定位只放开了"册"那一层筛选，没管学段：
+   目标不在当前学段里 → 它压根不进布局（x/y/w 全是 undefined）→
+   紧随其后的 centerOn 拿 undefined 一算就是 NaN → transform 被写成 translate(NaN,NaN)，
+   浏览器把整条属性丢掉，之后怎么拖怎么滚都还是 NaN（用户看到的就是这一条）。
+   两头都要守：学段要搬过去，view 也不能出现非有限数。 */
+MM.stage.set('primary');
+eq(MM.stage.get(), 'primary', '先停在小学（复现现场）');
+var juniorBook = TREE.kids.filter(function (b) { return b.stage === 'junior'; })[0];
+assert(!!juniorBook, '初中有册（前提）');
+var juniorChapter = (juniorBook.children || juniorBook.kids)[0];
+
+/* 前提：这个节点此刻**没有**几何。真机上就是这样 —— 首屏停在小学，初中的节点从没被布局过。
+   桩里前面的用例渲染过初中，节点上留着旧坐标，不清掉就复现不出真机那条路（第一版漏了这步，
+   于是"踩坏"之后断言照样绿 —— 假绿）。 */
+var probeNode = null;
+MM.each(function (n) { if (n.id === juniorChapter.id) probeNode = n; });
+assert(!!probeNode && typeof probeNode.x === 'number', '桩里这个节点带着上一轮布局留下的坐标（前提）');
+delete probeNode.x; delete probeNode.y; delete probeNode.w;
+assert(typeof probeNode.x !== 'number', '清掉旧坐标 —— 相当于"这个节点从没被布局过"（前提）');
+
+MM.locate(juniorChapter.id);
+eq(MM.stage.get(), 'junior', '定位别的学段的节点 → 学段跟着搬过去');
+eq(MM.scope.get(), '', '顺带回到这一学段的总览（不然册筛选还挂在别的学段的册上）');
+assert(isFinite(MM.view().tx) && isFinite(MM.view().ty) && isFinite(MM.view().k),
+  '定位之后 view 全是有限数（实际 tx=' + MM.view().tx + '，ty=' + MM.view().ty + '）');
+assert(MM.visible().length > 0, '定位之后图还在（有节点被布局出来）');
+
+/* 用户的原话是"不能放大缩小和拖动" —— 所以定位完还得真能拖、真能缩。
+   注意比的时候必须先判有限数：view 坏掉时 tx 是 NaN，而 NaN !== NaN 恒为真，
+   只写 `tx !== 拖之前的 tx` 会**假绿**（第一版就是这么写的，踩过）。 */
+var vAfterDeep = MM.view();
+fire(canvasEl, 'pointerdown', ev({ x: 600, y: 400, target: worldEl }));
+winFire('pointermove', ev({ x: 700, y: 460 }));
+winFire('pointerup');
+assert(isFinite(MM.view().tx) && MM.view().tx !== vAfterDeep.tx,
+  '定位之后画布照样能拖（用户报的就是这里拖不动；实际 tx=' + MM.view().tx + '）');
+var kAfterDeep = MM.view().k;
+/* 缩放是 ⌘/Ctrl + 滚轮（光滚轮是平移，见画布那段滚轮处理器） */
+fire(canvasEl, 'wheel', ev({ x: 600, y: 400, target: worldEl, deltaY: -240, ctrl: true }));
+assert(isFinite(MM.view().k) && MM.view().k !== kAfterDeep,
+  '定位之后滚轮照样能缩放（实际 k=' + MM.view().k + '，缩放前 ' + kAfterDeep + '）');
+
+/* 画面上那条 transform 永远得是能解析的有限数 —— 浏览器解析不了就整条丢掉，图会瞬移回左上角 */
+assert(/^translate\(-?[\d.]+,-?[\d.]+\) scale\([\d.]+\)$/.test(worldEl.getAttribute('transform') || ''),
+  '画布变换始终是能解析的有限数（实际 ' + worldEl.getAttribute('transform') + '）');
+
 /* ---- 13. 浮层里的事件不该泄漏到画布 ---- */
 var v0 = MM.view();
 
