@@ -7,6 +7,9 @@ tools/checks/_build/
 # 脚本推送用的临时凭据，绝不入库
 .git-token
 
+# 设计讨论用的样张会话（brainstorming 视觉伴侣，本地留存，不入库）
+.superpowers/
+
 # 系统 / 编辑器杂项
 .DS_Store
 *.swp
