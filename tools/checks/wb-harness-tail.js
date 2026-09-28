@@ -532,7 +532,8 @@ var hoverFills = fillDelta(function () { WB.redraw(); });
 WB.setProblemHover(false);
 
 assert(idleFills === 0, '未悬停时题面不画底（填充增量应为 0，实际 ' + idleFills + '）');
-assert(hoverFills === 2, '悬停时浮现底 + 竖条（填充增量应为 2，实际 ' + hoverFills + '）');
+assert(hoverFills === 4,
+  '悬停时浮现底 + 竖条 + 把手的两道短横（填充增量应为 4，实际 ' + hoverFills + '）');
 
 /* 命中判定：悬停和（后面的）拖动共用同一个谓词 */
 var hovBox = WB.problemLayout();
@@ -568,5 +569,117 @@ assert(st7c.points.length === 2,
 assert(minX7c > 0, '笔迹没有跑到板子左边去（最左 ' + Math.round(minX7c) + '）');
 assert(WB.badPoints() === badBefore + 1,
   '坏点被记了一次（实际 ' + (WB.badPoints() - badBefore) + ' 次）');
+
+/* ============================================================
+   8. 题面可拖动：抓住左侧把手把它挪走 —— 不落笔、不带动板面
+   ============================================================ */
+WB.setTool('pen');
+WB.clearAll();
+WB.applyProblem('8a-01');
+/* 每次从同一个位置起测：题面位置在会话内是活的，不能依赖上一组留下的状态 */
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
+WB.redraw();
+
+var box0 = WB.problemLayout();
+var v0 = WB.view();
+var strokes0 = WB.strokes().length;
+var actions0 = WB.state.actions.length;
+
+/* 世界点 → 屏幕点：sx = v.x + wx * scale。视图会被前面的用例改过，所以每次都现算 */
+function screenNow(wx, wy) {
+  var v = WB.view();
+  return { x: v.x + wx * v.scale, y: v.y + wy * v.scale };
+}
+
+/* 把手只占左侧那条无字处；正文必须留着能落笔（学生要在题目上圈已知条件） */
+assert(WB.hitProblemHandle(box0.x + 10, box0.y + 20) === true, '题面左侧那条算把手');
+assert(WB.hitProblemHandle(box0.x + box0.w - 20, box0.y + box0.h - 12) === false,
+  '题面正文不算把手（它要能直接圈画）');
+assert(WB.hitProblemHandle(box0.x + box0.w - 20, box0.y + box0.h - 12) !== null,
+  '把手判定返回布尔值而不是真值（便于断言）');
+
+var grab = screenNow(box0.x + 10, box0.y + 20);
+var dx = 120, dy = 80;
+
+canvasEl._h.pointerdown(pe(grab.x, grab.y));
+canvasEl._h.pointermove(pe(grab.x + dx, grab.y + dy));
+canvasEl._h.pointerup(pe(grab.x + dx, grab.y + dy));
+
+var box1 = WB.problemLayout();
+var v1 = WB.view();
+
+assert(Math.round(box1.x - box0.x) === Math.round(dx / v0.scale),
+  '题面横向跟着拖了 ' + dx + ' 屏幕像素（' + box0.x + ' → ' + box1.x + '）');
+assert(Math.round(box1.y - box0.y) === Math.round(dy / v0.scale),
+  '题面纵向跟着拖了 ' + dy + ' 屏幕像素（' + box0.y + ' → ' + box1.y + '）');
+assert(WB.strokes().length === strokes0, '拖题面不留下笔迹');
+assert(v1.x === v0.x && v1.y === v0.y, '拖题面不带动板面');
+assert(WB.state.actions.length === actions0, '拖题面不进撤销栈（挪位置不算一次编辑）');
+assert(WB.state.active === null, '松手后没留下未收尾的拖动状态');
+
+/* 缩放后手上拖 100px，题面只该挪 100/scale 个世界单位 */
+WB.state.view.scale = 2;
+WB.redraw();
+var boxZ0 = WB.problemLayout();
+var grabZ = screenNow(boxZ0.x + 10, boxZ0.y + 20);
+canvasEl._h.pointerdown(pe(grabZ.x, grabZ.y));
+canvasEl._h.pointermove(pe(grabZ.x + 100, grabZ.y));
+canvasEl._h.pointerup(pe(grabZ.x + 100, grabZ.y));
+var boxZ1 = WB.problemLayout();
+assert(Math.round(boxZ1.x - boxZ0.x) === 50,
+  '放大 2 倍时，手上拖 100px 题面只挪 50 个世界单位（实际 ' + Math.round(boxZ1.x - boxZ0.x) + '）');
+WB.state.view.scale = 1;
+WB.redraw();
+
+/* 对照组 1：题面正文里按下去，仍然正常落笔（不是"题面一律不能画"） */
+var bodyW = { x: boxZ1.x + boxZ1.w - 20, y: boxZ1.y + boxZ1.h - 12 };
+assert(WB.hitProblem(bodyW.x, bodyW.y) === true, '对照组：正文确实在题面里（前提）');
+var body = screenNow(bodyW.x, bodyW.y);
+var strokesBody = WB.strokes().length;
+canvasEl._h.pointerdown(pe(body.x, body.y));
+canvasEl._h.pointermove(pe(body.x + 30, body.y + 10));
+canvasEl._h.pointerup(pe(body.x + 30, body.y + 10));
+assert(WB.strokes().length === strokesBody + 1, '题面正文上照常落笔（留着圈已知条件）');
+
+/* 对照组 2：题面之外按下去，也照常落笔 —— 证明这套断言不是把落笔全关掉了 */
+var boxC = WB.problemLayout();
+var farW = { x: boxC.x + boxC.w + 300, y: boxC.y + 300 };
+assert(WB.hitProblem(farW.x, farW.y) === false, '对照组：题面之外（前提）');
+var far = screenNow(farW.x, farW.y);
+var strokes1 = WB.strokes().length;
+canvasEl._h.pointerdown(pe(far.x, far.y));
+canvasEl._h.pointermove(pe(far.x + 40, far.y + 30));
+canvasEl._h.pointerup(pe(far.x + 40, far.y + 30));
+assert(WB.strokes().length === strokes1 + 1, '题面之外按下去仍然正常落一笔（对照组）');
+
+/* 题面收起时，把手也不该生效 —— 否则看不见的题面会偷走一次落笔 */
+WB.clearAll();
+WB.applyProblem('8a-01');
+WB.setShowProblem(false);
+WB.redraw();
+var strokes2 = WB.strokes().length;
+var hid = screenNow(16 + 10, 16 + 20);
+canvasEl._h.pointerdown(pe(hid.x, hid.y));
+canvasEl._h.pointermove(pe(hid.x + 30, hid.y + 20));
+canvasEl._h.pointerup(pe(hid.x + 30, hid.y + 20));
+assert(WB.strokes().length === strokes2 + 1, '题面隐藏后，把手位置按下去照常落笔');
+WB.setShowProblem(true);
+
+/* 光标提示：压在把手上才变"可抓"，压在正文上还是十字 */
+WB.clearAll();
+WB.applyProblem('8a-01');
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
+WB.redraw();
+var boxG = WB.problemLayout();
+var onGrip = screenNow(boxG.x + 10, boxG.y + 20);
+var onBody = screenNow(boxG.x + boxG.w - 20, boxG.y + boxG.h - 12);
+canvasEl._h.pointermove(pe(onGrip.x, onGrip.y));
+assert(WB.state.problemGripHot === true, '压在把手上 → 把手亮起');
+assert(canvasEl.style.cursor === 'grab', '压在把手上 → 光标变可抓（实际 ' + canvasEl.style.cursor + '）');
+canvasEl._h.pointermove(pe(onBody.x, onBody.y));
+assert(WB.state.problemGripHot === false, '压到正文上 → 把手不再亮');
+assert(canvasEl.style.cursor === '', '压到正文上 → 光标恢复十字（实际 ' + canvasEl.style.cursor + '）');
 
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

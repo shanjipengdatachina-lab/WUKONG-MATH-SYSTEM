@@ -229,4 +229,4 @@ assert(!!chapCls && chapCls.indexOf('is-text') === -1, '有底色板的章节节
 MM.level.set(2);
 
 out('----');
-out(__fail ? '有失败项' : '图谱自检全部通过');
+out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

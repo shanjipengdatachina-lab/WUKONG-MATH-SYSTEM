@@ -40,4 +40,4 @@ has(avatarEl.innerHTML, 'data-lucide="user"', '退出后头像回到图标');
 eq2(window.localStorage.getItem('wkmath.user'), null, '退出后本机不残留用户数据');
 
 out('----');
-out(__fail ? '有失败项' : '会话自检全部通过');
+out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

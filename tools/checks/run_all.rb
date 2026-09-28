@@ -37,8 +37,11 @@ Dir[File.join(OUT, '*.js')].sort.each do |file|
   log = sh("osascript -l JavaScript #{file}")
   pass = log.scan(/^PASS/).size
   fail_n = log.scan(/^FAIL/).size
-  ok = fail_n.zero? && log.include?('全部通过')
-  rows << [name, pass, fail_n, ok]
+  # 跑到收尾 = 打出了 RESULT 行（无论结论是"全部通过"还是"有失败项"）。
+  # 没有 RESULT 行 = 中间抛错 / 被中断 —— 这才是"没跑完"，要和"跑了但红了"分开报。
+  finished = log.include?('RESULT:')
+  ok = fail_n.zero? && log.include?('RESULT: 全部通过')
+  rows << [name, pass, fail_n, ok, finished]
   puts format('  %-26s 通过 %-4d 失败 %-3d %s', name, pass, fail_n, ok ? '✔' : '✘')
   puts log.lines.grep(/^FAIL/).map { |l| '      ' + l.delete("\n") }.join("\n") if fail_n > 0
 end
@@ -64,9 +67,9 @@ puts "\n== 体检 =="
 end
 
 # ---------- 5. 汇总 ----------
-total   = rows.sum { |r| r[1] }
-bad     = rows.sum { |r| r[2] }
-crashed = rows.reject { |r| r[3] }.map { |r| r[0] }
+total    = rows.sum { |r| r[1] }
+bad      = rows.sum { |r| r[2] }
+crashed  = rows.reject { |r| r[4] }.map { |r| r[0] }   # 连 RESULT 行都没打到：没跑完
 puts "\n== 汇总 =="
 puts "  断言：#{total} 条，失败 #{bad} 条；JS 语法：#{syntax_ok ? '通过' : '有问题'}"
 # 断言包没跑到收尾（中间抛错 / 被中断）时，它既没有 PASS 到底、也没有 FAIL 行，

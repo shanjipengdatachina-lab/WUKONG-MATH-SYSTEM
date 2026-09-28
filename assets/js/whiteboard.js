@@ -92,6 +92,7 @@
     problemId: null,
     problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
     problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
+    problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
     external: null,              // 其它页面送来的内容 { text, tag, extra }
     strokes: [],                 // { type?, color, width, highlight?, pressured?, points:[{x,y,p}] }
     actions: [],
@@ -336,6 +337,16 @@
       ctx.rect(x + 0.5, y + 12, 2.5, Math.max(8, h - 24));
       ctx.fillStyle = 'rgba(37,99,235,.42)';
       ctx.fill();
+      /* 把手纹：两道短横，压在左侧那条无字处。
+         只在这里出现 —— 平时题面就是一段字，不挂任何"控件"。 */
+      var gy = y + h / 2;
+      ctx.fillStyle = state.problemGripHot ? 'rgba(37,99,235,.78)' : 'rgba(37,99,235,.30)';
+      ctx.beginPath();
+      ctx.rect(x + 5, gy - 6.4, 13, 2.2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.rect(x + 5, gy + 4.2, 13, 2.2);
+      ctx.fill();
     }
 
     var tx = x + 20;
@@ -370,11 +381,25 @@
     return { x: problemBox.x, y: problemBox.y, w: problemBox.w, h: problemBox.h };
   }
 
-  /* 这个世界点是否落在题面里 —— 悬停判定用它，拖动题面的命中判定也用它 */
+  /* 这个世界点是否落在题面里 —— 悬停判定用它 */
   function hitProblem(wx, wy) {
     return problemBox.h > 0 &&
       wx >= problemBox.x && wx <= problemBox.x + problemBox.w &&
       wy >= problemBox.y && wy <= problemBox.y + problemBox.h;
+  }
+
+  /* 题面的把手：左侧那条主色竖条所在的一小条（正文从 x+20 才开始，这里没有字）。
+     为什么不做成"整块都能拖"：题面是**演算区**，学生要在题目上圈已知条件、划关键词 ——
+     整块吃掉指针就等于把"在题目上圈画"这个最常用的动作禁掉了。
+     把手只压在无字处：想挪就抓它，想圈画就直接画。 */
+  var PROBLEM_GRIP_W = 24;
+  function problemGrip() {
+    return { x: problemBox.x - 3, y: problemBox.y, w: PROBLEM_GRIP_W + 3, h: problemBox.h };
+  }
+  function hitProblemHandle(wx, wy) {
+    if (problemBox.h <= 0) return false;
+    var g = problemGrip();
+    return wx >= g.x && wx <= g.x + g.w && wy >= g.y && wy <= g.y + g.h;
   }
 
   /* 那层很浅的底只在鼠标压上来时浮现：平时题面就是印在板上的一段字 */
@@ -382,7 +407,21 @@
     on = !!on;
     if (state.problemHover === on) return;
     state.problemHover = on;
+    /* 压在把手上时换成"可以抓"的光标 —— 整块都能拖的话这个提示就没意义了 */
+    if (canvas && canvas.style) {
+      canvas.style.cursor = on && state.problemGripHot ? 'grab' : '';
+    }
     scheduleRedraw();
+  }
+
+  /* 指针是不是正压在把手上（决定光标形状） */
+  function setProblemGripHot(on) {
+    on = !!on;
+    if (state.problemGripHot === on) return;
+    state.problemGripHot = on;
+    if (canvas && canvas.style) {
+      canvas.style.cursor = state.problemHover && on ? 'grab' : '';
+    }
   }
 
   function strokeWidthFor(s, p, q) {
@@ -623,6 +662,11 @@
       var i = state.strokes.indexOf(act.stroke);
       if (i >= 0) state.strokes.splice(i, 1);
     }
+    /* 拖动题面中途取消 → 退回原位，不留一个"拖到一半"的题面 */
+    if (act.mode === 'problem') {
+      state.problemAt.x = act.ax;
+      state.problemAt.y = act.ay;
+    }
     redraw();
   }
 
@@ -641,6 +685,21 @@
 
     var pt = pointFrom(e);
     if (!pt) return;   /* 坐标不可用：宁可不落笔，也不画出鬼线 */
+
+    /* 抓住题面左侧的把手 → 拖动题面，不落笔。
+       为什么不整块都能拖：题面是演算区，正文上还要能圈已知条件（见 hitProblemHandle 注释）。
+       判据用世界坐标：缩放 / 平移之后，把手跟着题面一起变。 */
+    if (state.showProblem && hitProblemHandle(pt.x, pt.y)) {
+      var cp = canvasPoint(e);
+      state.active = {
+        mode: 'problem', id: e.pointerId,
+        sx: cp.sx, sy: cp.sy,
+        ax: state.problemAt.x, ay: state.problemAt.y
+      };
+      syncUI();
+      return;
+    }
+
     if (state.tool === 'eraser') {
       state.active = { mode: 'erase', id: e.pointerId, bucket: [] };
       eraseAt(pt.x, pt.y, state.eraser / state.view.scale, state.active.bucket);
@@ -703,10 +762,14 @@
   function onMove(e) {
     var act = state.active;
     if (!act || act.id !== e.pointerId) {
-      /* 没落笔时，pointermove 只负责一件事：鼠标是不是压在题面上（决定那层底浮不浮现） */
+      /* 没落笔时，pointermove 只负责两件事：底要不要浮现、光标要不要变成"可抓" */
       if (!act) {
         var hp = pointFrom(e);
-        if (hp) setProblemHover(state.showProblem && hitProblem(hp.x, hp.y));
+        if (hp) {
+          var onProblem = state.showProblem && hitProblem(hp.x, hp.y);
+          setProblemHover(onProblem);
+          setProblemGripHot(onProblem && hitProblemHandle(hp.x, hp.y));
+        }
       }
       return;
     }
@@ -716,6 +779,17 @@
       var sp = canvasPoint(e);
       state.view.x = act.vx + (sp.sx - act.sx);
       state.view.y = act.vy + (sp.sy - act.sy);
+      scheduleRedraw();
+      return;
+    }
+
+    if (act.mode === 'problem') {
+      /* 屏幕位移除以 scale 才是世界位移：放大 2 倍时，手上拖 100px，题面只该挪 50 个世界单位 */
+      var pp = canvasPoint(e);
+      state.problemAt.x = act.ax + (pp.sx - act.sx) / state.view.scale;
+      state.problemAt.y = act.ay + (pp.sy - act.sy) / state.view.scale;
+      /* 题面跟着手走，指针就一直在它里面 —— 拖动期间让那层底保持浮现，看得见自己搬的是什么 */
+      setProblemHover(true);
       scheduleRedraw();
       return;
     }
@@ -767,6 +841,13 @@
 
     if (act.mode === 'pan') {
       redraw();
+      return;
+    }
+    if (act.mode === 'problem') {
+      /* 挪位置不算一次编辑：不进撤销栈（撤销是给笔画和擦除用的）。
+         位置也不写 localStorage —— 用户没要求记住它，多一个持久化字段就多一处迁移。 */
+      redraw();
+      syncUI();
       return;
     }
     if (act.mode === 'erase') {
@@ -859,7 +940,7 @@
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onUp);
     /* 鼠标离开画布时把题面那层底收掉，别留在板上 */
-    canvas.addEventListener('pointerleave', function () { setProblemHover(false); });
+    canvas.addEventListener('pointerleave', function () { setProblemGripHot(false); setProblemHover(false); });
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -1595,9 +1676,16 @@
     initPanelDrag: initPanelDrag,
     reflowPanel: reflowPanel,
     problemLayout: problemLayout,
+    view: function () {
+      return { x: state.view.x, y: state.view.y, scale: state.view.scale, w: state.view.w, h: state.view.h };
+    },
+    strokes: function () { return state.strokes; },
     badPoints: function () { return badPoints; },
     setProblemHover: setProblemHover,
+    setProblemGripHot: setProblemGripHot,
+    problemGrip: problemGrip,
     hitProblem: hitProblem,
+    hitProblemHandle: hitProblemHandle,
     drawProblemLayer: drawProblemLayer,
     drawStroke: drawStroke,
     wrapText: wrapText,
