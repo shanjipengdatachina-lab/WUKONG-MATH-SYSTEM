@@ -20,8 +20,9 @@ def src(n)
   File.join(ROOT, 'assets/js', n)
 end
 
+# 数据模块在前、主引擎在后：whiteboard.js 加载末尾就会读 window.WK_ANALYSIS / WK_INK_TEXT
 build([here('wb-harness-head.js'), src('whiteboard-problems.js'), src('whiteboard-analysis.js'),
-       src('whiteboard.js'), here('wb-harness-tail.js')], 'wb-check.js')
+       src('whiteboard-ink-text.js'), src('whiteboard.js'), here('wb-harness-tail.js')], 'wb-check.js')
 
 build([here('wb-harness-head.js'), src('board-link.js'), here('bl-harness-tail.js')],
       'bl-check.js')

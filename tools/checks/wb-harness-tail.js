@@ -1145,4 +1145,181 @@ WB.setGridSize(40);
 WB.setGrid(true);
 WB.redraw();
 
+/* ============================================================
+   15. 手写转文字：只认题面外的笔迹 → 落到题目下方 → 每步带点评
+   ------------------------------------------------------------
+   本版不接真 AI（预置数据），所以最要紧的两条不是"识别准不准"，而是：
+     a) **没写东西就不装** —— 不许凭空变出一段用户没写过的字；
+     b) 面板贴在题目下方、按题目 id 各存各的，不串台。
+   ============================================================ */
+var INK = window.WK_INK_TEXT;
+/* 本节统一用 eq2 的契约（实际, 期望, 说明），起个别名免得每行都写 eq2 */
+var eq = eq2;
+assert(!!INK, '转文字的预置模块已加载');
+assert(INK && INK.TONES.length === 3, '语气标只有三种取值（成立 / 可以更严谨 / 这一步有问题）');
+
+/* ---- 范围判定：题面框外的才算"你写的" ---- */
+var box0 = { x: 100, y: 100, w: 200, h: 80 };
+function st(pts) { return { color: '#000', width: 3, points: pts.map(function (p) { return { x: p[0], y: p[1] }; }) }; }
+var inside = st([[120, 120], [140, 130], [160, 140]]);
+var outside = st([[400, 400], [430, 420], [460, 440]]);
+var half = st([[120, 120], [400, 400]]);        // 正好一半在里面
+var mostlyOut = st([[120, 120], [400, 400], [430, 420]]);   // 1/3 在里面
+eq(INK.outsideStrokes([inside], box0).length, 0, '整条都在题面框里 → 不算（那是圈已知条件）');
+eq(INK.outsideStrokes([outside], box0).length, 1, '整条都在框外 → 算');
+eq(INK.outsideStrokes([half], box0).length, 0, '正好一半在框里的不算（严格过半才收，宁可少收）');
+eq(INK.outsideStrokes([mostlyOut], box0).length, 1, '过半在框外 → 算');
+eq(INK.outsideStrokes([inside, outside, mostlyOut], box0).length, 2, '混在一起也能挑对（3 条里收 2 条）');
+eq(INK.outsideStrokes([], box0).length, 0, '没笔迹就是空的（不炸）');
+eq(INK.outsideStrokes([outside], { x: 0, y: 0, w: 0, h: 0 }).length, 0, '题面框无效时一律不收（别把满板都当思路）');
+
+/* ---- 没写东西就"不装" ---- */
+WB.clearAll();
+WB.applyProblem('7a-01');
+WB.setShowProblem(true);
+WB.state.view.scale = 1;
+WB.redraw();
+
+var inkPanel = elById('wb-ink-text');
+var inkBtn = elById('wb-act-transcribe');
+eq(inkPanel.hidden, true, '默认收着');
+
+WB.toggleTranscribe();
+eq(WB.state.ink.open, true, '点「转文字」→ 打开面板');
+eq(inkPanel.hidden, false, '面板露出来了');
+eq(WB.inkOutside().length, 0, '此刻题面外一笔都没有');
+eq(WB.inkSteps().length, 0, '**不给内容** —— 不许凭空变出一段用户没写过的字');
+assert(inkPanel.innerHTML === undefined || elById('wb-ink-note').textContent.indexOf('还没有笔迹') >= 0,
+  '只给一句实话（实际 ' + elById('wb-ink-note').textContent + '）');
+eq(elById('wb-ink-badge').hidden, true, '没有内容时不挂「演示」标（空面板不装样子）');
+eq(elById('wb-ink-acts').hidden, true, '没有内容时不显示"重新识别 / 移除"（点了也没用）');
+
+/* ---- 题面外写了东西 → 转出分步文字 + 每步点评 ---- */
+WB.clearAll();
+WB.applyProblem('7a-01');
+/* 题面框的位置按算出来的走，不写死坐标 —— 题面宽度是随题目长度变的，
+   写死一组数看着"在里面"，其实早跑到框外去了（第一版就这么错了一回）。 */
+var pb15 = WB.problemLayout();
+draw([[pb15.x + 12, pb15.y + 12], [pb15.x + 40, pb15.y + 24], [pb15.x + 60, pb15.y + 30]]);  // 框里：圈注
+draw([[pb15.x, pb15.y + pb15.h + 120], [pb15.x + 60, pb15.y + pb15.h + 160],
+      [pb15.x + 120, pb15.y + pb15.h + 140]]);                                               // 框外：思路
+eq(WB.inkOutside().length, 1, '题面里的那条不算，题面外的才算（框内 1 条 + 框外 1 条）');
+WB.toggleTranscribe();                                // 先收起
+WB.toggleTranscribe();                                // 再打开 → 这次有内容
+var steps15 = WB.inkSteps();
+assert(steps15.length >= 2, '转出了分步骤的文字（实际 ' + steps15.length + ' 步）');
+assert(steps15.every(function (s) { return s.text && s.tone && s.comment; }),
+  '每一步都有文字、语气标、点评（缺一不可 —— 只转文字不点评就少了一半）');
+assert(steps15.every(function (s) { return INK.TONES.indexOf(s.tone) >= 0; }), '语气标的取值都在三种里');
+eq(elById('wb-ink-badge').hidden, false, '有内容时挂上「演示」标（预置数据不是真识别，必须说清）');
+assert(elById('wb-ink-note').textContent.indexOf('演示') >= 0,
+  '面板里写明这是本机演示数据（实际 ' + elById('wb-ink-note').textContent + '）');
+eq(elById('wb-ink-acts').hidden, false, '有内容时才显示那两个动作按钮');
+var listHtml = elById('wb-ink-steps').innerHTML;
+assert(listHtml.indexOf('can\'t') < 0 && listHtml.indexOf('第 1 步') >= 0, '第 1 步的编号进了内容');
+assert(listHtml.indexOf('contenteditable="true"') >= 0, '文字那一格可编辑（识别一定会出错，必须能改）');
+assert(listHtml.indexOf('data-step="0"') >= 0, '每一格带自己的序号（改哪一步要能对上）');
+assert(listHtml.indexOf('wb-ink__tone') >= 0 && listHtml.indexOf('成立') >= 0, '点评前面挂着语气标');
+
+/* ---- 落在题目下方，跟着题面走 ---- */
+var box15 = WB.problemLayout();
+WB.setShowProblem(true);
+WB.redraw();
+var panelTop = parseFloat(inkPanel.style.top);
+var boxBottomOnScreen = WB.boardToScreen(box15.x, box15.y + box15.h).y;
+assert(panelTop >= boxBottomOnScreen, '面板在题目下方（面板顶 ' + panelTop + ' ≥ 题面底 ' + boxBottomOnScreen + '）');
+var leftBefore = inkPanel.style.left;
+WB.state.problemAt.x = WB.state.problemAt.x + 120;
+WB.redraw();
+assert(inkPanel.style.left !== leftBefore, '题面右移 → 面板跟着右移（都是世界坐标投影出来的）');
+WB.state.problemAt.x = WB.state.problemAt.x - 120;
+WB.setShowProblem(false);
+WB.redraw();
+eq(inkPanel.hidden, true, '题面收起 → 面板一起收起，不留在板上当幽灵');
+WB.setShowProblem(true);
+WB.redraw();
+eq(inkPanel.hidden, false, '题面回来 → 面板也回来');
+
+/* ---- 编辑：改完不能被打断，也不能丢 ---- */
+WB.state.ink.steps[0].text = '我改了第一步';
+var fakeCell = mkEl('div');
+fakeCell.setAttribute('data-step', '0');
+fakeCell.textContent = '我改了第一步';
+elById('wb-ink-steps')._h.input({ target: fakeCell });
+var storedInk = JSON.parse(window.localStorage.getItem(WB.inkKey()));
+eq(storedInk['7a-01'].steps[0].text, '我改了第一步', '改完立刻落盘');
+WB.redraw();
+assert(elById('wb-ink-steps').innerHTML.indexOf('contenteditable') >= 0 &&
+  WB.inkSteps()[0].text === '我改了第一步',
+  '重绘之后编辑内容还在（面板不重建 DOM，光标才不会被输入打断）');
+
+/* ---- 按题目 id 各存各的，不串台 ---- */
+WB.toggleTranscribe();                                // 收起
+WB.applyProblem('7a-02');
+eq(WB.state.ink.open, false, '收起状态下换题，面板不会自己弹出来');
+WB.clearAll();
+draw([[60, 300], [120, 340]]);
+WB.toggleTranscribe();
+assert(WB.inkSteps().length >= 1 && WB.inkSteps()[0].text !== '我改了第一步',
+  '换到另一题 → 面板里是这一题的内容（不是上一题那段）');
+var stored2 = JSON.parse(window.localStorage.getItem(WB.inkKey()));
+assert(stored2['7a-01'] && stored2['7a-02'], '两题各存一份（实际存了 ' + Object.keys(stored2).join('、') + '）');
+eq(stored2['7a-01'].steps[0].text, '我改了第一步', '第一题那份没被第二题覆盖');
+
+/* 换回收起的总览（外部点名）时面板也该跟着收 */
+WB.toggleTranscribe();
+WB.applyExternal({ text: '外部点名的一道题', tag: '', extra: '' });
+eq(WB.state.ink.open, false, '换到外部题面时面板仍是收起的');
+
+/* ---- 重新识别 / 移除 ---- */
+WB.clearAll();
+WB.applyProblem('7a-03');
+var pb15b = WB.problemLayout();
+draw([[pb15b.x, pb15b.y + pb15b.h + 120], [pb15b.x + 60, pb15b.y + pb15b.h + 150]]);
+WB.toggleTranscribe();
+/* 走**真实路径**改一个字：contenteditable 上打字 → input 事件 → 落盘。
+   直接改内存数组不是用户可以走到的路径，拿它当测试会得到一个假结论。 */
+var editCell = mkEl('div');
+editCell.setAttribute('data-step', '0');
+editCell.textContent = '我改的第一步';
+elById('wb-ink-steps')._h.input({ target: editCell });
+WB.toggleTranscribe();                                // 收起
+WB.toggleTranscribe();                                // 重开
+eq(WB.inkSteps()[0].text, '我改的第一步',
+  '重新打开读的是存过的记录 —— 用户改过的内容不会被预置数据冲掉');
+WB.transcribe();
+assert(WB.inkSteps()[0].text !== '我改的第一步',
+  '点「重新识别」→ 重新跑一遍，覆盖掉（实际 "' + WB.inkSteps()[0].text + '"）');
+WB.inkDrop('7a-03');
+eq(WB.inkRecord('7a-03'), null, '移除之后这一题的记录没了');
+eq(WB.inkOutside().length, 1, '但笔迹还在（移除的是文字，不动画布）');
+
+/* ---- 坏数据不崩 ---- */
+window.localStorage.setItem(WB.inkKey(), '{不是 JSON');
+eq(WB.inkRecord('7a-01'), null, '存的不是 JSON → 当没转过（不崩）');
+window.localStorage.setItem(WB.inkKey(), JSON.stringify({ '7a-01': { steps: [{ text: 'x', tone: '乱写', comment: '' }] } }));
+var rec15 = WB.inkRecord('7a-01');
+eq(rec15 && rec15[0].tone, 'ok', '认不出的语气标回落成立（否则界面上是个没颜色的怪标）');
+window.localStorage.setItem(WB.inkKey(), JSON.stringify({ '7a-01': { steps: [] } }));
+eq(WB.inkRecord('7a-01'), null, '空步骤等于没转过');
+
+/* ---- 「清空画布」只清笔迹，不动已经转出来的文字 ---- */
+window.localStorage.setItem(WB.inkKey(), JSON.stringify({}));
+WB.clearAll();
+WB.applyProblem('7a-13');
+draw([[60, 300], [120, 340]]);
+WB.toggleTranscribe();
+var inkCount15 = WB.inkSteps().length;
+WB.clearAll();
+eq(WB.state.strokes.length, 0, '清空画布：笔迹没了');
+eq(WB.inkSteps().length, inkCount15, '但转出来的文字还留着（那是你存下来的东西，要删用面板上的「移除」）');
+
+/* ---- 收尾 ---- */
+WB.clearAll();
+WB.applyProblem(null);
+WB.state.ink.open = false;
+WB.state.ink.steps = [];
+window.localStorage.removeItem(WB.inkKey());
+WB.redraw();
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

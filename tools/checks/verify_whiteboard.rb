@@ -140,9 +140,13 @@ issues << '激活态又用回「圆圈描边」' if
   html[/\.wb-dock__btn\.is-on\{[^}]*border-color:var\(--math-primary-200\)/]
 issues << '工具条又变回胶囊' if html[/\.wb-dock\{[^}]*border-radius:999px/]
 issues << '工具条按钮又变回圆形' if html[/\.wb-dock__btn\{[^}]*border-radius:999px/]
-# 保留的圆只应是语义上该圆的：色板（含色板内圆）、笔迹预览点、橡皮预览环、册筛选胶囊
-round_ok = html.scan(/border-radius:999px/).length
-issues << "圆形用法数量异常（#{round_ok}）" unless round_ok == 6
+# 保留的圆只应是语义上该圆的：色板（含色板内圆）、笔迹预览点、橡皮预览环、册筛选胶囊。
+# **只数共享区（wb-styles）**：要守的是"工具条 / 浮层这些共用控件别变回胶囊"，
+# 而回归风险只存在于共享区。页面自己的小控件用胶囊是合理的
+# （「演示」标、语气标这种小标签本来就是圆的），数进去只会逼着后来人改预期数字。
+shared_css = html[/<style id="wb-styles">(.*?)<\/style>/m, 1].to_s
+round_ok = shared_css.scan(/border-radius:999px/).length
+issues << "共享区里的圆形用法数量异常（#{round_ok}，应为 6）" unless round_ok == 6
 
 # 悬浮提示：自绘气泡替掉系统灰框，工具条上不再挂 title
 dock_html = html[/<div class="wb-dock".*?<div class="wb-pop"/m].to_s
@@ -187,7 +191,7 @@ issues << '分析 / 答案的样式跑进了 wb-styles（会被抄到图谱当�
   html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-act\{/m]
 issues << '分析 / 答案的样式没放进独立 style 块' unless html.include?('<style id="wb-analysis-styles">')
 issues << '分析 / 答案按钮挂回了系统 title / 自绘提示（它们自己有字，不需要）' if
-  html[/id="wb-act-(analysis|answer)"[^>]*data-wb-tip/]
+  html[/id="wb-act-(analysis|answer|transcribe)"[^>]*data-wb-tip/]
 wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 issues << '笔粗 / 橡皮按钮仍用系统 title' if wbjs.include?('title="笔粗') || wbjs.include?('title="橡皮')
 
@@ -217,6 +221,36 @@ issues << '网格疏密是"顺手把网格打开"的（网格关着时选一档�
   wbjs.include?('if (!state.grid) state.grid = true;')
 issues << '网格疏密样式跑进了 wb-styles（会被抄到图谱当死规则）' if
   html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-grid\{/m]
+
+# ---------- 手写转文字（题面右边第三个按钮 + 题面下方的面板） ----------
+# 这一层**没有真 AI**：内容全是预置的。所以最要紧的守线是"必须说清这是演示"，
+# 以及"没写东西时不许凭空变出内容"（后者在断言里守，这里守页面上的那几处文案与结构）。
+%w[wb-act-transcribe wb-ink-text wb-ink-steps wb-ink-note wb-ink-badge wb-ink-acts
+   wb-ink-close wb-ink-again wb-ink-clear].each do |id|
+  issues << "手写转文字缺挂点 ##{id}" unless html.include?(%(id="#{id}"))
+end
+issues << '转文字面板没有默认收起（会一进页面就浮在板上）' unless
+  html[/id="wb-ink-text"[^>]*hidden/]
+issues << '转文字面板没挂在题面同一层（应该是 .wb-canvas-wrap 的绝对定位子元素）' unless
+  html.include?('.wb-ink{') && html.include?('position:absolute')
+issues << '转文字面板缺「演示」标（预置数据必须说清，不许假装真识别）' unless
+  html.include?('id="wb-ink-badge">演示<') || html.include?('id="wb-ink-badge">演示')
+issues << '转文字面板缺一句说明挂点（#wb-ink-note）' unless html.include?('id="wb-ink-note"')
+issues << '转文字样式跑进了 wb-styles（会被抄到图谱当死规则）' if
+  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-ink\{/m]
+inkjs = File.read(File.join(ROOT, 'assets/js/whiteboard-ink-text.js'), encoding: 'UTF-8')
+issues << '转文字的数据模块没被引用（应该是独立文件、界面与内容分开）' unless
+  html.include?('whiteboard-ink-text.js') && html.index('whiteboard-ink-text.js') < html.index('assets/js/whiteboard.js')
+issues << '转文字缺少"两个可替换的函数"（接真服务时只换它们）' unless
+  inkjs.include?('function recognize(') && inkjs.include?('function review(')
+issues << '转文字没写清"本版不接真 AI"' unless inkjs.include?('不接真 AI')
+issues << '转文字没守住"只认题面框外的笔迹"' unless inkjs.include?('function outsideStrokes(')
+issues << '转文字没写清"没写东西就不装"' unless inkjs.include?('一笔都没有时不装')
+# 预置数据里不许出现"这一步有问题" —— 没有真模型就不判学生对错（语气标里支持，数据里不用）
+issues << '预置数据里出现了 warn（没有真模型就不该判学生对错）' if
+  inkjs[/var PRESET = \{[\s\S]*?\n  \};/].to_s.include?("'warn'")
+issues << '文字那一格不是可编辑的（识别一定会出错，必须能改）' unless
+  wbjs.include?('contenteditable')
 # 设置面板又高了一行，矮屏上必须有个"放不下就自己滚"的兜底，不能把顶上一截切掉
 issues << '设置面板没有兜底滚动（矮屏上会被切掉顶部，够不着上面那一行）' unless
   html[/\.wb-pop\{max-height:calc\(100vh - \d+px\);overflow-y:auto/]

@@ -160,6 +160,13 @@
       showNotes: true,            // 默认展示注释（设计 §2 #7）
       steps: []                   // [{ wx, wy, text }]，长度 0~5
     },
+    ink: {                        // 「手写转文字」这一层（同样是 DOM 浮层）
+      open: false,
+      problemId: null,            // 这份文字属于哪道题
+      steps: [],                  // [{ text, tone, comment }]
+      source: '',                 // preset | empty | none —— 决定要不要挂「演示」标
+      notice: ''                  // 面板顶部那句实话
+    },
     strokes: [],                 // { type?, color, width, highlight?, pressured?, points:[{x,y,p}] }
     actions: [],
     redo: [],
@@ -714,18 +721,25 @@
     return { has: !!data && !!state.showProblem && box.h > 0, box: box };
   }
 
-  /* 两个按钮的激活态：分析开 / 答案开，各自亮，互不干扰 */
+  /* 两个按钮的激活态：分析开 / 答案开，各自亮，互不干扰
+     （第三个按钮"转文字"见下面的 syncActs 扩展） */
   function syncActs() {
     press(byId('wb-act-analysis'), state.analysis.open);
     press(byId('wb-act-answer'), state.analysis.answerOpen);
+    press(byId('wb-act-transcribe'), state.ink.open);
   }
 
   /* 浮层落位：全部由世界坐标投影出来，所以平移 / 缩放后重排一次就跟着板走了。
      redraw() 结尾会调它，因此不需要额外的 resize 监听。 */
   function layoutOverlays(ctx) {
-    var v = state.view;
     ctx = ctx || overlayCtx();
+    layoutActs(ctx);
+    layoutBelow(ctx);
+  }
 
+  /* 题面右上角那组按钮 */
+  function layoutActs(ctx) {
+    var v = state.view;
     var acts = byId('wb-acts');
     if (!acts) return;
     /* 板上没题、或题面被收起 → 这一层跟着收起，不留在板上当幽灵 */
@@ -743,6 +757,34 @@
     acts.style.top = Math.min(Math.max(4, anchor.y), maxY) + 'px';
   }
 
+  /* 题目下方竖排的那几块：谁开谁占位，依次往下，互不重叠。
+     目前只有「手写转文字」一块；「台阶框」「答案块」按同一张登记表挂进来即可，
+     不用各自去算位置 —— 三块都往下挂，各算各的必然会互相压。 */
+  function belowBlocks() {
+    return [
+      { el: byId('wb-ink-text'), open: state.ink.open }
+    ];
+  }
+
+  function layoutBelow(ctx) {
+    var v = state.view;
+    var below = ctx.box.y + ctx.box.h + 12;
+    belowBlocks().forEach(function (block) {
+      var el = block.el;
+      if (!el || !el.style) return;
+      toggleHidden(el, !ctx.has || !block.open);
+      if (el.hidden) return;
+      var at = boardToScreen(ctx.box.x, below);
+      var bw = el.offsetWidth || 280;
+      var bh = el.offsetHeight || 120;
+      var maxX = Math.max(4, (wrap.clientWidth || v.w) - bw - 4);
+      var maxY = Math.max(4, (wrap.clientHeight || v.h) - bh - 4);
+      el.style.left = Math.min(Math.max(4, at.x), maxX) + 'px';
+      el.style.top = Math.min(Math.max(4, at.y), maxY) + 'px';
+      below += bh + 10;
+    });
+  }
+
   /* 这两个开关在 Task 3 / Task 4 里长出内容；先让按钮有个真实反应，
      免得 Task 2 交付的是两个点不动的装饰。 */
   function toggleAnalysis() {
@@ -756,6 +798,160 @@
     state.analysis.answerOpen = !state.analysis.answerOpen;
     redraw();
     return state.analysis.answerOpen;
+  }
+
+  /* ---------- 手写转文字：识别 + 分步点评 ----------
+     本版不接真 AI：文字与点评都来自 assets/js/whiteboard-ink-text.js 的预置数据，
+     接真服务时只换那个模块里的 recognize() / review() 两个函数，这里一行不用动。 */
+
+  var INK_KEY = 'wkmath.whiteboard.inktext';
+  var WK_INK = window.WK_INK_TEXT;
+
+  /* 按题目 id 分开放，与笔迹分开存：
+     「清空画布」只清笔迹，不该把已经转出来的文字一起抹掉 —— 那是你存下来的东西。 */
+  function inkStore() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(INK_KEY); } catch (e) { return {}; }
+    if (!raw) return {};
+    var d;
+    try { d = JSON.parse(raw); } catch (e) { return {}; }
+    return (d && typeof d === 'object' && !Array.isArray(d)) ? d : {};
+  }
+
+  function inkWrite(store) {
+    try { window.localStorage.setItem(INK_KEY, JSON.stringify(store)); } catch (e) { /* 忽略 */ }
+  }
+
+  /* 读某一题的记录。坏数据一律当"没转过"，不崩也不显示半截 */
+  function inkRecord(problemId) {
+    if (!problemId) return null;
+    var rec = inkStore()[problemId];
+    if (!rec || !rec.steps || !rec.steps.length) return null;
+    return rec.steps.map(function (s) {
+      var tone = (s && s.tone) || 'ok';
+      if (!WK_INK || WK_INK.TONES.indexOf(tone) < 0) tone = 'ok';
+      return {
+        text: String((s && s.text) != null ? s.text : ''),
+        tone: tone,
+        comment: String((s && s.comment) || '')
+      };
+    });
+  }
+
+  function inkSave(problemId, steps) {
+    if (!problemId) return false;
+    var store = inkStore();
+    store[problemId] = {
+      steps: steps.map(function (s) { return { text: s.text, tone: s.tone, comment: s.comment }; })
+    };
+    inkWrite(store);
+    return true;
+  }
+
+  function inkDrop(problemId) {
+    if (!problemId) return false;
+    var store = inkStore();
+    if (!store[problemId]) return false;
+    delete store[problemId];
+    inkWrite(store);
+    return true;
+  }
+
+  /* 题面框以外的笔迹 —— 一条都没有就**不装**（不许凭空变出一段用户没写过的字） */
+  function inkOutside() {
+    if (!WK_INK) return [];
+    return WK_INK.outsideStrokes(state.strokes, problemLayout());
+  }
+
+  function runTranscribe() {
+    var id = state.problemId;
+    /* 面板里那份文字属于哪道题，以**打开这一刻**的题为准。
+       不跟着走的话，编辑会存到上一题名下（断言抓出来过：切到 7a-03 改字，却写进了 7a-02）。 */
+    state.ink.problemId = id;
+    var outside = inkOutside();
+    if (!outside.length) {
+      state.ink.steps = [];
+      state.ink.source = 'empty';
+      state.ink.notice = '题面外还没有笔迹。写下你的思路，再点一次。';
+      inkRender();
+      return false;
+    }
+    var res = WK_INK ? WK_INK.recognize(id, outside) : { ok: false };
+    if (!res.ok) {
+      state.ink.steps = [];
+      state.ink.source = 'none';
+      state.ink.notice = (WK_INK && WK_INK.NO_PRESET) || '这道题还没有演示数据。';
+      inkRender();
+      return false;
+    }
+    state.ink.steps = (res.steps || []).map(function (s, i) {
+      var rv = WK_INK.review(id, i, s.text) || {};
+      return { text: s.text, tone: rv.tone || 'ok', comment: rv.comment || '' };
+    });
+    state.ink.source = 'preset';
+    state.ink.notice = WK_INK.DEMO_NOTE;
+    inkSave(id, state.ink.steps);
+    inkRender();
+    return true;
+  }
+
+  function inkRowHtml(s, i) {
+    var tone = (WK_INK && WK_INK.TONES.indexOf(s.tone) >= 0) ? s.tone : 'ok';
+    return '<li class="wb-ink__step" data-tone="' + tone + '">' +
+      '<span class="wb-ink__no">第 ' + (i + 1) + ' 步</span>' +
+      '<div class="wb-ink__text" contenteditable="true" role="textbox" tabindex="0"' +
+      ' data-step="' + i + '" aria-label="第 ' + (i + 1) + ' 步的文字">' + esc(s.text) + '</div>' +
+      (s.comment
+        ? '<p class="wb-ink__cmt"><span class="wb-ink__tone">' +
+          esc((WK_INK && WK_INK.TONE_LABEL[tone]) || '') + '</span>' + esc(s.comment) + '</p>'
+        : '') +
+      '</li>';
+  }
+
+  /* 面板内容由数据重建。文字那格是 contenteditable ——
+     所以**输入过程中绝不重画**（重画会重建 DOM、光标就断了）：输入只写数据。 */
+  function inkRender() {
+    setText(byId('wb-ink-note'), state.ink.notice || '');
+    toggleHidden(byId('wb-ink-badge'), state.ink.source !== 'preset');
+    var list = byId('wb-ink-steps');
+    if (list) {
+      list.innerHTML = (state.ink.steps || []).map(inkRowHtml).join('');
+    }
+    var acts = byId('wb-ink-acts');
+    toggleHidden(acts, !state.ink.steps.length);
+    syncActs();
+  }
+
+  /* 打开时：有记录就用记录，没有就当场转一次 */
+  function inkLoad() {
+    state.ink.problemId = state.problemId;
+    var rec = inkRecord(state.ink.problemId);
+    if (rec) {
+      state.ink.steps = rec;
+      state.ink.source = 'preset';
+      state.ink.notice = (WK_INK && WK_INK.DEMO_NOTE) || '';
+      inkRender();
+      return true;
+    }
+    return runTranscribe();
+  }
+
+  /* 换题了：面板开着就换成这一题的记录 / 重新识别。
+     不这么做的话，切到另一题还挂着上一题的文字 —— 那是串台。 */
+  function inkSyncProblem() {
+    if (!state.ink.open) return false;
+    state.ink.problemId = state.problemId;
+    inkLoad();
+    scheduleRedraw();
+    return true;
+  }
+
+  function toggleTranscribe() {
+    state.ink.open = !state.ink.open;
+    if (state.ink.open) inkLoad();
+    else inkRender();
+    redraw();
+    return state.ink.open;
   }
 
   var rafPending = false;
@@ -1326,6 +1522,46 @@
     if (actsAnswer && actsAnswer.addEventListener) {
       actsAnswer.addEventListener('click', function () { toggleAnswer(); });
     }
+    /* 第三个按钮：手写转文字 */
+    var actsInk = byId('wb-act-transcribe');
+    if (actsInk && actsInk.addEventListener) {
+      actsInk.addEventListener('click', function () { toggleTranscribe(); });
+    }
+    var inkClose = byId('wb-ink-close');
+    if (inkClose && inkClose.addEventListener) {
+      inkClose.addEventListener('click', function () { toggleTranscribe(); });
+    }
+    /* 重新识别：再跑一遍（会覆盖这一题存过的文字） */
+    var inkAgain = byId('wb-ink-again');
+    if (inkAgain && inkAgain.addEventListener) {
+      inkAgain.addEventListener('click', function () { runTranscribe(); redraw(); });
+    }
+    /* 移除：删掉这一题的记录，面板跟着收起 */
+    var inkClear = byId('wb-ink-clear');
+    if (inkClear && inkClear.addEventListener) {
+      inkClear.addEventListener('click', function () {
+        inkDrop(state.problemId);
+        state.ink.steps = [];
+        state.ink.source = '';
+        state.ink.notice = '';
+        state.ink.open = false;
+        inkRender();
+        redraw();
+      });
+    }
+    /* 文字那一格是 contenteditable：用委托接输入，输入只写数据、不重画 ——
+       重画会把 DOM 重建，光标就断了（正打字时最烦人的那种 bug）。 */
+    var inkSteps = byId('wb-ink-steps');
+    if (inkSteps && inkSteps.addEventListener) {
+      inkSteps.addEventListener('input', function (e) {
+        var t = e && e.target;
+        if (!t || !t.getAttribute) return;
+        var i = parseInt(t.getAttribute('data-step'), 10);
+        if (!(i >= 0) || !state.ink.steps[i]) return;
+        state.ink.steps[i].text = String(t.textContent == null ? '' : t.textContent);
+        inkSave(state.ink.problemId || state.problemId, state.ink.steps);
+      });
+    }
     canvas.addEventListener('touchcancel', onTouchEnd);
     if (wrap && wrap.addEventListener) {
       wrap.addEventListener('pointerdown', function (e) {
@@ -1428,6 +1664,7 @@
     renderBank();
     persist();
     syncUI();
+    inkSyncProblem();       // 面板开着就换成这一题的记录，别让上一题的文字留在板上
     return p;
   }
 
@@ -1440,6 +1677,7 @@
     renderBank();
     persist();
     syncUI();
+    inkSyncProblem();
     return state.external;
   }
 
@@ -2216,6 +2454,15 @@
     overlayCtx: overlayCtx,
     toggleAnalysis: toggleAnalysis,
     toggleAnswer: toggleAnswer,
+    toggleTranscribe: toggleTranscribe,
+    transcribe: runTranscribe,
+    inkOutside: inkOutside,
+    inkSteps: function () { return state.ink.steps; },
+    inkRecord: inkRecord,
+    inkDrop: inkDrop,
+    inkLoad: inkLoad,
+    inkKey: function () { return INK_KEY; },
+    belowBlocks: belowBlocks,
     view: function () {
       return { x: state.view.x, y: state.view.y, scale: state.view.scale, w: state.view.w, h: state.view.h };
     },

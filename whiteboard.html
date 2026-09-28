@@ -530,6 +530,23 @@
           <div class="wb-acts" id="wb-acts" role="group" aria-label="对这道题做什么" hidden>
             <button type="button" class="wb-act" id="wb-act-analysis" aria-label="分析这道题">分析</button>
             <button type="button" class="wb-act" id="wb-act-answer" aria-label="看这道题的答案">答案</button>
+            <button type="button" class="wb-act" id="wb-act-transcribe" aria-label="把手写思路转成电子文字">转文字</button>
+          </div>
+
+          <!-- 题目下方那一块：手写转文字。位置由白板按世界坐标投影出来，
+               与「台阶框」「答案块」共用一张"往下排"的登记表（见 belowBlocks）。 -->
+          <div class="wb-ink" id="wb-ink-text" role="group" aria-label="手写转文字" hidden>
+            <div class="wb-ink__head">
+              <span class="wb-ink__title">手写转文字</span>
+              <span class="wb-ink__badge" id="wb-ink-badge">演示</span>
+              <button type="button" class="wb-ink__close" id="wb-ink-close" aria-label="收起转文字面板">×</button>
+            </div>
+            <p class="wb-ink__note" id="wb-ink-note"></p>
+            <ol class="wb-ink__steps" id="wb-ink-steps"></ol>
+            <div class="wb-ink__acts" id="wb-ink-acts">
+              <button type="button" class="wb-ink__btn" id="wb-ink-again">重新识别</button>
+              <button type="button" class="wb-ink__btn" id="wb-ink-clear">移除</button>
+            </div>
           </div>
         </div>
 
@@ -620,12 +637,67 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 .wb-grid[data-wb-grid="20"] .wb-grid__chip{background-size:4px 4px}
 .wb-grid[data-wb-grid="40"] .wb-grid__chip{background-size:6px 6px}
 .wb-grid[data-wb-grid="80"] .wb-grid__chip{background-size:9px 9px}
+
+/* ---------- 题面下方：手写转文字 ----------
+   位置由白板按世界坐标投影（见 layoutBelow），这里只管长相。
+   文字那格是 contenteditable —— 识别一定会出错，必须能改。 */
+.wb-ink{
+  position:absolute;z-index:5;width:min(360px,calc(100% - 16px));
+  padding:10px 12px 11px;border:1px solid var(--math-border);border-radius:var(--math-radius-md,10px);
+  background:var(--math-background);box-shadow:0 10px 28px rgba(15,23,42,.14);
+}
+.wb-ink[hidden]{display:none}
+.wb-ink__head{display:flex;align-items:center;gap:7px}
+.wb-ink__title{font-size:12.5px;font-weight:600;color:var(--math-foreground)}
+.wb-ink__badge{
+  padding:1px 6px;border-radius:999px;background:var(--math-surface);
+  font-size:10.5px;letter-spacing:.06em;color:var(--math-ink-3);
+}
+.wb-ink__badge[hidden]{display:none}
+.wb-ink__close{
+  margin-left:auto;width:22px;height:22px;display:grid;place-items:center;
+  border:0;border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-3);
+  font-size:15px;line-height:1;cursor:pointer;
+}
+.wb-ink__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-ink__note{margin:7px 0 0;font-size:11.5px;line-height:1.65;color:var(--math-ink-3)}
+.wb-ink__steps{margin:8px 0 0;padding:0;list-style:none}
+.wb-ink__step{padding:7px 0;border-top:1px solid var(--math-border)}
+.wb-ink__step:first-child{border-top:0;padding-top:2px}
+.wb-ink__no{
+  display:block;font-family:var(--math-font-mono);font-size:10.5px;
+  letter-spacing:.06em;color:var(--math-ink-4);
+}
+.wb-ink__text{
+  margin-top:3px;padding:3px 5px;border-radius:var(--math-radius-sm);
+  font-size:13.5px;line-height:1.7;color:var(--math-foreground);
+  background:var(--math-surface);outline:none;white-space:pre-wrap;
+}
+.wb-ink__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint)}
+.wb-ink__cmt{margin:5px 0 0;font-size:11.5px;line-height:1.7;color:var(--math-ink-2)}
+.wb-ink__tone{
+  display:inline-block;margin-right:5px;padding:0 5px;border-radius:999px;
+  font-size:10.5px;line-height:1.6;background:var(--math-surface);color:var(--math-ink-3);
+}
+/* 语气标只有三种，颜色跟着走 —— 扫一眼就知道哪一步要留意 */
+.wb-ink__step[data-tone="ok"] .wb-ink__tone{color:var(--math-state-success)}
+.wb-ink__step[data-tone="careful"] .wb-ink__tone{color:var(--math-state-warning,#b45309)}
+.wb-ink__step[data-tone="warn"] .wb-ink__tone{color:var(--math-state-error)}
+.wb-ink__acts{display:flex;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--math-border)}
+.wb-ink__acts[hidden]{display:none}
+.wb-ink__btn{
+  height:26px;padding:0 10px;border:1px solid var(--math-border);border-radius:6px;
+  background:none;font:inherit;font-size:12px;line-height:1;color:var(--math-ink-3);cursor:pointer;
+}
+.wb-ink__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-ink__btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
     </style>
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/ide-shell.js"></script>
     <script src="assets/js/board-link.js"></script>
     <script src="assets/js/whiteboard-problems.js"></script>
     <script src="assets/js/whiteboard-analysis.js"></script>
+    <script src="assets/js/whiteboard-ink-text.js"></script>
     <script src="assets/js/whiteboard.js"></script>
   </body>
 </html>

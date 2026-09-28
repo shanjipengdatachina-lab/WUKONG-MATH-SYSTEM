@@ -159,6 +159,14 @@ for (var stepI = 0; stepI < 5; stepI++) {
 elById('wb-answer').hidden = true;
 elById('wb-answer-toggle').setAttribute('aria-pressed', 'true');
 
+/* 「手写转文字」那一层：按真实 HTML 的初始状态预置 ——
+   面板与「演示」标都是收起的，两个动作按钮跟着面板走。 */
+elById('wb-act-transcribe').setAttribute('aria-label', '把手写思路转成电子文字');
+elById('wb-ink-text').hidden = true;
+elById('wb-ink-text').setAttribute('hidden', 'hidden');
+elById('wb-ink-badge').hidden = true;
+elById('wb-ink-acts').hidden = true;
+
 var window = {
   devicePixelRatio: 2,
   localStorage: {
