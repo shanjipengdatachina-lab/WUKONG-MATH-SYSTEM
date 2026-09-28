@@ -154,12 +154,12 @@
     problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
     tipAt: null,                  // 笔尖 / 橡皮圆圈的位置（画布内 CSS 像素）；null = 不画
     external: null,              // 其它页面送来的内容 { text, tag, extra }
-    analysis: {                   // 「分析 / 答案」这一层（DOM 浮层，不是画在板上的墨）
-      open: false,                // 台阶框是否展开
+    analysis: {                 // 「分析 / 答案」这一层（DOM 浮层）
+      open: false,                // 思路框是否展开
       answerOpen: false,          // 答案块是否展开
-      showNotes: true,            // 默认展示注释（设计 §2 #7）
-      steps: []                   // [{ wx, wy, text }]，长度 0~5
+      showNotes: true             // 注释默认显示（用户原话："点答案之后，有注释就给它注释上"）
     },
+    uploadTip: false,           // 「上传我的题」的实话便签是否展开（一次性的说明，不落盘）
     ink: {                        // 「手写转文字」这一层（同样是 DOM 浮层）
       open: false,
       problemId: null,            // 这份文字属于哪道题
@@ -686,11 +686,12 @@
     for (var i = 0; i < state.strokes.length; i++) drawStroke(state.strokes[i]);
     ctx.restore();
     drawTipRing();
-    /* 浮层（题面旁两个按钮 / 台阶框 / 答案块）都是 DOM，画布管不到它们；
+    /* 浮层（题面上方三个按钮 / 右侧思路框 / 下方答案块与转写）都是 DOM，画布管不到它们；
        它们的位置全部由世界坐标投影出来，所以每次重绘后重排一次就跟着板走了。
        注意：必须放在**画完题面之后** —— drawProblemLayer 里才会算出最新的题面矩形，
        摆在它前面就会慢一帧（这一处踩过：断言报"题面右移后按钮没跟着动"）。 */
-    renderSteps(overlayCtx());
+    renderThink(overlayCtx());
+    renderAnswer(overlayCtx());
     layoutOverlays();
   }
 
@@ -728,17 +729,22 @@
     press(byId('wb-act-analysis'), state.analysis.open);
     press(byId('wb-act-answer'), state.analysis.answerOpen);
     press(byId('wb-act-transcribe'), state.ink.open);
+    press(byId('wb-act-upload'), !!state.uploadTip);
   }
 
   /* 浮层落位：全部由世界坐标投影出来，所以平移 / 缩放后重排一次就跟着板走了。
-     redraw() 结尾会调它，因此不需要额外的 resize 监听。 */
+     redraw() 结尾会调它，因此不需要额外的 resize 监听。
+     顺序有讲究：下面那几块先摆（思路框要让开它们算出来的宽度）→ 思路框最后摆。 */
   function layoutOverlays(ctx) {
     ctx = ctx || overlayCtx();
     layoutActs(ctx);
+    layoutUploadNote(ctx);
     layoutBelow(ctx);
+    layoutThink(ctx);
   }
 
-  /* 题面右上角那组按钮 */
+  /* 题目前面那三个按钮：**题目上方、左对齐**（用户定的位置）。
+     为什么不继续摆右边：右边那一列留给「思路」框 —— 一列"看思路"、一列"对答案"，各管一件事。 */
   function layoutActs(ctx) {
     var v = state.view;
     var acts = byId('wb-acts');
@@ -748,26 +754,69 @@
     syncActs();
     if (acts.hidden || !acts.style) return;
 
-    var anchor = boardToScreen(ctx.box.x + ctx.box.w + 10, ctx.box.y);
-    var aw = acts.offsetWidth || 108;
+    var aw = acts.offsetWidth || 132;
     var ah = acts.offsetHeight || 26;
+    var at = boardToScreen(ctx.box.x, ctx.box.y);
+    var anchor = { x: at.x, y: at.y - ah - 10 };
     /* 压回可视区：宁可"不再贴着题面"，也不能让按钮跑出画布按不到 */
     var maxX = Math.max(4, (wrap.clientWidth || v.w) - aw - 4);
     var maxY = Math.max(4, (wrap.clientHeight || v.h) - ah - 4);
     acts.style.left = Math.min(Math.max(4, anchor.x), maxX) + 'px';
     acts.style.top = Math.min(Math.max(4, anchor.y), maxY) + 'px';
+  }
 
-    /* 台阶框也由世界坐标投影出来 —— 和上面两个按钮同一套算法。
-       位置只在第一次落位时算，之后跟着学生拖的结果走（见 openAnalysis）。 */
-    for (var si = 0; si < MAX_STEPS; si++) {
-      var sb = byId('wb-step-' + si);
-      if (!sb || sb.hidden || !sb.style) continue;
-      var st = state.analysis.steps[si];
-      if (!st || st.wx === null) continue;
-      var sp = boardToScreen(st.wx, st.wy);
-      sb.style.left = Math.round(sp.x) + 'px';
-      sb.style.top = Math.round(sp.y) + 'px';
-    }
+  /* 「上传我的题」的实话便签：贴在按钮组正下方（点了才出现）。
+     板面一收（题面被收起）就跟着收 —— 便签是挂在题上的，不该单独留在板上。 */
+  function layoutUploadNote(ctx) {
+    var tip = byId('wb-upload-tip');
+    if (!tip || !tip.style) return;
+    toggleHidden(tip, !ctx.has || !state.uploadTip);
+    if (tip.hidden) return;
+    var v = state.view;
+    var acts = byId('wb-acts');
+    var w = tip.offsetWidth || 260;
+    var h = tip.offsetHeight || 96;
+    var x = acts && acts.style && acts.style.left ? parseFloat(acts.style.left) : 4;
+    var y = acts && acts.style && acts.style.top
+      ? parseFloat(acts.style.top) + (acts.offsetHeight || 26) + 6
+      : 4;
+    var maxX = Math.max(4, (wrap.clientWidth || v.w) - w - 4);
+    var maxY = Math.max(4, (wrap.clientHeight || v.h) - h - 4);
+    tip.style.left = Math.min(Math.max(4, x), maxX) + 'px';
+    tip.style.top = Math.min(Math.max(4, y), maxY) + 'px';
+  }
+
+  /* 整块占到的右缘：题面右缘，和**题目下方那几块**各自的右缘，取最靠右的那个。
+     为什么不只按题面右缘算：下面那几块（答案 300、转写 360）比窄题面还宽，
+     只按题面右缘摆的话思路框会压在答案上 —— 真机复核抓到的（两块 rect 相交 180×287px）。
+     思路框必须让开它们，才既"跟着整块动"又不叠上去。 */
+  function groupRight(ctx) {
+    var right = boardToScreen(ctx.box.x + ctx.box.w, ctx.box.y).x;
+    belowBlocks().forEach(function (b) {
+      var el = b.el;
+      if (!el || !el.style || el.hidden) return;
+      var l = parseFloat(el.style.left);
+      if (isNaN(l)) return;
+      var r = l + (el.offsetWidth || 280);
+      if (r > right) right = r;
+    });
+    return right;
+  }
+
+  /* 思路框：贴在**整块**的右边（用户原话："就在画板的右边，就直接出一个框"）。
+     它跟题面共用一份位置，所以题目一挪它就跟着挪 —— 这就是"整块动"。 */
+  function layoutThink(ctx) {
+    var v = state.view;
+    var el = byId('wb-think');
+    if (!el || !el.style) return;
+    if (el.hidden) return;
+    var w = el.offsetWidth || 238;
+    var h = el.offsetHeight || 160;
+    var at = boardToScreen(ctx.box.x, ctx.box.y);
+    var maxX = Math.max(4, (wrap.clientWidth || v.w) - w - 4);
+    var maxY = Math.max(4, (wrap.clientHeight || v.h) - h - 4);
+    el.style.left = Math.min(Math.max(4, groupRight(ctx) + 16), maxX) + 'px';
+    el.style.top = Math.min(Math.max(4, at.y), maxY) + 'px';
   }
 
   /* 题目下方竖排的那几块：谁开谁占位，依次往下，互不重叠。
@@ -775,6 +824,9 @@
      不用各自去算位置 —— 三块都往下挂，各算各的必然会互相压。 */
   function belowBlocks() {
     return [
+      /* 答案直接写在题目下面（用户原话："就直接在这个题下面……就直接在白板上写了"），
+         转写文字排在它下面 —— 顺序就是「先对答案，再看自己的推导」。 */
+      { el: byId('wb-answer'), open: state.analysis.answerOpen },
       { el: byId('wb-ink-text'), open: state.ink.open }
     ];
   }
@@ -798,8 +850,10 @@
     });
   }
 
-  /* 这两个开关在 Task 3 / Task 4 里长出内容；先让按钮有个真实反应，
-     免得 Task 2 交付的是两个点不动的装饰。 */
+  /* 这两个按钮各自开关自己那一块（DOM 上就是两个独立浮层）。
+     唯一的联动：点「分析」时先把「答案」收起来 ——
+     思路框和答案上下/左右同时摆着，孩子会直接抄答案，前面那几步就没人走了（设计 §2 #6）。
+     反过来点「答案」不动思路框：此刻他已经在"对答案"了，把思路收掉反而多余。 */
   function toggleAnalysis() {
     if (state.analysis.open) closeAnalysis(); else openAnalysis();
     return state.analysis.open;
@@ -808,153 +862,201 @@
   function toggleAnswer() {
     state.analysis.answerOpen = !state.analysis.answerOpen;
     redraw();
+    persist();
     return state.analysis.answerOpen;
   }
 
-  /* ---------- 台阶框 ---------- */
+  /* ---------- 思路框 / 答案块：都挂在题目上，位置只有一份 ----------
+     用户看过第一版（4~5 个可写的"台阶框"）后明确否掉了：
+     「分析不用搞那么多台阶框……就直接出一个框，主体思路是一二三四五六七八，它目的就是看」。
+     所以现在：**分析 = 题目右侧一个只读的框**，里面是编号的思路；
+     **答案 = 题目下方直接写出来的标准答案**（含每步的 AI 注释，可收起）。 */
 
-  var MAX_STEPS = 5;
+  var MAX_THINK_STEPS = 8;   /* "一二三四五六七八"——最多八步 */
 
-  /* 台阶的引导语：只给"该往哪儿看"。本版是预置数据，接真服务只换这一个调用点。 */
-  function stepGuides() {
-    var api = (typeof window !== 'undefined' && window.WK_ANALYSIS) ? window.WK_ANALYSIS : null;
+  /* 分析数据来自 assets/js/whiteboard-analysis.js 的预置数据，接真服务只换那一个模块。
+     「分析里不许出现答案」那条由断言守着（设计 §2 #6），这里不额外过滤。 */
+  function analysisApi() {
+    return (typeof window !== 'undefined' && window.WK_ANALYSIS) ? window.WK_ANALYSIS : null;
+  }
+  function thinkSteps() {
+    var api = analysisApi();
     if (!api || typeof api.steps !== 'function') return [];
     var list = api.steps(cardData());
-    return (list && list.length) ? list.slice(0, MAX_STEPS) : [];
+    return (list && list.length) ? list.slice(0, MAX_THINK_STEPS) : [];
   }
-  function stepGuide(i) { return stepGuides()[i] || ''; }
-
-  /* 台阶框的初始落位：题面右侧、依次向下错开。
-     偏移量按屏幕像素折算成世界单位 —— 这样不管当前缩放多少，看起来都是同一套间距。 */
-  function defaultStepAt(i) {
-    var box = problemBox;
-    var k = state.view.scale || 1;
+  /* 答案：预置表按**题目 id** 取（answer(problemId)），不是按题面文字取 ——
+     在同一句话下改一个字就换一份答案，那种"匹配"是编的。
+     取回来统一成 { result, steps:[{text, note}] }，界面层只认这一种形状。 */
+  function answerData() {
+    var api = analysisApi();
+    if (!api || typeof api.answer !== 'function') return null;
+    var d = api.answer(state.problemId);
+    if (!d) return null;
+    var lines = d.lines || d.steps || [];
     return {
-      wx: box.x + box.w + (26 + i * 16) / k,
-      wy: box.y + (i * 104) / k
+      result: String(d.result || ''),
+      steps: lines.map(function (l) {
+        var text = String((l && l.text) || '');
+        var note = String((l && (l.note || l.comment)) || '');
+        /* 只写了注释、没有正文的那一条：注释本身就是这一步要说的话，提到正文来。
+           不然关掉注释之后会剩一个空行，看着像坏了。 */
+        if (!text && note) { text = note; note = ''; }
+        return { text: text, note: note };
+      })
     };
   }
 
-  /* 展开台阶：位置只在第一次落位时算，之后跟着学生拖的结果走 */
+  /* 一条编号条目：编号 + 正文（+ 注释）。
+     「思路」和「答案」共用同一套条目样式（.wb-tile），转文字面板也是这一套 ——
+     三处的形状本来就一样，不各造一套。 */
+  function tileHtml(no, text, note) {
+    var html = '<li class="wb-tile">' +
+      '<span class="wb-tile__no">' + esc(no) + '</span>' +
+      '<span class="wb-tile__text">' + esc(text || '') + '</span>';
+    if (note) {
+      html += '<span class="wb-tile__cmt"' + (state.analysis.showNotes ? '' : ' hidden') + '>' +
+        esc(note) + '</span>';
+    }
+    return html + '</li>';
+  }
+
+  function renderThink(ctx) {
+    var box = byId('wb-think');
+    if (!box) return;
+    var steps = thinkSteps();
+    var on = ctx.has && state.analysis.open && steps.length > 0;
+    toggleHidden(box, !on);
+    if (!on) return;
+    var list = byId('wb-think-list');
+    if (list) {
+      var html = '';
+      for (var i = 0; i < steps.length; i++) html += tileHtml(i + 1, steps[i], '');
+      list.innerHTML = html;
+    }
+    setText(byId('wb-think-count'), steps.length + ' 步');
+  }
+
+  function renderAnswer(ctx) {
+    var box = byId('wb-answer');
+    if (!box) return;
+    var data = answerData();
+    /* 按钮点了就得有东西出来。没预置答案时给一句实话（NO_ANSWER），
+       而不是让答案块默默不出现 —— 那会变成"点了没反应"，比说"还没有"更糟。 */
+    var on = !!ctx.has && state.analysis.answerOpen;
+    toggleHidden(box, !on);
+    if (!on) return;
+
+    var api = analysisApi();
+    setText(byId('wb-answer-result'),
+      data ? data.result : String((api && api.NO_ANSWER) || '这道题还没有预置答案。'));
+    var steps = (data && data.steps) || [];
+    var list = byId('wb-answer-steps');
+    if (list) {
+      var html = '';
+      for (var i = 0; i < steps.length; i++) html += tileHtml(i + 1, steps[i].text, steps[i].note);
+      list.innerHTML = html;
+    }
+
+    /* 注释开关：有注释才出现。开关的字与 aria 一起变，读屏看到的和眼睛看到的是同一个状态 */
+    var toggle = byId('wb-act-notes');
+    if (toggle) {
+      var hasNotes = false;
+      for (var j = 0; j < steps.length; j++) { if (steps[j].note) { hasNotes = true; break; } }
+      toggleHidden(toggle, !hasNotes);
+      press(toggle, state.analysis.showNotes);
+      var label = state.analysis.showNotes ? '收起注释' : '显示注释';
+      setText(toggle, label);
+      if (toggle.setAttribute) toggle.setAttribute('aria-label', label);
+    }
+  }
+
   function openAnalysis() {
-    var n = stepGuides().length;
-    if (!n) return 0;
-    for (var i = 0; i < n; i++) {
-      var s = state.analysis.steps[i];
-      if (!s) { s = { wx: null, wy: null, text: '' }; state.analysis.steps[i] = s; }
-      if (s.wx === null || s.wy === null) {
-        var d = defaultStepAt(i);
-        s.wx = d.wx; s.wy = d.wy;
-      }
-    }
-    state.analysis.steps.length = n;
+    if (!thinkSteps().length) return 0;
     state.analysis.open = true;
-    state.analysis.answerOpen = false;   /* 点「分析」先把答案收起来（设计 §2 #6） */
+    state.analysis.answerOpen = false;   /* 点「分析」先把答案收起来（§2 #6） */
     redraw();
     persist();
-    return n;
+    return thinkSteps().length;
   }
-
   function closeAnalysis() {
-    state.analysis.open = false;         /* 收起不是清空：学生写的内容留着 */
+    state.analysis.open = false;         /* 收起不是清空 */
     redraw();
     persist();
   }
-
   function analysisOpen() { return !!state.analysis.open; }
-
-  function setStepText(i, text) {
-    var s = state.analysis.steps[i];
-    if (!s) return null;
-    s.text = String(text == null ? '' : text);
-    var pad = byId('wb-step-pad-' + i);
-    /* 只有真的不一样才回写 DOM —— 否则每敲一个字都会把光标顶到末尾 */
-    if (pad && pad.textContent !== s.text) pad.textContent = s.text;
-    /* 这里**故意不 persist()**：本函数挂在 input 事件上，每敲一个字都会调用一次，
-       而 persist() 会把最多 800 笔笔迹整体 JSON 序列化一遍 —— 每敲一个字写几百 KB 会卡。
-       落盘交给失焦（blur）和拖动结束（onStepUp）。 */
-    return s.text;
+  function toggleNotes() {
+    state.analysis.showNotes = !state.analysis.showNotes;
+    redraw();
+    persist();
+    return state.analysis.showNotes;
   }
-  function stepText(i) {
-    var s = state.analysis.steps[i];
-    return s ? (s.text || '') : '';
-  }
-  function stepPos(i) {
-    var s = state.analysis.steps[i];
-    return s ? { wx: s.wx, wy: s.wy } : null;
-  }
+  function notesOn() { return !!state.analysis.showNotes; }
 
-  function renderSteps(ctx) {
-    var guides = stepGuides();
-    for (var i = 0; i < MAX_STEPS; i++) {
-      var box = byId('wb-step-' + i);
-      if (!box) continue;
-      var on = ctx.has && state.analysis.open && i < guides.length;
-      toggleHidden(box, !on);
-      if (!on) continue;
-      setText(byId('wb-step-guide-' + i), guides[i]);
-      var s = state.analysis.steps[i];
-      var pad = byId('wb-step-pad-' + i);
-      if (pad && pad.textContent !== (s ? (s.text || '') : '')) pad.textContent = s ? (s.text || '') : '';
-      if (box.style && box.style.setProperty) box.style.setProperty('--i', String(i));
-    }
-  }
+  /* ---------- 整块拖动 ----------
+     题 + 三个按钮 + 思路框 + 答案 + 转写文字**只有一份位置**：state.problemAt。
+     所以"拖哪儿都整块动"——任意一块的标题栏按下，走的都是改 state.problemAt 同一条路，
+     跟题目左侧把手那条路改的是同一个东西，不存在两套坐标（用户原话："拖哪儿都整块动"）。 */
+  var groupDrag = null;
 
-  /* 拖台阶框：手柄是标题栏。手上拖的是屏幕像素，世界位移除以 scale —— 和拖题面同一条规矩。 */
-  var stepDrag = null;
-
-  function onStepDown(idx, e) {
-    var s = state.analysis.steps[idx];
-    if (!s || s.wx === null) return;
-    var head = byId('wb-step-head-' + idx);
-    stepDrag = { idx: idx, id: e.pointerId, sx: e.clientX, sy: e.clientY, wx: s.wx, wy: s.wy };
-    var box = byId('wb-step-' + idx);
-    if (box && box.classList) box.classList.add('is-dragging');
-    if (head && typeof head.setPointerCapture === 'function') {
-      try { head.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+  function groupDown(name, e) {
+    if (!state.showProblem || problemBox.h <= 0) return;
+    groupDrag = {
+      name: name, id: e.pointerId,
+      sx: e.clientX, sy: e.clientY,
+      ax: state.problemAt.x, ay: state.problemAt.y
+    };
+    var head = byId('wb-' + name + '-head');
+    if (head && head.classList) head.classList.add('is-dragging');
+    var src = e.currentTarget;
+    if (src && typeof src.setPointerCapture === 'function') {
+      try { src.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
     if (typeof e.preventDefault === 'function') e.preventDefault();
   }
 
-  function onStepMove(idx, e) {
-    if (!stepDrag || stepDrag.idx !== idx || e.pointerId !== stepDrag.id) return;
-    var s = state.analysis.steps[idx];
-    if (!s) return;
+  function groupMove(name, e) {
+    if (!groupDrag || groupDrag.name !== name) return;
+    if (e.pointerId !== undefined && e.pointerId !== groupDrag.id) return;
     var k = state.view.scale || 1;
-    s.wx = stepDrag.wx + (e.clientX - stepDrag.sx) / k;
-    s.wy = stepDrag.wy + (e.clientY - stepDrag.sy) / k;
-    layoutOverlays();
+    state.problemAt.x = groupDrag.ax + (e.clientX - groupDrag.sx) / k;
+    state.problemAt.y = groupDrag.ay + (e.clientY - groupDrag.sy) / k;
+    /* 位置改了要 redraw：题面矩形是画的时候算出来的，只重排浮层会慢一帧 */
+    redraw();
     if (typeof e.preventDefault === 'function') e.preventDefault();
   }
 
-  function onStepUp(idx, e) {
-    if (!stepDrag || stepDrag.idx !== idx) return;
-    if (e && e.pointerId !== undefined && e.pointerId !== stepDrag.id) return;
-    var box = byId('wb-step-' + idx);
-    if (box && box.classList) box.classList.remove('is-dragging');
-    stepDrag = null;
+  function groupUp(name, e) {
+    if (!groupDrag || groupDrag.name !== name) return;
+    if (e && e.pointerId !== undefined && e.pointerId !== groupDrag.id) return;
+    var head = byId('wb-' + name + '-head');
+    if (head && head.classList) head.classList.remove('is-dragging');
+    groupDrag = null;
     persist();
   }
 
-  /* 每个台阶框各挂各的 —— 把序号闭包进来，
-     比在事件里 closest('.wb-step') 反查更稳（桩里 closest 永远是 null）。 */
-  function initStepDrag() {
-    for (var i = 0; i < MAX_STEPS; i++) {
-      (function (idx) {
-        var head = byId('wb-step-head-' + idx);
+  /* 每块的标题栏各挂各的（把名字闭包进去）—— 比在事件里 closest() 反查更稳（桩里 closest 恒为 null）。 */
+  function bindGroupDrag() {
+    var names = ['think', 'answer', 'ink'];
+    for (var i = 0; i < names.length; i++) {
+      (function (name) {
+        var head = byId('wb-' + name + '-head');
         if (!head || !head.addEventListener) return;
-        head.addEventListener('pointerdown', function (e) { onStepDown(idx, e); });
-        head.addEventListener('pointermove', function (e) { onStepMove(idx, e); });
-        head.addEventListener('pointerup', function (e) { onStepUp(idx, e); });
-        head.addEventListener('pointercancel', function (e) { onStepUp(idx, e); });
-        var pad = byId('wb-step-pad-' + idx);
-        if (pad && pad.addEventListener) {
-          pad.addEventListener('input', function () { setStepText(idx, pad.textContent); });
-          /* 失焦时落盘：打字过程不写，离开这个框才写一次 */
-          pad.addEventListener('blur', function () { persist(); });
-        }
-      })(i);
+        head.addEventListener('pointerdown', function (e) { groupDown(name, e); });
+        head.addEventListener('pointermove', function (e) { groupMove(name, e); });
+        head.addEventListener('pointerup', function (e) { groupUp(name, e); });
+        head.addEventListener('pointercancel', function (e) { groupUp(name, e); });
+      })(names[i]);
     }
+  }
+
+  /* 「上传我的题」：拍照 / 传图识别还没做（在 Plan 3）。
+     按钮先占住位置 —— 这一排要三个按钮，位置定下来就不返工；
+     点了给一句实话 + 一条现在就能走的路，不做点了没反应的假按钮。 */
+  function toggleUploadNote() {
+    state.uploadTip = !state.uploadTip;
+    redraw();
+    return state.uploadTip;
   }
 
   /* ---------- 手写转文字：识别 + 分步点评 ----------
@@ -1054,12 +1156,12 @@
 
   function inkRowHtml(s, i) {
     var tone = (WK_INK && WK_INK.TONES.indexOf(s.tone) >= 0) ? s.tone : 'ok';
-    return '<li class="wb-ink__step" data-tone="' + tone + '">' +
-      '<span class="wb-ink__no">第 ' + (i + 1) + ' 步</span>' +
-      '<div class="wb-ink__text" contenteditable="true" role="textbox" tabindex="0"' +
+    return '<li class="wb-tile" data-tone="' + tone + '">' +
+      '<span class="wb-tile__no">第 ' + (i + 1) + ' 步</span>' +
+      '<div class="wb-tile__text" contenteditable="true" role="textbox" tabindex="0"' +
       ' data-step="' + i + '" aria-label="第 ' + (i + 1) + ' 步的文字">' + esc(s.text) + '</div>' +
       (s.comment
-        ? '<p class="wb-ink__cmt"><span class="wb-ink__tone">' +
+        ? '<p class="wb-tile__cmt"><span class="wb-tile__tone">' +
           esc((WK_INK && WK_INK.TONE_LABEL[tone]) || '') + '</span>' + esc(s.comment) + '</p>'
         : '') +
       '</li>';
@@ -1670,10 +1772,21 @@
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
 
-    /* 台阶框：拖动与书写各挂各的（序号闭包进去），挂在按钮之前先建好桩 */
-    initStepDrag();
+    /* 整块拖动：思路框 / 答案块 / 转写面板的标题栏都能拖，拖哪儿都整块动 */
+    bindGroupDrag();
 
-    /* 「分析 / 答案」两个按钮：先只有按钮，内容在 Task 3 / Task 4 接进来 */
+    /* 题目前面那三个小按钮：上传我的题 / 分析 / 答案 */
+    var actsUpload = byId('wb-act-upload');
+    if (actsUpload && actsUpload.addEventListener) {
+      actsUpload.addEventListener('click', function (e) { toggleUploadNote(e); });
+    }
+    /* 注释开关：只切答案里那些注释的显隐 */
+    var actsNotes = byId('wb-act-notes');
+    if (actsNotes && actsNotes.addEventListener) {
+      actsNotes.addEventListener('click', function () { toggleNotes(); });
+    }
+
+    /* 「分析 / 答案」两个按钮 */
     var actsAnalysis = byId('wb-act-analysis');
     if (actsAnalysis && actsAnalysis.addEventListener) {
       actsAnalysis.addEventListener('click', function () { toggleAnalysis(); });
@@ -2475,15 +2588,12 @@
         showProblem: state.showProblem,
         problemId: state.problemId,
         external: state.external,
-        /* 分析 / 答案那一层：台阶的位置与学生写的内容都要落盘 ——
-           「收起」不算清空，刷新回来还得在。 */
+        /* 这一层只存三个开关：思路框展开没、答案块展开没、注释显示没。
+           位置不单独存 —— 它跟题面共用 state.problemAt（题面位置那一份）。 */
         analysis: {
           open: state.analysis.open,
           answerOpen: state.analysis.answerOpen,
-          showNotes: state.analysis.showNotes,
-          steps: state.analysis.steps.map(function (s) {
-            return { wx: s.wx, wy: s.wy, text: s.text || '' };
-          })
+          showNotes: state.analysis.showNotes
         },
         view: { scale: state.view.scale, x: state.view.x, y: state.view.y },
         strokes: state.strokes.slice(-MAX_STROKES)
@@ -2520,6 +2630,12 @@
     }
     /* 板面主题：不在三套里就回落白板，别让旧数据把白板弄崩 */
     if (THEME_KEYS.indexOf(d.theme) >= 0) state.theme = d.theme;
+    /* 分析 / 答案那一层：刷新回来还是你离开时的样子 */
+    if (d.analysis && typeof d.analysis === 'object') {
+      state.analysis.open = !!d.analysis.open;
+      state.analysis.answerOpen = !!d.analysis.answerOpen;
+      state.analysis.showNotes = d.analysis.showNotes === undefined ? true : !!d.analysis.showNotes;
+    }
     if (typeof d.showProblem === 'boolean') state.showProblem = d.showProblem;
     if (Array.isArray(d.strokes)) {
       state.strokes = d.strokes.filter(function (s) {
@@ -2672,15 +2788,15 @@
     overlayCtx: overlayCtx,
     toggleAnalysis: toggleAnalysis,
     toggleAnswer: toggleAnswer,
-    stepGuides: stepGuides,
-    stepGuide: stepGuide,
-    stepText: stepText,
-    setStepText: setStepText,
-    stepPos: stepPos,
+    thinkSteps: thinkSteps,
+    answerData: answerData,
     openAnalysis: openAnalysis,
     closeAnalysis: closeAnalysis,
     analysisOpen: analysisOpen,
-    initStepDrag: initStepDrag,
+    toggleNotes: toggleNotes,
+    notesOn: notesOn,
+    toggleUploadNote: toggleUploadNote,
+    bindGroupDrag: bindGroupDrag,
     toggleTranscribe: toggleTranscribe,
     transcribe: runTranscribe,
     inkOutside: inkOutside,

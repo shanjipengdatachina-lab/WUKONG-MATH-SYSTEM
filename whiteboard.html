@@ -333,53 +333,113 @@
 .wb-act.is-on{background:var(--math-primary-tint);color:var(--math-primary)}
 .wb-act.is-on:hover{background:var(--math-primary-200)}
 .wb-act:disabled{color:var(--math-ink-4);cursor:default;background:none}
-/* 台阶框：一步一框，浮在板上、跟着板走。
-   **字号刻意不跟着缩** —— 台阶是要读、要写的，缩到 15% 就没法用了，
-   所以只有位置跟板，尺寸恒定。 */
-.wb-step{
+/* ---------- 思路框（分析）：题目右侧一个框，里面是编号的思路 ----------
+   只读。原来做成 4~5 个可写的"台阶框"，用户看过真实效果后否掉了：
+   「分析不用搞那么多台阶框……就直接出一个框，主体思路是一二三四五六七八……它的目的就是看」。
+   字号不跟着画布缩放：这是要读的字，缩到 15% 就没法看了。 */
+.wb-think{
   position:absolute;left:0;top:0;z-index:4;
-  width:232px;border:1px solid var(--math-border);border-radius:10px;
-  background:var(--math-popover);box-shadow:var(--math-shadow-2);
-  animation:wb-step-in .16s ease-out both;
-  animation-delay:calc(var(--i,0) * 60ms);
+  width:238px;padding:8px 10px 9px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:var(--math-popover);box-shadow:var(--math-shadow-1);
+  /* 上限 8 步 × 大字号时，内容能高过整块画布 —— 不封顶的话框底那个按钮就再也点不到了。
+     封顶之后由列表自己滚：框始终在板内，读不完也够得着。 */
+  display:flex;flex-direction:column;max-height:calc(100% - 32px);
 }
-.wb-step[hidden]{display:none}
-/* 依次浮出：每框比上一个晚 60ms —— 这就是"台阶"的节奏 */
-@keyframes wb-step-in{
-  from{opacity:0;transform:translateY(6px)}
-  to{opacity:1;transform:none}
+.wb-think[hidden]{display:none}
+.wb-think__head{flex:none;display:flex;align-items:center;gap:7px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.wb-think.is-dragging{box-shadow:var(--math-shadow-2)}
+.wb-think.is-dragging .wb-think__head{cursor:grabbing}
+.wb-think__title{font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
+.wb-think__count{font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-3)}
+.wb-think__grip{flex:none;margin-left:auto;width:14px;height:14px;color:var(--math-ink-4)}
+.wb-think__list{margin:7px 0 0;padding:0;list-style:none;overflow-y:auto;min-height:0}
+.wb-think__foot{flex:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--math-border)}
+.wb-think__act{
+  width:100%;height:28px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
+  background:none;color:var(--math-ink-2);cursor:pointer;
+  font-family:var(--math-font-sans);font-size:calc(11.5px * var(--math-fs));
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
 }
-@media (prefers-reduced-motion:reduce){
-  .wb-step{animation:none}
+.wb-think__act:hover{color:var(--math-primary);border-color:var(--math-primary)}
+.wb-think__act:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-think__act[aria-pressed="true"]{color:var(--math-primary);background:var(--math-primary-soft);border-color:var(--math-primary-tint)}
+
+/* ---------- 答案块：直接写在题目下方 ---------- */
+.wb-answer{
+  position:absolute;left:0;top:0;z-index:4;
+  width:300px;padding:9px 11px 10px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:var(--math-popover);box-shadow:var(--math-shadow-1);
+  /* 同思路框：注释全展开时分步能很长，封顶 + 自己滚，别顶出画布 */
+  display:flex;flex-direction:column;max-height:calc(100% - 32px);
 }
-.wb-step__head{
-  display:flex;align-items:center;gap:6px;padding:5px 8px;
-  border-bottom:1px solid var(--math-border);
-  background:var(--math-surface);border-radius:9px 9px 0 0;
-  cursor:grab;touch-action:none;
-  /* 把手不许被选中：拖的时候如果顺手划出一片蓝，看着就像把页面拖坏了 */
-  user-select:none;-webkit-user-select:none;
+.wb-answer[hidden]{display:none}
+.wb-answer__head{flex:none;display:flex;align-items:center;gap:7px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.wb-answer.is-dragging{box-shadow:var(--math-shadow-2)}
+.wb-answer.is-dragging .wb-answer__head{cursor:grabbing}
+.wb-answer__title{font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
+/* 「AI 生成」是实话标注：这是模型给的答案，不是老师批的 */
+.wb-answer__flag{
+  padding:1px 6px;border-radius:var(--math-radius-pill);
+  background:var(--math-primary-soft);color:var(--math-primary);
+  font-size:calc(10.5px * var(--math-fs));
 }
-.wb-step.is-dragging{box-shadow:0 16px 40px rgba(15,23,42,.20)}
-.wb-step.is-dragging .wb-step__head{cursor:grabbing}
-.wb-step__no{
-  flex:none;width:18px;height:18px;border-radius:50%;
+.wb-answer__notes{
+  margin-left:auto;padding:0 6px;height:22px;border:1px solid var(--math-border);
+  border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-2);cursor:pointer;
+  font-family:var(--math-font-sans);font-size:calc(11px * var(--math-fs));
+}
+.wb-answer__notes[hidden]{display:none}
+.wb-answer__notes[aria-pressed="true"]{color:var(--math-primary);border-color:var(--math-primary-tint);background:var(--math-primary-soft)}
+.wb-answer__notes:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-answer__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
+/* 结果单独一行、主色加重 —— 先看结论再看过程 */
+.wb-answer__result{
+  flex:none;margin:8px 0 0;padding:6px 8px;border-radius:var(--math-radius-sm);
+  background:var(--math-surface);color:var(--math-foreground);
+  font-family:var(--math-font-math);font-size:calc(15px * var(--math-fs));font-weight:600;
+}
+.wb-answer__steps{margin:6px 0 0;padding:0;list-style:none;overflow-y:auto;min-height:0}
+
+/* ---------- 编号条目：思路 / 答案 / 转文字三处共用这一套 ---------- */
+.wb-tile{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:6px 0;border-top:1px solid var(--math-border)}
+.wb-tile:first-child{border-top:0;padding-top:2px}
+.wb-tile__no{
+  flex:none;width:17px;height:17px;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;
-  font-size:calc(11px * var(--math-fs));font-weight:600;
   background:var(--math-primary-tint);color:var(--math-primary);
+  font-size:calc(10.5px * var(--math-fs));font-weight:600;
 }
-.wb-step__grip{flex:none;margin-left:auto;width:14px;height:14px;color:var(--math-ink-4)}
-.wb-step__guide{
-  padding:8px 10px 0;font-size:calc(12.5px * var(--math-fs));line-height:1.55;color:var(--math-ink-2);
-}
-.wb-step__pad{
-  min-height:40px;margin:8px 10px 10px;padding:6px 8px;
-  border:1px dashed var(--math-border);border-radius:8px;
-  font-size:calc(13px * var(--math-fs));line-height:1.5;color:var(--math-foreground);
+.wb-tile__text{
+  flex:1;min-width:0;font-size:calc(12.5px * var(--math-fs));line-height:1.6;color:var(--math-foreground);
   outline:none;
 }
-.wb-step__pad:focus{border-style:solid;border-color:var(--math-primary)}
-.wb-step__pad:empty::before{content:attr(data-placeholder);color:var(--math-ink-4)}
+.wb-tile__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint);border-radius:var(--math-radius-xs)}
+/* 注释（AI 给的那句"为什么这么想"）单独占一行，缩进到正文下面。
+   46px = 23（让开编号列：17px 圆点 + 6px 间距）+ 23（再往里缩一格，才看得出"这是附在正文下的"）。
+   注意用 padding 而不是 margin：这行是 flex:1 0 100%（basis 已经是整行宽），
+   再加 margin 就超出容器了，浏览器会把它吞掉 —— 真机上就是"注释和正文齐平、看着像正文"。 */
+.wb-tile__cmt{
+  flex:1 0 100%;box-sizing:border-box;padding-left:46px;
+  font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-2);
+}
+.wb-tile__cmt[hidden]{display:none}
+.wb-tile__tone{font-weight:600}
+.wb-tile[data-tone="ok"] .wb-tile__tone{color:var(--math-state-success)}
+.wb-tile[data-tone="careful"] .wb-tile__tone{color:var(--math-state-warning,#b45309)}
+.wb-tile[data-tone="warn"] .wb-tile__tone{color:var(--math-state-error)}
+
+/* ---------- 「上传我的题」的实话便签 ---------- */
+.wb-note{
+  position:absolute;left:0;top:0;z-index:5;max-width:280px;padding:9px 11px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:var(--math-popover);box-shadow:var(--math-shadow-2);
+}
+.wb-note[hidden]{display:none}
+.wb-note__title{margin:0;font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
+.wb-note__text{margin:5px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-2)}
+
   </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
@@ -576,63 +636,54 @@
             </div>
           </div>
 
+          <!-- 题目前面那三个小按钮：上传我的题 / 分析 / 答案（用户定的三个，位置在题目上方、左对齐）。
+               「转文字」挪进思路框底部 —— 那一排就三个，不再多挂一个。 -->
           <div class="wb-acts" id="wb-acts" role="group" aria-label="对这道题做什么" hidden>
-            <button type="button" class="wb-act" id="wb-act-analysis" aria-label="分析这道题">分析</button>
-            <button type="button" class="wb-act" id="wb-act-answer" aria-label="看这道题的答案">答案</button>
-            <button type="button" class="wb-act" id="wb-act-transcribe" aria-label="把手写思路转成电子文字">转文字</button>
+            <button type="button" class="wb-act" id="wb-act-upload" aria-pressed="false" aria-label="上传我自己的题">上传我的题</button>
+            <button type="button" class="wb-act" id="wb-act-analysis" aria-pressed="false" aria-label="看这道题的思路">分析</button>
+            <button type="button" class="wb-act" id="wb-act-answer" aria-pressed="false" aria-label="对这道题的答案">答案</button>
           </div>
 
-          <!-- 台阶框：一步一框。「分析」浮出 1~5 个，可拖、可写。
-               位置同样由世界坐标投影出来（跟板走），但字号不跟缩 —— 台阶要能读能写。 -->
-          <div class="wb-step" id="wb-step-0" hidden>
-            <div class="wb-step__head" id="wb-step-head-0">
-              <span class="wb-step__no">1</span>
-              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+          <!-- 分析：题目**右侧**一个只读的「思路」框。原来做成 4~5 个可写的台阶框，
+               用户看过真实效果后否掉了：「就直接出一个框，主体思路是一二三四五六七八……它的目的就是看」。
+               标题栏是拖动把手 —— 拖哪儿都整块动（跟题面共用一份位置）。 -->
+          <div class="wb-think" id="wb-think" role="group" aria-label="这道题的思路" hidden>
+            <div class="wb-think__head" id="wb-think-head">
+              <span class="wb-think__title">思路</span>
+              <span class="wb-think__count" id="wb-think-count"></span>
+              <i data-lucide="grip-vertical" class="wb-think__grip" aria-hidden="true"></i>
             </div>
-            <div class="wb-step__guide" id="wb-step-guide-0"></div>
-            <div class="wb-step__pad" id="wb-step-pad-0" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 1 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+            <ol class="wb-think__list" id="wb-think-list"></ol>
+            <div class="wb-think__foot">
+              <button type="button" class="wb-think__act" id="wb-act-transcribe" aria-pressed="false" aria-label="把手写思路转成电子文字">把手写转成文字</button>
+            </div>
           </div>
 
-          <div class="wb-step" id="wb-step-1" hidden>
-            <div class="wb-step__head" id="wb-step-head-1">
-              <span class="wb-step__no">2</span>
-              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+          <!-- 答案：直接写在题目**下方**、就写在板上（用户原话）。
+               结果在前、分步在后，每步下面挂 AI 注释，注释可以整块收起。 -->
+          <div class="wb-answer" id="wb-answer" role="group" aria-label="这道题的答案" hidden>
+            <div class="wb-answer__head" id="wb-answer-head">
+              <span class="wb-answer__title">标准答案</span>
+              <span class="wb-answer__flag">AI 生成</span>
+              <button type="button" class="wb-answer__notes" id="wb-act-notes" aria-pressed="true" aria-label="收起注释">收起注释</button>
+              <i data-lucide="grip-vertical" class="wb-answer__grip" aria-hidden="true"></i>
             </div>
-            <div class="wb-step__guide" id="wb-step-guide-1"></div>
-            <div class="wb-step__pad" id="wb-step-pad-1" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 2 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+            <p class="wb-answer__result" id="wb-answer-result"></p>
+            <ol class="wb-answer__steps" id="wb-answer-steps"></ol>
           </div>
 
-          <div class="wb-step" id="wb-step-2" hidden>
-            <div class="wb-step__head" id="wb-step-head-2">
-              <span class="wb-step__no">3</span>
-              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
-            </div>
-            <div class="wb-step__guide" id="wb-step-guide-2"></div>
-            <div class="wb-step__pad" id="wb-step-pad-2" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 3 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
-          </div>
-
-          <div class="wb-step" id="wb-step-3" hidden>
-            <div class="wb-step__head" id="wb-step-head-3">
-              <span class="wb-step__no">4</span>
-              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
-            </div>
-            <div class="wb-step__guide" id="wb-step-guide-3"></div>
-            <div class="wb-step__pad" id="wb-step-pad-3" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 4 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
-          </div>
-
-          <div class="wb-step" id="wb-step-4" hidden>
-            <div class="wb-step__head" id="wb-step-head-4">
-              <span class="wb-step__no">5</span>
-              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
-            </div>
-            <div class="wb-step__guide" id="wb-step-guide-4"></div>
-            <div class="wb-step__pad" id="wb-step-pad-4" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 5 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+          <!-- 「上传我的题」的实话：拍照 / 传图识别还没做（在 Plan 3）。
+               按钮先占住位置（这一排要三个，位置定下来就不返工），点了给一句实话 + 一条现在就能走的路，
+               不做点了没反应的假按钮。 -->
+          <div class="wb-note" id="wb-upload-tip" role="status" hidden>
+            <p class="wb-note__title">拍照上传还在做</p>
+            <p class="wb-note__text">现在可以：① 在题库里选一道题上板；② 用笔写出你的推导，再点思路框底部的「把手写转成文字」生成电子版。</p>
           </div>
 
           <!-- 题目下方那一块：手写转文字。位置由白板按世界坐标投影出来，
-               与「台阶框」「答案块」共用一张"往下排"的登记表（见 belowBlocks）。 -->
+               与「答案块」共用一张"往下排"的登记表（见 belowBlocks）。 -->
           <div class="wb-ink" id="wb-ink-text" role="group" aria-label="手写转文字" hidden>
-            <div class="wb-ink__head">
+            <div class="wb-ink__head" id="wb-ink-head">
               <span class="wb-ink__title">手写转文字</span>
               <span class="wb-ink__badge" id="wb-ink-badge">演示</span>
               <button type="button" class="wb-ink__close" id="wb-ink-close" aria-label="收起转文字面板">×</button>
@@ -756,29 +807,27 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
   font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
 .wb-ink__close:hover{background:var(--math-surface);color:var(--math-foreground)}
-.wb-ink__note{margin:7px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.65;color:var(--math-ink-3)}
-.wb-ink__steps{margin:8px 0 0;padding:0;list-style:none}
-.wb-ink__step{padding:7px 0;border-top:1px solid var(--math-border)}
-.wb-ink__step:first-child{border-top:0;padding-top:2px}
-.wb-ink__no{
+/* 转文字面板里的条目是**另一种**排法：编号是「第 1 步」这种文字标签（进不了 17px 圆点），
+   正文是一格可改的输入框。所以这里按 .wb-ink 限定作用域另写一套 ——
+   千万别写成不带前缀的 .wb-tile__no：那是三处共用的那套，会连思路框 / 答案块一起改掉
+   （真机复核抓到过：不带前缀的旧样式把答案块的编号压成了灰色小字、正文还多了一层底）。
+   共用那份只管形状（圆点编号 + 正文 + 注释），面板这份只管"能改的输入框"。 */
+.wb-ink .wb-tile{display:block}
+.wb-ink .wb-tile__no{
   display:block;font-family:var(--math-font-mono);font-size:calc(10.5px * var(--math-fs));
   letter-spacing:.06em;color:var(--math-ink-4);
 }
-.wb-ink__text{
+.wb-ink .wb-tile__text{
   margin-top:3px;padding:3px 5px;border-radius:var(--math-radius-sm);
   font-size:calc(13.5px * var(--math-fs));line-height:1.7;color:var(--math-foreground);
   background:var(--math-surface);outline:none;white-space:pre-wrap;
 }
-.wb-ink__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint)}
-.wb-ink__cmt{margin:5px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-2)}
-.wb-ink__tone{
+.wb-ink .wb-tile__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint)}
+.wb-ink .wb-tile__cmt{margin:5px 0 0}
+.wb-ink .wb-tile__tone{
   display:inline-block;margin-right:5px;padding:0 5px;border-radius:999px;
   font-size:calc(10.5px * var(--math-fs));line-height:1.6;background:var(--math-surface);color:var(--math-ink-3);
 }
-/* 语气标只有三种，颜色跟着走 —— 扫一眼就知道哪一步要留意 */
-.wb-ink__step[data-tone="ok"] .wb-ink__tone{color:var(--math-state-success)}
-.wb-ink__step[data-tone="careful"] .wb-ink__tone{color:var(--math-state-warning,#b45309)}
-.wb-ink__step[data-tone="warn"] .wb-ink__tone{color:var(--math-state-error)}
 .wb-ink__acts{display:flex;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--math-border)}
 .wb-ink__acts[hidden]{display:none}
 .wb-ink__btn{

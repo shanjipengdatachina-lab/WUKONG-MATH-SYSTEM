@@ -65,9 +65,16 @@ need = {
   '网格疏密选择器样式' => '.wb-grid{',
   '画布底色跟着主题' => 'background:var(--wb-board,var(--math-background))',
   '题库脚本' => 'whiteboard-problems.js',
+  '题面上方三个按钮（上传我的题）' => 'id="wb-act-upload"',
   '分析按钮' => 'id="wb-act-analysis"',
   '答案按钮' => 'id="wb-act-answer"',
-  '分析与答案按钮组' => 'class="wb-acts" id="wb-acts"',
+  '三个按钮的按钮组' => 'class="wb-acts" id="wb-acts"',
+  '思路框（题目右侧）' => 'id="wb-think"',
+  '思路框的条目列表' => 'id="wb-think-list"',
+  '答案块（题目下方）' => 'id="wb-answer"',
+  '答案块的标准答案行' => 'id="wb-answer-result"',
+  '答案块的注释开关' => 'id="wb-act-notes"',
+  '上传功能的实话条' => 'id="wb-upload-tip"',
   '分析与答案数据脚本' => 'whiteboard-analysis.js',
   '白板脚本' => 'whiteboard.js'
 }
@@ -222,7 +229,7 @@ issues << '网格疏密是"顺手把网格打开"的（网格关着时选一档�
 issues << '网格疏密样式跑进了 wb-styles（会被抄到图谱当死规则）' if
   html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-grid\{/m]
 
-# ---------- 手写转文字（题面右边第三个按钮 + 题面下方的面板） ----------
+# ---------- 手写转文字（思路框底部的按钮 + 题目下方的面板） ----------
 # 这一层**没有真 AI**：内容全是预置的。所以最要紧的守线是"必须说清这是演示"，
 # 以及"没写东西时不许凭空变出内容"（后者在断言里守，这里守页面上的那几处文案与结构）。
 %w[wb-act-transcribe wb-ink-text wb-ink-steps wb-ink-note wb-ink-badge wb-ink-acts
@@ -251,6 +258,85 @@ issues << '预置数据里出现了 warn（没有真模型就不该判学生对�
   inkjs[/var PRESET = \{[\s\S]*?\n  \};/].to_s.include?("'warn'")
 issues << '文字那一格不是可编辑的（识别一定会出错，必须能改）' unless
   wbjs.include?('contenteditable')
+# ---------- 题面上方那三个按钮 + 右侧思路框 + 下方答案块 ----------
+# 用户看过第一版的"4~5 个可写台阶框"后明确否掉了，这一版是：三个小按钮（上传我的题 / 分析 / 答案）
+# 摆在题目上方左对齐；「分析」出**一个**只读的思路框（在题目右侧）；
+# 「答案」把标准答案直接写在题目下方，每步挂 AI 注释、注释可整块收起。
+acts_html = html[/<div class="wb-acts".*?<\/div>/m].to_s
+if acts_html.empty?
+  issues << '找不到三个按钮那一排（.wb-acts）'
+else
+  issues << "按钮排里不是三个按钮（实际 #{acts_html.scan(/<button/).size} 个）" unless
+    acts_html.scan(/<button/).size == 3
+  order = %w[wb-act-upload wb-act-analysis wb-act-answer].map { |id| acts_html.index(id) }
+  issues << '三个按钮的顺序不是「上传我的题 → 分析 → 答案」' unless
+    order.all? && order == order.sort && order.uniq.size == 3
+end
+
+# 旧的台阶框必须**清干净**：留着挂点就会被下一版又接回去
+issues << '页面上还留着旧的台阶框挂点（wb-step）' if html.include?('wb-step')
+issues << 'whiteboard.js 里还留着台阶框那套代码' if wbjs.include?('wb-step') || wbjs.include?('stepGuides')
+issues << 'whiteboard.js 里还留着可写台阶的内容字段（analysis.steps）' if wbjs.include?('analysis.steps')
+
+%w[wb-think wb-answer].each do |id|
+  issues << "#{id} 没有默认收起（会一进页面就浮在板上）" unless html[/id="#{id}"[^>]*hidden/]
+end
+think_i = html.index('id="wb-think"')
+answer_i = html.index('id="wb-answer"')
+think_html = (think_i && answer_i && answer_i > think_i) ? html[think_i...answer_i] : ''
+issues << '思路框不是只读的（用户要的是"就看看思路"，里面不该有可写格子）' if
+  think_html.include?('contenteditable')
+issues << '思路框没挂在题面同一层（应该是 .wb-canvas-wrap 的绝对定位子元素）' unless
+  html.include?('.wb-think{') && html.include?('.wb-answer{')
+issues << '思路框 / 答案块样式跑进了 wb-styles（会被抄到图谱当死规则）' if
+  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-think\{/m]
+issues << '答案块没标「AI 生成」（注释是 AI 给的，必须说清来源）' unless
+  html.include?('wb-answer__flag') && html.include?('AI 生成')
+issues << '「上传我的题」没写清这一版还没做（会变成点了没反应的假按钮）' unless
+  html.include?('拍照上传还在做')
+issues << '「上传我的题」没给出现在就能走的路（只说不做，等于把用户晾在那儿）' unless
+  html.include?('用笔写出你的推导')
+issues << '答案块没挂进"往下排"的登记表（各算各的位置，迟早和转写面板互相压）' unless
+  wbjs.include?("el: byId('wb-answer')")
+# 真机复核抓到过：窄题面时答案块（300 宽）比题面还宽，思路框只按"题面右缘"摆就会压在答案上。
+issues << '思路框没让开题目下方那几块（会压在答案上，真机复核抓到过）' unless
+  wbjs.include?('function groupRight(')
+overlay_fn = wbjs[/function layoutOverlays\(ctx\)[\s\S]*?\n  \}/].to_s
+issues << '浮层重排顺序不对：思路框要排在"下面那几块"之后摆（否则量不到它们的宽度）' unless
+  overlay_fn.include?('layoutBelow(ctx)') && overlay_fn.include?('layoutThink(ctx)') &&
+  overlay_fn.index('layoutBelow(ctx)') < overlay_fn.index('layoutThink(ctx)')
+issues << '注释开关只有一态文案（收起 / 显示必须都有，否则点一次就再也回不来）' unless
+  wbjs.include?('收起注释') && wbjs.include?('显示注释')
+# 上限 8 步 × 大字号，内容能高过整块画布；不封顶的话框底那个「把手写转成文字」就再也点不到了
+issues << '思路框 / 答案块没设最大高度（长内容会顶出画布，底下的按钮点不到）' unless
+  html[/\.wb-think\{[^}]*max-height/] && html[/\.wb-answer\{[^}]*max-height/]
+issues << '思路框 / 答案块的长内容不能自己滚（超出画布的部分就够不着了）' unless
+  html[/\.wb-think__list\{[^}]*overflow-y:auto/] && html[/\.wb-answer__steps\{[^}]*overflow-y:auto/]
+# 思路 / 答案 / 转文字三处共用同一套条目样式，最怕后一段"不带前缀地又写一遍"——
+# 后写的会静静盖掉前写的，而且三处里只有一处看着不对（真机复核抓到过：
+# 转文字面板的旧样式把答案块的编号压成了灰色小字、正文还多了一层底）。
+tile_dupes = html.scan(/^([^\n{}]*?)\{/).flatten.map(&:strip)
+               .select { |s| s.start_with?('.wb-tile') }
+               .group_by { |s| s }.select { |_, v| v.size > 1 }.keys
+issues << "条目样式被不带前缀地定义了两遍（后一条会悄悄盖掉前一条）：#{tile_dupes.join('、')}" unless tile_dupes.empty?
+issues << '条目样式没做成三处共用的一套（思路 / 答案 / 转文字各写各的）' unless
+  html.include?('.wb-tile{') && html.include?('.wb-tile__no{')
+# 注释那一行是 flex:1 0 100%，再挂 margin 会被浏览器吞掉（真机上就是"注释与正文齐平"）
+issues << 'AI 注释那一行没缩进（和正文齐平，会被当成正文的一部分）' unless
+  html[/\.wb-tile__cmt\{[^}]*padding-left:/]
+issues << '四块浮层的位置不是同一份（应共用 state.problemAt，"拖哪儿都整块动"）' if
+  wbjs.include?('thinkAt') || wbjs.include?('answerAt') || wbjs.include?('actAt')
+# 分析那一层的状态：只该有三个开关，落盘也是这三个
+analysis_blocks = wbjs.scan(/analysis:\s*\{[\s\S]*?\n\s*\},/)
+issues << '找不到分析那一层的状态 / 落盘块' if analysis_blocks.empty?
+analysis_blocks.each do |b|
+  %w[open answerOpen showNotes].each do |k|
+    issues << "分析那一层的开关 #{k} 没进状态或没落盘" unless b.include?(k)
+  end
+  issues << '分析那一层存了步骤（步骤是算出来的，不该存）' if b.include?('steps')
+end
+
+
 # 设置面板又高了一行，矮屏上必须有个"放不下就自己滚"的兜底，不能把顶上一截切掉
 issues << '设置面板没有兜底滚动（矮屏上会被切掉顶部，够不着上面那一行）' unless
   html[/\.wb-pop\{max-height:calc\(100vh - \d+px\);overflow-y:auto/]

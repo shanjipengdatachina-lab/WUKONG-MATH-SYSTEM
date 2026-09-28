@@ -148,16 +148,20 @@ document.addEventListener = function (t, fn) { __capture.docHandlers[t] = fn; };
 
 var __capture = { docHandlers: {}, store: {} };
 
-/* 「分析 / 答案」两个按钮、5 个台阶框、答案块：真实 HTML 里默认都是收起的 */
+/* 题面上方那三个小按钮（上传我的题 / 分析 / 答案）、右侧「思路」框、
+   题目下方的「标准答案」块、以及「拍照还在做」的实话条：真实 HTML 里默认全是收起的 */
 elById('wb-acts').hidden = true;
-elById('wb-act-analysis').setAttribute('aria-label', '分析这道题');
-elById('wb-act-answer').setAttribute('aria-label', '看这道题的答案');
-for (var stepI = 0; stepI < 5; stepI++) {
-  elById('wb-step-' + stepI).hidden = true;
-  elById('wb-step-pad-' + stepI).setAttribute('contenteditable', 'true');
-}
+elById('wb-act-upload').setAttribute('aria-label', '上传我自己的题');
+elById('wb-act-analysis').setAttribute('aria-label', '看这道题的思路');
+elById('wb-act-answer').setAttribute('aria-label', '对这道题的答案');
+elById('wb-think').hidden = true;
+elById('wb-think').setAttribute('hidden', 'hidden');
 elById('wb-answer').hidden = true;
-elById('wb-answer-toggle').setAttribute('aria-pressed', 'true');
+elById('wb-answer').setAttribute('hidden', 'hidden');
+elById('wb-act-notes').setAttribute('aria-pressed', 'true');
+elById('wb-act-notes').textContent = '收起注释';
+elById('wb-upload-tip').hidden = true;
+elById('wb-upload-tip').setAttribute('hidden', 'hidden');
 
 /* 「手写转文字」那一层：按真实 HTML 的初始状态预置 ——
    面板与「演示」标都是收起的，两个动作按钮跟着面板走。 */
