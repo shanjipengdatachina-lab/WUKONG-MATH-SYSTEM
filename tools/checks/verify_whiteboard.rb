@@ -45,7 +45,7 @@ need = {
   '缩放控件在工具条内' => 'id="wb-zoom-level"',
   '放大按钮' => 'id="wb-zoom-in"',
   '缩小按钮' => 'id="wb-zoom-out"',
-  '适应内容（设置面板内）' => 'id="wb-zoom-fit"',
+  '适应内容（工具条上、「放大」右边）' => 'class="wb-dock__btn" id="wb-zoom-fit"',
   '全屏按钮在侧栏（与全站一致）' => 'id="toggle-fullscreen"',
   '撤销按钮' => 'id="wb-undo"',
   '重做按钮' => 'id="wb-redo"',
@@ -113,7 +113,28 @@ plain = html.scan(/class="wb-dock__btn"/).length
 groups = html.scan(/class="wb-dock__btn wb-dock__btn--group"/).length
 level = html.scan(/class="wb-dock__level"/).length
 puts "工具条槽位: #{plain + groups + level} 个（工具组 #{groups} + 普通按钮 #{plain} + 缩放读数 #{level}）"
-issues << '工具条槽位又变多了，检查是否把同类工具拆回了单个按钮' unless plain + groups + level <= 14
+# 15 = 原来 14 + 「适应内容」。这一格是**故意加的**：它原先藏在「画笔设置」浮层里
+# （一行「视图」+ 一个带文字的按钮），用户要求挪到工具条上、紧挨着「放大」右边 ——
+# 找一个"适应内容"得先打开设置，本来就不合理。
+# 上限仍然卡得紧：以后再加按钮，先想能不能并进已有的组，别顺手就加一格。
+issues << '工具条槽位又变多了，检查是否把同类工具拆回了单个按钮' unless plain + groups + level <= 15
+
+# 「适应内容」的三件事一起守（用户原话："适应内容按钮挪出来，放在放大按钮的右边；换个图标表示适配内容"）：
+#   ① 位置：紧跟在「放大」之后（原来藏在「画笔设置」浮层里 —— 找一个适应内容得先打开设置）
+#   ② 长相：走工具条按钮那一套，不是原来那个带文字的 .wb-view-btn
+#   ③ 图标：maximize-2（四角向外 = "把内容撑满、一眼看全"），与图谱页的「适应窗口」同一个 ——
+#      同一个动作同一个图标。原来那支是 scan，几个方括号读起来像"扫描"
+# 比之前先把 HTML 注释剥掉：这两个按钮之间正好夹着一段"为什么挪过来"的说明，
+# 不剥的话窗口宽度就得跟着注释长度调（第一版写 400 就是被它顶掉的）。
+html_bare = html.gsub(/<!--[\s\S]*?-->/, '')
+zoom_seq = html_bare[/id="wb-zoom-in"[\s\S]{0,300}?id="wb-zoom-fit"[\s\S]{0,300}?<\/button>/m].to_s
+issues << '「适应内容」不在「放大」右边（要求的顺序：缩小 · 读数 · 放大 · 适应内容）' if zoom_seq.empty?
+issues << '「适应内容」没走工具条按钮那一套样式' unless zoom_seq.include?('class="wb-dock__btn" id="wb-zoom-fit"')
+issues << '「适应内容」的图标不是 maximize-2（应与图谱「适应窗口」同一个）' unless zoom_seq.include?('data-lucide="maximize-2"')
+issues << '「适应内容」的提示里丢了 ⇧1 快捷键' unless zoom_seq.include?('data-wb-tip="适应内容 ⇧1"')
+issues << '「适应内容」还留在「画笔设置」浮层里（旧位置没清干净）' if
+  html[/class="wb-pop"[\s\S]*?id="wb-zoom-fit"/]
+issues << '.wb-view-btn 成了死样式（那个按钮已经挪到工具条上）' if html.include?('.wb-view-btn{')
 
 # 紧凑度：浮层 / 工具条 / 设置面板都收过一档，别又松回去
 tight = {

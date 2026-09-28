@@ -284,17 +284,9 @@
   font-family:var(--math-font-mono);font-size:calc(10px * var(--math-fs));color:var(--math-ink-2);
 }
 .wb-pop__stat{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
-.wb-view-btn{
-  display:inline-flex;align-items:center;gap:5px;
-  height:26px;padding:0 8px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
-  background:var(--math-background);color:var(--math-ink-2);
-  font:inherit;font-size:calc(12px * var(--math-fs));cursor:pointer;
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
-}
-.wb-view-btn svg{width:13px;height:13px}
-.wb-view-btn:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}
-.wb-view-btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+/* 这里原有 .wb-view-btn（设置面板里那个带文字的「适应内容」按钮）。
+   按钮挪到工具条上之后这几条就成了谁也看不见的死样式 —— 一起删掉，
+   免得下一个人以为设置面板里还有东西是这套样式。 */
 
 /* 画布内容对读屏不可见，这里留一份文字镜像 */
 .wb-sr{
@@ -643,6 +635,13 @@
             <button type="button" class="wb-dock__btn" id="wb-zoom-in" data-wb-tip="放大" aria-label="放大">
               <i data-lucide="zoom-in"></i>
             </button>
+            <!-- 适应内容：原来藏在「画笔设置」浮层里（一行「视图」+ 一个带文字的按钮）。
+                 用户要求挪到工具条上、紧挨着「放大」右边 —— 找"适应内容"得先打开设置，本来就不合理。
+                 图标也从 scan 换成 maximize-2：scan 那几个角读起来像"扫描"，
+                 四角向外的箭头才是"把内容撑满、一眼看全"，而且跟图谱页的「适应窗口」是同一个图标（同一个动作同一个图标）。 -->
+            <button type="button" class="wb-dock__btn" id="wb-zoom-fit" data-wb-tip="适应内容 ⇧1" aria-label="适应内容">
+              <i data-lucide="maximize-2"></i>
+            </button>
           </div>
 
           <div class="wb-pop" id="wb-pop" hidden>
@@ -666,12 +665,6 @@
             <div class="wb-pop__row">
               <span class="wb-pop__label">橡皮</span>
               <div class="wb-sizes" id="wb-erasers" role="group" aria-label="橡皮大小"></div>
-            </div>
-            <div class="wb-pop__row">
-              <span class="wb-pop__label">视图</span>
-              <button type="button" class="wb-view-btn" id="wb-zoom-fit" data-wb-tip="适应内容 ⇧1">
-                <i data-lucide="scan"></i><span>适应内容</span>
-              </button>
             </div>
             <div class="wb-pop__foot">
               <div class="wb-pop__keys">
