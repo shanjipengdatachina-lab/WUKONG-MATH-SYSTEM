@@ -369,6 +369,16 @@ win_code = win_down.gsub(%r{/\*[\s\S]*?\*/}, '').gsub(%r{//[^\n]*}, '')
 issues << '面板抓手没躲开标题栏里的控件（✕ / tab 会点不动）' unless win_code.include?('closest(')
 issues << '面板抓手又加了 preventDefault（会把 ✕ / tab 的点击一起挡掉）' if
   win_code.include?('preventDefault')
+# 题面的把手：左侧那一条 + **标题行**（用户原话"包括题目上面的那个标题"）。
+# 标题行只在有 tag 时才存在：没 tag 的题，最上面那一行就是正文第一行 —— 吃了它，
+# 学生就圈不动那一道题里最常圈的那一行。
+issues << '题面的把手只剩左边那一条了（用户要的标题行把手丢了）' unless
+  wbjs.include?('function problemGripRects(') && wbjs.include?('PROBLEM_TITLE_H')
+issues << '题面标题行把手没判"有没有 tag"（没 tag 的题会把正文第一行吃掉）' unless
+  wbjs[/function problemGripRects\([\s\S]*?\n  \}/].to_s.include?('data.tag')
+# 拖动中的光标要压过子控件自己的 cursor（否则手划到 tab 上就从 grabbing 变 pointer）
+issues << '拖动中的"正抓着"光标没压过标题栏里的子控件' unless
+  html[/\.wb-panel\.is-dragging \.wb-panel__head \*/] && html[/\.wb-ink\.is-dragging \.wb-ink__head \*/]
 # 两块的标题栏都要做成"可抓"的样子（用户看不出它能拖）。
 # 注意要带分号：不带分号的话 `.wb-ink__head{cursor:grabbing}`（拖动中那条）也能把它满足，
 # 守线就成了摆设 —— 反证时正是这样"没能变红"。

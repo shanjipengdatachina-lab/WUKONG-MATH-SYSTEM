@@ -476,18 +476,45 @@
       wy >= problemBox.y && wy <= problemBox.y + problemBox.h;
   }
 
-  /* 题面的把手：左侧那条主色竖条所在的一小条（正文从 x+20 才开始，这里没有字）。
-     为什么不做成"整块都能拖"：题面是**演算区**，学生要在题目上圈已知条件、划关键词 ——
+  /* 题面的把手，两块：
+     ① 左侧那一小条（正文从 x+20 才开始，这一条上没有字）；
+     ② **题面的标题行**——有 tag 时就是写着出处 / 考点的那一行。
+     为什么不整块都能拖：题面是**演算区**，学生要在题目上圈已知条件、划关键词 ——
      整块吃掉指针就等于把"在题目上圈画"这个最常用的动作禁掉了。
-     把手只压在无字处：想挪就抓它，想圈画就直接画。 */
+     为什么又加上标题行（用户明确要的）：面板的标题栏整条都能拖，题目这边不该只有最左边那一小条 ——
+     原话「只要鼠标焦点到达面板的这个[标题栏]，就会出现小手……包括题目上面的那个标题」。
+     没有 tag 的题**没有**标题行，那就只有左边那一条：题面第一行正文是学生最常圈画的地方，
+     不能把它吃成把手。 */
   var PROBLEM_GRIP_W = 24;
+  var PROBLEM_GRIP_EDGE = 3;    // 往左多让 3px：贴着板边也抓得住
+  var PROBLEM_TITLE_H = 36;     // 标题行＝框内上边距 14 + 那一行的行高 22（见 drawProblemLayer）
+
   function problemGrip() {
-    return { x: problemBox.x - 3, y: problemBox.y, w: PROBLEM_GRIP_W + 3, h: problemBox.h };
+    return { x: problemBox.x - PROBLEM_GRIP_EDGE, y: problemBox.y, w: PROBLEM_GRIP_W + PROBLEM_GRIP_EDGE, h: problemBox.h };
   }
+
+  function problemGripRects() {
+    if (problemBox.h <= 0) return [];
+    var out = [problemGrip()];
+    var data = cardData();
+    if (data && data.tag) {
+      out.push({
+        x: problemBox.x,
+        y: problemBox.y,
+        w: problemBox.w,
+        h: Math.min(problemBox.h, PROBLEM_TITLE_H)
+      });
+    }
+    return out;
+  }
+
   function hitProblemHandle(wx, wy) {
-    if (problemBox.h <= 0) return false;
-    var g = problemGrip();
-    return wx >= g.x && wx <= g.x + g.w && wy >= g.y && wy <= g.y + g.h;
+    var list = problemGripRects();
+    for (var i = 0; i < list.length; i++) {
+      var g = list[i];
+      if (wx >= g.x && wx <= g.x + g.w && wy >= g.y && wy <= g.y + g.h) return true;
+    }
+    return false;
   }
 
   /* 那层很浅的底只在鼠标压上来时浮现：平时题面就是印在板上的一段字 */

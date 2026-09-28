@@ -335,30 +335,39 @@ assert(WB.state.view.x !== 16 || WB.state.view.y !== 16, '拖拽改变了视图�
 WB.onUp(pe(160, 140, { button: 1 }));
 assert(WB.state.active === null, '松开结束平移');
 
-/* ---------- 箭头与标记 ---------- */
+/* ---------- 箭头与标记 ----------
+   坐标不能写死：题面上有"把手区"（左侧那一条 + 标题行），而题面落在屏幕哪个位置
+   取决于视图（上面刚平移过）。写死坐标就会出现"某一天题面正好挪过来，
+   这一笔变成拖题面"—— 真发生过：加"标题行也是把手"之后，箭头那两条在 (200,260) / (200,300)
+   正好压在题面的标题行上，画不出来。所以统一从"题面下方"起手。 */
+var shapeBox = WB.problemLayout();
+var shapeAt = WB.boardToScreen(shapeBox.x + 10, shapeBox.y + shapeBox.h + 80);
+var sx = Math.round(shapeAt.x);
+var sy = Math.round(shapeAt.y);
+
 WB.setTool('line');
-WB.onDown(pe(200, 200));
-WB.onMove(pe(300, 240));
-WB.onUp(pe(300, 240));
+WB.onDown(pe(sx, sy));
+WB.onMove(pe(sx + 100, sy + 40));
+WB.onUp(pe(sx + 100, sy + 40));
 var lineStroke = WB.state.strokes[WB.state.strokes.length - 1];
 assert(lineStroke.type === 'line' && lineStroke.points.length === 2, '直线工具：两点成线');
 WB.setTool('arrow');
-WB.onDown(pe(200, 260));
-WB.onMove(pe(320, 260));
-WB.onUp(pe(320, 260));
+WB.onDown(pe(sx, sy + 60));
+WB.onMove(pe(sx + 120, sy + 60));
+WB.onUp(pe(sx + 120, sy + 60));
 assert(WB.state.strokes[WB.state.strokes.length - 1].type === 'arrow', '箭头工具生效');
-WB.onDown(pe(200, 300));
-WB.onUp(pe(200, 300));
+WB.onDown(pe(sx, sy + 100));
+WB.onUp(pe(sx, sy + 100));
 assert(WB.state.strokes[WB.state.strokes.length - 1].type === 'arrow', '只点一下不拖拽不会留下空图形');
 WB.setTool('rect');
-WB.onDown(pe(360, 200));
-WB.onMove(pe(460, 280));
-WB.onUp(pe(460, 280));
+WB.onDown(pe(sx + 160, sy));
+WB.onMove(pe(sx + 260, sy + 80));
+WB.onUp(pe(sx + 260, sy + 80));
 assert(WB.state.strokes[WB.state.strokes.length - 1].type === 'rect', '矩形工具生效');
 WB.setTool('ellipse');
-WB.onDown(pe(500, 200));
-WB.onMove(pe(600, 280));
-WB.onUp(pe(600, 280));
+WB.onDown(pe(sx + 300, sy));
+WB.onMove(pe(sx + 400, sy + 80));
+WB.onUp(pe(sx + 400, sy + 80));
 assert(WB.state.strokes[WB.state.strokes.length - 1].type === 'ellipse', '椭圆工具生效');
 
 WB.setTool('line');
@@ -661,6 +670,58 @@ canvasEl._h.pointerdown(pe(body.x, body.y));
 canvasEl._h.pointermove(pe(body.x + 30, body.y + 10));
 canvasEl._h.pointerup(pe(body.x + 30, body.y + 10));
 assert(WB.strokes().length === strokesBody + 1, '题面正文上照常落笔（留着圈已知条件）');
+
+/* ---- 题面的**标题行**也是把手 ----
+   用户要的：面板标题栏整条都能拖（鼠标一到就出小手），题目这边不该只剩最左边那一小条 ——
+   原话「只要鼠标焦点到达面板的这个[标题栏]，就会出现小手，表示我们可以拖动。
+   包括题目上面的那个标题」。只有带 tag 的题才有标题行；没 tag 的题最上面那一行就是正文第一行，
+   那一行是学生最常圈画的地方，不能吃成把手。 */
+var keepAt = { x: WB.state.problemAt.x, y: WB.state.problemAt.y };
+WB.applyExternal({ text: '(−7) + 3', tag: '考点 1 整式的概念', extra: '' });
+WB.state.problemAt.x = 16;
+WB.state.problemAt.y = 16;
+WB.redraw();
+var boxTag = WB.problemLayout();
+assert(WB.hitProblemHandle(boxTag.x + boxTag.w - 20, boxTag.y + 20) === true,
+  '带标题的题：标题行右侧也算把手（不再只认最左边那一条）');
+assert(WB.hitProblemHandle(boxTag.x + boxTag.w - 20, boxTag.y + 60) === false,
+  '标题行下面还是正文，不算把手（正文要能圈画）');
+
+/* 从标题行拖：题面跟着走、不留笔迹 */
+var strokesTag = WB.strokes().length;
+var grabT = screenNow(boxTag.x + boxTag.w - 20, boxTag.y + 20);
+canvasEl._h.pointerdown(pe(grabT.x, grabT.y));
+canvasEl._h.pointermove(pe(grabT.x + 60, grabT.y));
+canvasEl._h.pointerup(pe(grabT.x + 60, grabT.y));
+assert(Math.round(WB.problemLayout().x - boxTag.x) === Math.round(60 / WB.view().scale),
+  '从标题行也能把题面拖走（' + Math.round(WB.problemLayout().x - boxTag.x) + ' 个世界单位）');
+assert(WB.strokes().length === strokesTag, '从标题行拖不留下笔迹');
+
+/* 光标：压在标题行上要变成小手（用户原话："就会出现小手，表示我们可以拖动"） */
+WB.state.problemHover = true;
+WB.setProblemGripHot(WB.hitProblemHandle(boxTag.x + boxTag.w - 20, boxTag.y + 20));
+assert(canvasEl.style.cursor === 'grab',
+  '压在题面标题行上光标变成小手（实际 "' + canvasEl.style.cursor + '"）');
+/* 反过来：压在正文上不该是"可抓"（不然学生会以为那一条拖不得、也就不敢在上面画了） */
+WB.setProblemGripHot(WB.hitProblemHandle(boxTag.x + boxTag.w - 20, boxTag.y + 60));
+assert(canvasEl.style.cursor !== 'grab', '压在正文上不是小手（正文要留给圈画）');
+WB.state.problemHover = false;
+WB.setProblemGripHot(false);
+
+/* 没有 tag 的题：最上面那一行是正文，不能吃成把手 */
+WB.applyExternal({ text: '(−7) + 3', tag: '', extra: '' });
+WB.redraw();
+var boxNoTag = WB.problemLayout();
+assert(WB.hitProblemHandle(boxNoTag.x + boxNoTag.w - 20, boxNoTag.y + 20) === false,
+  '没有标题的题：正文第一行不算把手（否则那一行就圈不动了）');
+assert(WB.hitProblemHandle(boxNoTag.x + 10, boxNoTag.y + 20) === true,
+  '没有标题的题：左边那一条仍然是把手');
+
+/* 复位：外部内容撤掉、位置还给上面 */
+WB.applyExternal(null);
+WB.state.problemAt.x = keepAt.x;
+WB.state.problemAt.y = keepAt.y;
+WB.redraw();
 
 /* 对照组 2：题面之外按下去，也照常落笔 —— 证明这套断言不是把落笔全关掉了 */
 var boxC = WB.problemLayout();

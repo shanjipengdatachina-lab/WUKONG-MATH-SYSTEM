@@ -392,7 +392,10 @@
   cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
 }
 .wb-panel.is-dragging{box-shadow:var(--math-shadow-2)}
-.wb-panel.is-dragging .wb-panel__head{cursor:grabbing}
+/* 拖动中整条标题栏（含里面的 tab / ✕）都显示"正抓着" —— 用 * 压过子控件自己的 cursor:pointer，
+   不然手一划到 tab 上，光标就从 grabbing 变成 pointer，看着像没在拖。 */
+.wb-panel.is-dragging .wb-panel__head,
+.wb-panel.is-dragging .wb-panel__head *{cursor:grabbing}
 .wb-panel__close{
   flex:none;width:22px;height:22px;display:grid;place-items:center;
   border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
@@ -849,7 +852,8 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 }
 .wb-ink[hidden]{display:none}
 .wb-ink__head{display:flex;align-items:center;gap:7px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.wb-ink.is-dragging .wb-ink__head{cursor:grabbing}
+.wb-ink.is-dragging .wb-ink__head,
+.wb-ink.is-dragging .wb-ink__head *{cursor:grabbing}
 .wb-ink__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .wb-ink__badge{
   padding:1px 6px;border-radius:999px;background:var(--math-surface);
