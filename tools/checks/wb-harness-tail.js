@@ -1018,6 +1018,42 @@ WB.setShowProblem(true);
 WB.redraw();
 eq2(panel12.hidden, false, '题面回来 → 面板回来');
 
+/* ---- 标题栏里的控件不能被标题栏的拖动吃掉 ----
+   用户反馈："点击关闭都没有效果"。根在这里：✕ 和 tab 都长在标题栏里面，
+   而标题栏是拖动抓手 —— pointerdown 里 setPointerCapture(+preventDefault) 之后，
+   浏览器会把后面那个 click 改派给捕获元素，✕ / tab 自己的 click 根本不响。
+   题库面板当初就专门躲开了 .wb-bank__close，新的两块面板当时漏了这一步。
+   桩里没有祖先链，所以用一个"会说自己是 button"的 target 来演真实按钮。 */
+var btnTarget12 = { closest: function (s) { return s.indexOf('button') >= 0 ? {} : null; } };
+var dragX12 = WB.state.winAt.panel.x;
+head12._h.pointerdown(pe(300, 200, { id: 12, target: btnTarget12 }));
+head12._h.pointermove(pe(360, 260, { id: 12 }));
+head12._h.pointerup(pe(360, 260, { id: 12 }));
+eq2(Math.round(WB.state.winAt.panel.x), Math.round(dragX12),
+  '按在 ✕ / tab 上不会把面板拖走（标题栏不许吃掉控件的点击）');
+eq2(head12.classList.contains('is-dragging'), false, '按在 ✕ 上也不会进入"正在拖"的样子');
+/* 反过来：按在标题栏空白处照样能拖（别为了躲按钮把拖动整个关掉） */
+head12._h.pointerdown(pe(300, 200, { id: 13, target: null }));
+head12._h.pointermove(pe(340, 200, { id: 13 }));
+head12._h.pointerup(pe(340, 200, { id: 13 }));
+eq2(Math.round(WB.state.winAt.panel.x - dragX12), 40, '按在标题栏空白处照样能拖（40px）');
+
+/* ✕ 自己的 click 要能关掉面板 */
+WB.openAnalysis();
+eq2(WB.analysisOpen(), true, '前提：面板开着');
+elById('wb-panel-close')._h.click(pe(300, 200, { target: btnTarget12 }));
+eq2(WB.analysisOpen(), false, '点面板的 ✕ → 面板关掉');
+eq2(panel12.hidden, true, '点面板的 ✕ → 面板真的藏起来');
+
+/* 转译窗口的 ✕ 同理（它也是长在标题栏里的） */
+WB.toggleTranscribe();
+eq2(WB.state.ink.open, true, '前提：转译窗口开着');
+elById('wb-ink-close')._h.click(pe(300, 200, { target: btnTarget12 }));
+eq2(WB.state.ink.open, false, '点转译窗口的 ✕ → 它自己关掉');
+eq2(elById('wb-ink-text').hidden, true, '转译窗口也真的藏起来');
+WB.openAnalysis();
+WB.redraw();
+
 /* ---- 保存菜单：存题 / 导出两条 ---- */
 eq2(saveMenu12.hidden, true, '没点保存时，菜单不出现');
 WB.toggleSaveMenu();

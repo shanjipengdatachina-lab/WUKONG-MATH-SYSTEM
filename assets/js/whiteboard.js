@@ -839,6 +839,16 @@
   function winDown(which, e) {
     var el = winEl(which);
     if (!el || !el.style || el.hidden) return;
+    /* 抓手是标题栏的**空白处**，不是标题栏里的按钮。
+       点到 ✕ / tab / 注释开关上就交给它们自己处理：不躲开的话，标题栏会把这一次点击吃掉 ——
+       pointerdown 里 setPointerCapture + preventDefault 之后，浏览器把后面那个 click
+       改派给了捕获元素，按钮自己的 click 根本不响。题库面板当初就是这么修的（只躲 .wb-bank__close），
+       这里躲宽一点：整个标题栏里的控件都不碰。用户反馈："点击关闭都没有效果"。 */
+    var t = e.target;
+    if (t && typeof t.closest === 'function' &&
+        t.closest('button, a, input, select, textarea, [contenteditable="true"], .wb-tabs')) {
+      return;
+    }
     var at = state.winAt[which] || defaultWinAt(which);
     state.winAt[which] = at;
     winDrag = { which: which, id: e.pointerId, sx: e.clientX, sy: e.clientY, ax: at.x, ay: at.y };
@@ -847,7 +857,8 @@
     if (head && typeof head.setPointerCapture === 'function') {
       try { head.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
-    if (typeof e.preventDefault === 'function') e.preventDefault();
+    /* 这里**不再** preventDefault：标题栏不选中文字 / 不触发手势，靠 CSS 的
+       user-select:none + touch-action:none 就够；preventDefault 会把子控件的点击一起挡掉。 */
   }
 
   function winMove(which, e) {

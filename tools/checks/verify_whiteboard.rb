@@ -357,6 +357,25 @@ issues << '转译窗口标题字号不是 13px（跟其它面板标题不齐）'
   html[/\.wb-ink__title\{[^}]*font-size:calc\(13px \* var\(--math-fs\)\)/m]
 issues << '条目正文没跟题库条目同一档（应 13.5px）' unless
   html[/\.wb-tile__text\{[^}]*font-size:calc\(13.5px \* var\(--math-fs\)\)/m]
+
+# 拖动抓手必须躲开标题栏里的控件（用户反馈："点击关闭都没有效果"）。
+# ✕ 与 tab 都长在标题栏里面，抓手要是不躲：pointerdown 里的 setPointerCapture 会把后面那个
+# click 改派给抓手，按钮自己的 click 根本不响 —— 题库面板当初就躲开了 .wb-bank__close，
+# 新的两块面板漏了这一步。附带一条：抓手不许 preventDefault（同理会把子控件的点击挡掉）。
+win_down = wbjs[/function winDown\([\s\S]*?\n  \}/].to_s
+# 先剥掉注释再查：这段函数里就写着"这里不再 preventDefault……"，不剥的话守线会被注释自己点着
+# （这次就点着了：守线常红 = 和"常绿"一样没用，等于没守）
+win_code = win_down.gsub(%r{/\*[\s\S]*?\*/}, '').gsub(%r{//[^\n]*}, '')
+issues << '面板抓手没躲开标题栏里的控件（✕ / tab 会点不动）' unless win_code.include?('closest(')
+issues << '面板抓手又加了 preventDefault（会把 ✕ / tab 的点击一起挡掉）' if
+  win_code.include?('preventDefault')
+# 两块的标题栏都要做成"可抓"的样子（用户看不出它能拖）。
+# 注意要带分号：不带分号的话 `.wb-ink__head{cursor:grabbing}`（拖动中那条）也能把它满足，
+# 守线就成了摆设 —— 反证时正是这样"没能变红"。
+issues << '转译窗口的标题栏没做成可抓的样子（用户看不出它能拖）' unless
+  html[/\.wb-ink__head\{[^}]*cursor:grab;/m]
+issues << '分析答案面板的标题栏没做成可抓的样子' unless
+  html[/\.wb-panel__head\{[^}]*cursor:grab;/m]
 # 思路 / 答案 / 转文字三处共用同一套条目样式，最怕后一段"不带前缀地又写一遍"——
 # 后写的会静静盖掉前写的，而且三处里只有一处看着不对（真机复核抓到过：
 # 转文字面板的旧样式把答案块的编号压成了灰色小字、正文还多了一层底）。
