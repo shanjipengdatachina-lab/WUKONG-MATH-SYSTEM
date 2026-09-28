@@ -331,6 +331,53 @@
 .wb-act.is-on{background:var(--math-primary-tint);color:var(--math-primary)}
 .wb-act.is-on:hover{background:var(--math-primary-200)}
 .wb-act:disabled{color:var(--math-ink-4);cursor:default;background:none}
+/* 台阶框：一步一框，浮在板上、跟着板走。
+   **字号刻意不跟着缩** —— 台阶是要读、要写的，缩到 15% 就没法用了，
+   所以只有位置跟板，尺寸恒定。 */
+.wb-step{
+  position:absolute;left:0;top:0;z-index:4;
+  width:232px;border:1px solid var(--math-border);border-radius:10px;
+  background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.10);
+  animation:wb-step-in .16s ease-out both;
+  animation-delay:calc(var(--i,0) * 60ms);
+}
+.wb-step[hidden]{display:none}
+/* 依次浮出：每框比上一个晚 60ms —— 这就是"台阶"的节奏 */
+@keyframes wb-step-in{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .wb-step{animation:none}
+}
+.wb-step__head{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;
+  border-bottom:1px solid var(--math-border);
+  background:var(--math-surface);border-radius:9px 9px 0 0;
+  cursor:grab;touch-action:none;
+  /* 把手不许被选中：拖的时候如果顺手划出一片蓝，看着就像把页面拖坏了 */
+  user-select:none;-webkit-user-select:none;
+}
+.wb-step.is-dragging{box-shadow:0 16px 40px rgba(15,23,42,.20)}
+.wb-step.is-dragging .wb-step__head{cursor:grabbing}
+.wb-step__no{
+  flex:none;width:18px;height:18px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;
+  background:var(--math-primary-tint);color:var(--math-primary);
+}
+.wb-step__grip{flex:none;margin-left:auto;width:14px;height:14px;color:var(--math-ink-4)}
+.wb-step__guide{
+  padding:8px 10px 0;font-size:12.5px;line-height:1.55;color:var(--math-ink-2);
+}
+.wb-step__pad{
+  min-height:40px;margin:8px 10px 10px;padding:6px 8px;
+  border:1px dashed var(--math-border);border-radius:8px;
+  font-size:13px;line-height:1.5;color:var(--math-foreground);
+  outline:none;
+}
+.wb-step__pad:focus{border-style:solid;border-color:var(--math-primary)}
+.wb-step__pad:empty::before{content:attr(data-placeholder);color:var(--math-ink-4)}
   </style>
 </head>
 <body class="min-h-screen font-sans antialiased">
@@ -531,6 +578,53 @@
             <button type="button" class="wb-act" id="wb-act-analysis" aria-label="分析这道题">分析</button>
             <button type="button" class="wb-act" id="wb-act-answer" aria-label="看这道题的答案">答案</button>
             <button type="button" class="wb-act" id="wb-act-transcribe" aria-label="把手写思路转成电子文字">转文字</button>
+          </div>
+
+          <!-- 台阶框：一步一框。「分析」浮出 1~5 个，可拖、可写。
+               位置同样由世界坐标投影出来（跟板走），但字号不跟缩 —— 台阶要能读能写。 -->
+          <div class="wb-step" id="wb-step-0" hidden>
+            <div class="wb-step__head" id="wb-step-head-0">
+              <span class="wb-step__no">1</span>
+              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+            </div>
+            <div class="wb-step__guide" id="wb-step-guide-0"></div>
+            <div class="wb-step__pad" id="wb-step-pad-0" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 1 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+          </div>
+
+          <div class="wb-step" id="wb-step-1" hidden>
+            <div class="wb-step__head" id="wb-step-head-1">
+              <span class="wb-step__no">2</span>
+              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+            </div>
+            <div class="wb-step__guide" id="wb-step-guide-1"></div>
+            <div class="wb-step__pad" id="wb-step-pad-1" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 2 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+          </div>
+
+          <div class="wb-step" id="wb-step-2" hidden>
+            <div class="wb-step__head" id="wb-step-head-2">
+              <span class="wb-step__no">3</span>
+              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+            </div>
+            <div class="wb-step__guide" id="wb-step-guide-2"></div>
+            <div class="wb-step__pad" id="wb-step-pad-2" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 3 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+          </div>
+
+          <div class="wb-step" id="wb-step-3" hidden>
+            <div class="wb-step__head" id="wb-step-head-3">
+              <span class="wb-step__no">4</span>
+              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+            </div>
+            <div class="wb-step__guide" id="wb-step-guide-3"></div>
+            <div class="wb-step__pad" id="wb-step-pad-3" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 4 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
+          </div>
+
+          <div class="wb-step" id="wb-step-4" hidden>
+            <div class="wb-step__head" id="wb-step-head-4">
+              <span class="wb-step__no">5</span>
+              <i data-lucide="grip-vertical" class="wb-step__grip" aria-hidden="true"></i>
+            </div>
+            <div class="wb-step__guide" id="wb-step-guide-4"></div>
+            <div class="wb-step__pad" id="wb-step-pad-4" contenteditable="true" role="textbox" aria-multiline="false" aria-label="第 5 步：在这里写你的推导" data-placeholder="在这里写你的推导"></div>
           </div>
 
           <!-- 题目下方那一块：手写转文字。位置由白板按世界坐标投影出来，

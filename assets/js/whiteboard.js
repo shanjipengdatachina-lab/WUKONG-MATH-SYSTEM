@@ -690,6 +690,7 @@
        它们的位置全部由世界坐标投影出来，所以每次重绘后重排一次就跟着板走了。
        注意：必须放在**画完题面之后** —— drawProblemLayer 里才会算出最新的题面矩形，
        摆在它前面就会慢一帧（这一处踩过：断言报"题面右移后按钮没跟着动"）。 */
+    renderSteps(overlayCtx());
     layoutOverlays();
   }
 
@@ -755,6 +756,18 @@
     var maxY = Math.max(4, (wrap.clientHeight || v.h) - ah - 4);
     acts.style.left = Math.min(Math.max(4, anchor.x), maxX) + 'px';
     acts.style.top = Math.min(Math.max(4, anchor.y), maxY) + 'px';
+
+    /* 台阶框也由世界坐标投影出来 —— 和上面两个按钮同一套算法。
+       位置只在第一次落位时算，之后跟着学生拖的结果走（见 openAnalysis）。 */
+    for (var si = 0; si < MAX_STEPS; si++) {
+      var sb = byId('wb-step-' + si);
+      if (!sb || sb.hidden || !sb.style) continue;
+      var st = state.analysis.steps[si];
+      if (!st || st.wx === null) continue;
+      var sp = boardToScreen(st.wx, st.wy);
+      sb.style.left = Math.round(sp.x) + 'px';
+      sb.style.top = Math.round(sp.y) + 'px';
+    }
   }
 
   /* 题目下方竖排的那几块：谁开谁占位，依次往下，互不重叠。
@@ -788,9 +801,7 @@
   /* 这两个开关在 Task 3 / Task 4 里长出内容；先让按钮有个真实反应，
      免得 Task 2 交付的是两个点不动的装饰。 */
   function toggleAnalysis() {
-    state.analysis.open = !state.analysis.open;
-    if (state.analysis.open) state.analysis.answerOpen = false;   /* 分析时先把答案收起来（设计 §2 #6） */
-    redraw();
+    if (state.analysis.open) closeAnalysis(); else openAnalysis();
     return state.analysis.open;
   }
 
@@ -798,6 +809,152 @@
     state.analysis.answerOpen = !state.analysis.answerOpen;
     redraw();
     return state.analysis.answerOpen;
+  }
+
+  /* ---------- 台阶框 ---------- */
+
+  var MAX_STEPS = 5;
+
+  /* 台阶的引导语：只给"该往哪儿看"。本版是预置数据，接真服务只换这一个调用点。 */
+  function stepGuides() {
+    var api = (typeof window !== 'undefined' && window.WK_ANALYSIS) ? window.WK_ANALYSIS : null;
+    if (!api || typeof api.steps !== 'function') return [];
+    var list = api.steps(cardData());
+    return (list && list.length) ? list.slice(0, MAX_STEPS) : [];
+  }
+  function stepGuide(i) { return stepGuides()[i] || ''; }
+
+  /* 台阶框的初始落位：题面右侧、依次向下错开。
+     偏移量按屏幕像素折算成世界单位 —— 这样不管当前缩放多少，看起来都是同一套间距。 */
+  function defaultStepAt(i) {
+    var box = problemBox;
+    var k = state.view.scale || 1;
+    return {
+      wx: box.x + box.w + (26 + i * 16) / k,
+      wy: box.y + (i * 104) / k
+    };
+  }
+
+  /* 展开台阶：位置只在第一次落位时算，之后跟着学生拖的结果走 */
+  function openAnalysis() {
+    var n = stepGuides().length;
+    if (!n) return 0;
+    for (var i = 0; i < n; i++) {
+      var s = state.analysis.steps[i];
+      if (!s) { s = { wx: null, wy: null, text: '' }; state.analysis.steps[i] = s; }
+      if (s.wx === null || s.wy === null) {
+        var d = defaultStepAt(i);
+        s.wx = d.wx; s.wy = d.wy;
+      }
+    }
+    state.analysis.steps.length = n;
+    state.analysis.open = true;
+    state.analysis.answerOpen = false;   /* 点「分析」先把答案收起来（设计 §2 #6） */
+    redraw();
+    persist();
+    return n;
+  }
+
+  function closeAnalysis() {
+    state.analysis.open = false;         /* 收起不是清空：学生写的内容留着 */
+    redraw();
+    persist();
+  }
+
+  function analysisOpen() { return !!state.analysis.open; }
+
+  function setStepText(i, text) {
+    var s = state.analysis.steps[i];
+    if (!s) return null;
+    s.text = String(text == null ? '' : text);
+    var pad = byId('wb-step-pad-' + i);
+    /* 只有真的不一样才回写 DOM —— 否则每敲一个字都会把光标顶到末尾 */
+    if (pad && pad.textContent !== s.text) pad.textContent = s.text;
+    /* 这里**故意不 persist()**：本函数挂在 input 事件上，每敲一个字都会调用一次，
+       而 persist() 会把最多 800 笔笔迹整体 JSON 序列化一遍 —— 每敲一个字写几百 KB 会卡。
+       落盘交给失焦（blur）和拖动结束（onStepUp）。 */
+    return s.text;
+  }
+  function stepText(i) {
+    var s = state.analysis.steps[i];
+    return s ? (s.text || '') : '';
+  }
+  function stepPos(i) {
+    var s = state.analysis.steps[i];
+    return s ? { wx: s.wx, wy: s.wy } : null;
+  }
+
+  function renderSteps(ctx) {
+    var guides = stepGuides();
+    for (var i = 0; i < MAX_STEPS; i++) {
+      var box = byId('wb-step-' + i);
+      if (!box) continue;
+      var on = ctx.has && state.analysis.open && i < guides.length;
+      toggleHidden(box, !on);
+      if (!on) continue;
+      setText(byId('wb-step-guide-' + i), guides[i]);
+      var s = state.analysis.steps[i];
+      var pad = byId('wb-step-pad-' + i);
+      if (pad && pad.textContent !== (s ? (s.text || '') : '')) pad.textContent = s ? (s.text || '') : '';
+      if (box.style && box.style.setProperty) box.style.setProperty('--i', String(i));
+    }
+  }
+
+  /* 拖台阶框：手柄是标题栏。手上拖的是屏幕像素，世界位移除以 scale —— 和拖题面同一条规矩。 */
+  var stepDrag = null;
+
+  function onStepDown(idx, e) {
+    var s = state.analysis.steps[idx];
+    if (!s || s.wx === null) return;
+    var head = byId('wb-step-head-' + idx);
+    stepDrag = { idx: idx, id: e.pointerId, sx: e.clientX, sy: e.clientY, wx: s.wx, wy: s.wy };
+    var box = byId('wb-step-' + idx);
+    if (box && box.classList) box.classList.add('is-dragging');
+    if (head && typeof head.setPointerCapture === 'function') {
+      try { head.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+    }
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
+  function onStepMove(idx, e) {
+    if (!stepDrag || stepDrag.idx !== idx || e.pointerId !== stepDrag.id) return;
+    var s = state.analysis.steps[idx];
+    if (!s) return;
+    var k = state.view.scale || 1;
+    s.wx = stepDrag.wx + (e.clientX - stepDrag.sx) / k;
+    s.wy = stepDrag.wy + (e.clientY - stepDrag.sy) / k;
+    layoutOverlays();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+
+  function onStepUp(idx, e) {
+    if (!stepDrag || stepDrag.idx !== idx) return;
+    if (e && e.pointerId !== undefined && e.pointerId !== stepDrag.id) return;
+    var box = byId('wb-step-' + idx);
+    if (box && box.classList) box.classList.remove('is-dragging');
+    stepDrag = null;
+    persist();
+  }
+
+  /* 每个台阶框各挂各的 —— 把序号闭包进来，
+     比在事件里 closest('.wb-step') 反查更稳（桩里 closest 永远是 null）。 */
+  function initStepDrag() {
+    for (var i = 0; i < MAX_STEPS; i++) {
+      (function (idx) {
+        var head = byId('wb-step-head-' + idx);
+        if (!head || !head.addEventListener) return;
+        head.addEventListener('pointerdown', function (e) { onStepDown(idx, e); });
+        head.addEventListener('pointermove', function (e) { onStepMove(idx, e); });
+        head.addEventListener('pointerup', function (e) { onStepUp(idx, e); });
+        head.addEventListener('pointercancel', function (e) { onStepUp(idx, e); });
+        var pad = byId('wb-step-pad-' + idx);
+        if (pad && pad.addEventListener) {
+          pad.addEventListener('input', function () { setStepText(idx, pad.textContent); });
+          /* 失焦时落盘：打字过程不写，离开这个框才写一次 */
+          pad.addEventListener('blur', function () { persist(); });
+        }
+      })(i);
+    }
   }
 
   /* ---------- 手写转文字：识别 + 分步点评 ----------
@@ -1512,6 +1669,9 @@
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
+
+    /* 台阶框：拖动与书写各挂各的（序号闭包进去），挂在按钮之前先建好桩 */
+    initStepDrag();
 
     /* 「分析 / 答案」两个按钮：先只有按钮，内容在 Task 3 / Task 4 接进来 */
     var actsAnalysis = byId('wb-act-analysis');
@@ -2269,6 +2429,16 @@
         showProblem: state.showProblem,
         problemId: state.problemId,
         external: state.external,
+        /* 分析 / 答案那一层：台阶的位置与学生写的内容都要落盘 ——
+           「收起」不算清空，刷新回来还得在。 */
+        analysis: {
+          open: state.analysis.open,
+          answerOpen: state.analysis.answerOpen,
+          showNotes: state.analysis.showNotes,
+          steps: state.analysis.steps.map(function (s) {
+            return { wx: s.wx, wy: s.wy, text: s.text || '' };
+          })
+        },
         view: { scale: state.view.scale, x: state.view.x, y: state.view.y },
         strokes: state.strokes.slice(-MAX_STROKES)
       }));
@@ -2454,6 +2624,15 @@
     overlayCtx: overlayCtx,
     toggleAnalysis: toggleAnalysis,
     toggleAnswer: toggleAnswer,
+    stepGuides: stepGuides,
+    stepGuide: stepGuide,
+    stepText: stepText,
+    setStepText: setStepText,
+    stepPos: stepPos,
+    openAnalysis: openAnalysis,
+    closeAnalysis: closeAnalysis,
+    analysisOpen: analysisOpen,
+    initStepDrag: initStepDrag,
     toggleTranscribe: toggleTranscribe,
     transcribe: runTranscribe,
     inkOutside: inkOutside,

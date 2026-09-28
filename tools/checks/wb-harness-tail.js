@@ -1314,6 +1314,97 @@ WB.clearAll();
 eq(WB.state.strokes.length, 0, '清空画布：笔迹没了');
 eq(WB.inkSteps().length, inkCount15, '但转出来的文字还留着（那是你存下来的东西，要删用面板上的「移除」）');
 
+/* ============================================================
+   12. 台阶框：「分析」浮出 1~5 个可拖、可写的框
+   ============================================================ */
+WB.clearAll();
+WB.applyProblem('7a-01');
+WB.redraw();
+WB.state.analysis.open = false;
+WB.state.analysis.steps = [];
+WB.redraw();
+assert(document.getElementById('wb-step-0').hidden === true, '没点分析时，第一个台阶框不出现');
+
+WB.toggleAnalysis();
+var n12 = WB.stepGuides().length;
+assert(n12 >= 1 && n12 <= 5, '「分析」浮出的台阶数量在 1~5（实际 ' + n12 + '）');
+
+var shown12 = [];
+for (var i12 = 0; i12 < 5; i12++) {
+  if (!document.getElementById('wb-step-' + i12).hidden) shown12.push(i12);
+}
+assert(shown12.length === n12,
+  '浮出的台阶框个数与台阶数一致（期望 ' + n12 + '，实际 ' + shown12.length + '）');
+
+assert(document.getElementById('wb-step-guide-0').textContent === WB.stepGuides()[0],
+  '第一个台阶框里写着第一条引导语');
+
+/* 设计 §2 #6：分析里不许有答案。这条在界面上守一遍，别只信数据层 */
+var guideAll12 = '';
+for (var j12 = 0; j12 < n12; j12++) guideAll12 += WB.stepGuide(j12) + ' ';
+var ans12 = window.WK_ANALYSIS.answer('7a-01');
+assert(guideAll12.indexOf(ans12.result) < 0,
+  '台阶框里不出现答案 ' + ans12.result + '（这条是「分析」的底线）');
+
+/* 台阶框自己带引导语，但学生写的那一栏是空的 —— 引导语不是答案 */
+assert(WB.stepText(0) === '', '学生那一栏初始是空的（别把引导语塞成"已答"）');
+WB.setStepText(0, '要求的是 −7 + 3 的和');
+assert(WB.stepText(0) === '要求的是 −7 + 3 的和', '写进台阶框的内容记得住');
+assert(document.getElementById('wb-step-pad-0').textContent === '要求的是 −7 + 3 的和',
+  '写进台阶框的内容也同步到界面上');
+assert(document.getElementById('wb-step-pad-0').getAttribute('contenteditable') === 'true',
+  '台阶框是可直接书写的（contenteditable）');
+
+/* 拖动：手上拖的是屏幕像素，世界位移要除以 scale（和拖题面同一条规矩） */
+var pos0 = WB.stepPos(0);
+var head0 = document.getElementById('wb-step-head-0');
+var stepBox0 = document.getElementById('wb-step-0');
+var leftBefore12 = parseFloat(stepBox0.style.left);
+var topBefore12 = parseFloat(stepBox0.style.top);
+var s12 = WB.state.view.scale;
+var v12x = WB.state.view.x, v12y = WB.state.view.y;      /* 前后各取一次，别写死 16 */
+var strokes12 = WB.state.strokes.length;
+head0._h.pointerdown(pe(300, 200));
+head0._h.pointermove(pe(360, 260));
+head0._h.pointerup(pe(360, 260));
+var pos1 = WB.stepPos(0);
+assert(Math.round(pos1.wx - pos0.wx) === Math.round(60 / s12),
+  '台阶框横向跟着拖了 60 屏幕像素（' + Math.round(pos0.wx) + ' → ' + Math.round(pos1.wx) + '）');
+assert(Math.round(pos1.wy - pos0.wy) === Math.round(60 / s12),
+  '台阶框纵向跟着拖了 60 屏幕像素（' + Math.round(pos0.wy) + ' → ' + Math.round(pos1.wy) + '）');
+assert(WB.state.view.x === v12x && WB.state.view.y === v12y, '拖台阶框不带动板面');
+assert(WB.state.strokes.length === strokes12, '拖台阶框不留下笔迹（事件没漏到画布）');
+
+/* 光"数据动了"不够 —— 界面也得跟着重排，否则就是"拖了看不见"。
+   上面两条量的是 state，这两条量的是 DOM 上的位置（由 layoutOverlays 写进去）。
+   计划里原本只写了上面两条，反证时发现删掉 layoutOverlays 它们照样过 —— 补在这里。 */
+assert(Math.round(parseFloat(stepBox0.style.left) - leftBefore12) === 60,
+  '界面上的横坐标跟着走了 60px（' + leftBefore12 + ' → ' + stepBox0.style.left + '）');
+assert(Math.round(parseFloat(stepBox0.style.top) - topBefore12) === 60,
+  '界面上的纵坐标跟着走了 60px（' + topBefore12 + ' → ' + stepBox0.style.top + '）');
+
+/* 落盘：写进台阶的内容要真的进了 localStorage，别只停在内存里。
+   setStepText 本身不写（打字过程不落盘），拖动结束会写一次。 */
+var stored12 = String(window.localStorage.getItem('wkmath.whiteboard.v1') || '');
+assert(stored12.indexOf('要求的是') >= 0,
+  '拖完一次台阶框，学生写的内容就落盘了（存储里能找到）');
+
+/* 点第二次「分析」收起来，但写过的内容还在 —— 收起不是清空 */
+WB.toggleAnalysis();
+assert(WB.analysisOpen() === false, '再点一次「分析」收起台阶');
+assert(document.getElementById('wb-step-0').hidden === true, '收起后台阶框隐藏');
+assert(WB.stepText(0) === '要求的是 −7 + 3 的和', '收起台阶不清空学生写的内容');
+WB.toggleAnalysis();
+assert(WB.stepText(0) === '要求的是 −7 + 3 的和', '再展开，内容还在');
+
+/* 题面收起时，台阶框不该留在板上 */
+WB.setShowProblem(false);
+WB.redraw();
+assert(document.getElementById('wb-step-0').hidden === true, '题面收起时台阶框一起收起');
+WB.setShowProblem(true);
+WB.redraw();
+assert(document.getElementById('wb-step-0').hidden === false, '题面恢复后台阶框回来');
+
 /* ---- 收尾 ---- */
 WB.clearAll();
 WB.applyProblem(null);
