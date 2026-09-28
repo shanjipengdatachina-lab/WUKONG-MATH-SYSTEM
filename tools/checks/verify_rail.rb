@@ -28,6 +28,15 @@ files.each do |path|
   issues << '缺设置入口' unless html.include?('settings.html')
   issues << '侧栏缺搜索按钮' unless html.include?('ide-rail__search') || name == 'concept.html'
 
+  # 侧栏上不再出现快捷键提示（用户原话："左边栏搜索有快捷键去掉"）。
+  # 原来「搜索」那一行悬停展开时会露出一个 ⌘K 角标（.ide-rail__kbd），
+  # 「全屏」那颗的 title 里也写着（Esc 退出）。**键照旧好使**，只是不再写在界面上。
+  issues << '侧栏的搜索那一行又挂上了快捷键角标（.ide-rail__kbd）' if html.include?('ide-rail__kbd')
+  issues << '侧栏的搜索 title 里又带上了快捷键（应只是「搜索知识点」）' if
+    html.include?('title="搜索知识点（')
+  issues << '侧栏「全屏」的 title 里又带上了按键（应只是「全屏模式」）' if
+    html.include?('title="全屏模式（')
+
   # 侧栏入口：论坛必须有一项；论坛各页该项要是当前项；错题本不该再挂在主导航
   if html.include?('class="ide-rail"')
     issues << '侧栏缺「论坛」入口' unless html.include?('data-nav-key="forum"')

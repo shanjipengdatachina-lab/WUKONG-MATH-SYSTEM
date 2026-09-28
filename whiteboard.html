@@ -121,8 +121,10 @@
    用户原话："当前题目也应该有个和分析面板一样的关闭按钮和拖动，当鼠标hover的时候出现"。
 
    两条设计约束：
-   1. **落在题面框的外面**（上沿之上一线）。题面是给学生圈已知条件、划关键词的演算区，
-      控件压进正文就等于把那一小块地吃了；浮在框外，平时又不出现，正文一整块都还是学生的。
+   1. **落在题面框之内**（右上角，往里缩 6px）。用户原话："题目的关闭按钮和拖动按钮要在题目的
+      范围内，要不然点不到" —— 原来它浮在框**上面 6px 的外面**，指针从题面挪过去要先跨过那
+      6px 空档，一跨出去题面就判定"离开了"，控件当场消失，于是永远点不到。
+      代价是它压住正文右上角那一小块；换来的是"一定点得到"。位置由 layoutProblemCtl 算。
    2. 把手是**真的能拖**：按在指纹上就能搬题面（处理函数走 beginProblemDrag，跟按在
       标题行上同一条路），不是只做了个样子。 */
 .wb-pctl{
@@ -579,15 +581,14 @@
 
       <div class="ide-rail__foot">
         <span class="ide-rail__sep" aria-hidden="true"></span>
-        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式">
           <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
           <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
           <span class="ide-rail__label">全屏</span>
         </button>
-        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点">
           <i data-lucide="search" class="ide-rail__icon"></i>
           <span class="ide-rail__label">搜索</span>
-          <kbd class="ide-rail__kbd">⌘K</kbd>
         </a>
         <a class="ide-rail__account" href="login.html" title="登录 / 注册">
           <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
@@ -651,23 +652,23 @@
               </div>
             </div>
             <span class="wb-dock__sep" aria-hidden="true"></span>
-            <button type="button" class="wb-dock__btn" id="wb-undo" data-wb-tip="撤销 ⌘Z" aria-label="撤销">
+            <button type="button" class="wb-dock__btn" id="wb-undo" data-wb-tip="撤销" aria-label="撤销">
               <i data-lucide="undo-2"></i>
             </button>
-            <button type="button" class="wb-dock__btn" id="wb-redo" data-wb-tip="重做 ⇧⌘Z" aria-label="重做">
+            <button type="button" class="wb-dock__btn" id="wb-redo" data-wb-tip="重做" aria-label="重做">
               <i data-lucide="redo-2"></i>
             </button>
             <button type="button" class="wb-dock__btn" id="wb-clear" data-wb-tip="清空画布" aria-label="清空">
               <i data-lucide="trash-2"></i>
             </button>
             <span class="wb-dock__sep" aria-hidden="true"></span>
-            <button type="button" class="wb-dock__btn" id="wb-grid" aria-pressed="false" data-wb-tip="网格 · 中 G" aria-label="网格">
+            <button type="button" class="wb-dock__btn" id="wb-grid" aria-pressed="false" data-wb-tip="网格 · 中" aria-label="网格">
               <i data-lucide="grid-3x3"></i>
             </button>
             <button type="button" class="wb-dock__btn" id="wb-problem-toggle" aria-pressed="true" data-wb-tip="显示题面" aria-label="题面">
               <i data-lucide="file-text"></i>
             </button>
-            <button type="button" class="wb-dock__btn" id="wb-bank-toggle" aria-pressed="false" aria-controls="wb-bank" data-wb-tip="题库 ⌘B" aria-label="题库">
+            <button type="button" class="wb-dock__btn" id="wb-bank-toggle" aria-pressed="false" aria-controls="wb-bank" data-wb-tip="题库" aria-label="题库">
               <i data-lucide="library-big"></i>
             </button>
             <!-- 上传我的题：独立功能（拍照 / 传图识别在 Plan 3），点开选一道自己的题上传。
@@ -694,7 +695,7 @@
                  用户要求挪到工具条上、紧挨着「放大」右边 —— 找"适应内容"得先打开设置，本来就不合理。
                  图标也从 scan 换成 maximize-2：scan 那几个角读起来像"扫描"，
                  四角向外的箭头才是"把内容撑满、一眼看全"，而且跟图谱页的「适应窗口」是同一个图标（同一个动作同一个图标）。 -->
-            <button type="button" class="wb-dock__btn" id="wb-zoom-fit" data-wb-tip="适应内容 ⇧1" aria-label="适应内容">
+            <button type="button" class="wb-dock__btn" id="wb-zoom-fit" data-wb-tip="适应内容" aria-label="适应内容">
               <i data-lucide="maximize-2"></i>
             </button>
           </div>

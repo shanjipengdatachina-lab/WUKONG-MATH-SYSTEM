@@ -41,7 +41,9 @@
     function sync() {
       var on = !!current();
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.setAttribute('title', on ? '退出全屏（Esc）' : '全屏模式（Esc 退出）');
+      /* 提示语里不再跟按键（原来是"全屏模式（Esc 退出）"）：
+         用户要求去掉界面上的快捷键提示 —— 键照旧好使，只是不在提示里写出来。 */
+      btn.setAttribute('title', on ? '退出全屏' : '全屏模式');
       if (label) label.textContent = on ? '退出全屏' : '全屏';
     }
 
@@ -274,8 +276,9 @@
     if (sideBtn) {
       sideBtn.setAttribute('aria-expanded', rh ? 'false' : 'true');
       sideBtn.setAttribute('aria-label', rh ? '展开右栏' : '隐藏右栏');
-      sideBtn.setAttribute('title',
-        (rh ? '展开右栏' : '隐藏右栏') + '（⌘/Ctrl + ⌥/Alt + B）');
+      /* 提示语里不再跟快捷键（原来是"隐藏右栏（⌘/Ctrl + ⌥/Alt + B）"）——
+         用户要求去掉界面上的快捷键提示；⌘/Ctrl + ⌥/Alt + B 本身照旧好使。 */
+      sideBtn.setAttribute('title', rh ? '展开右栏' : '隐藏右栏');
     }
   }
 

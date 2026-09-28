@@ -13,14 +13,14 @@ assert(typeof fsBtn.handlers.click === 'function', '侧栏全屏按钮绑定了�
 assert(fsBtn.hidden === false, '浏览器支持时按钮正常显示');
 assert(fsBtn.getAttribute('aria-pressed') === 'false', '初始不是全屏');
 assert(fsLabel.textContent === '全屏', '初始文案是「全屏」');
-assert(fsBtn.getAttribute('title') === '全屏模式（Esc 退出）', '初始提示语正确');
+assert(fsBtn.getAttribute('title') === '全屏模式', '初始提示语正确（不带按键提示）');
 
 /* 2. 点一下 → 整页全屏 */
 fsBtn.handlers.click();
 assert(document.fullscreenElement === document.documentElement, '请求的是整页全屏');
 assert(fsBtn.getAttribute('aria-pressed') === 'true', '按钮同步为全屏态');
 assert(fsLabel.textContent === '退出全屏', '文案改为「退出全屏」');
-assert(fsBtn.getAttribute('title') === '退出全屏（Esc）', '提示语改为退出');
+assert(fsBtn.getAttribute('title') === '退出全屏', '提示语改为退出（也不带按键提示）');
 
 /* 3. 再点一下 → 退出 */
 fsBtn.handlers.click();

@@ -59,15 +59,14 @@
         <!-- 「目录 / 本页」这两个面板开关已撤（用户："左下角俩按钮在各自的顶部都有了可以去掉"）：
              左右两栏的标题栏上各自就有收起 / 展开按钮（#tree-collapse / #side-collapse），
              同一个动作不该在两处出现。快捷键 ⌘/Ctrl + B、⌘/Ctrl + ⌥/Alt + B 仍然可用。 -->
-        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式">
           <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
           <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
           <span class="ide-rail__label">全屏</span>
         </button>
-        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点">
           <i data-lucide="search" class="ide-rail__icon"></i>
           <span class="ide-rail__label">搜索</span>
-          <kbd class="ide-rail__kbd">⌘K</kbd>
         </a>
         <a class="ide-rail__account" href="login.html" title="登录 / 注册">
           <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
@@ -209,7 +208,7 @@
         <div class="side-bar">
           <span class="side-bar__label">本页</span>
           <button type="button" class="side-collapse" id="side-collapse" aria-expanded="true"
-                  aria-label="隐藏右栏" title="隐藏右栏（⌘/Ctrl + ⌥/Alt + B）">
+                  aria-label="隐藏右栏" title="隐藏右栏">
             <i data-lucide="panel-right-close" class="side-collapse__icon"></i>
           </button>
         </div>
@@ -569,25 +568,35 @@
   transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
 }.outline__link:hover{color:var(--math-foreground)}.outline__link[data-active="true"]{
   color:var(--math-primary);border-left-color:var(--math-primary);font-weight:500;
-}.outline__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.tree-collapse{
+}.outline__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}/* 左右栏头部这两颗「收起 / 展开」按钮：**跟左侧栏（.ide-rail）的按钮同一套长相** ——
+   用户原话："这里换成侧边栏的那种按钮"。
+   侧栏那套是：无边框、圆角 8px、图标 18px、悬停只换底色（不再把边框染出来）、聚焦用内缩 outline。
+   原来这里是 24px 带 1px 边框的小方块（悬停还把边框染出来），跟侧栏那一排图标按钮摆在一起，
+   看着像另一个系统里的东西。两栏这两颗**共用这一条**，别各写各的。 */
+.tree-collapse,
+.side-collapse{
   flex:none;display:inline-flex;align-items:center;justify-content:center;
-  width:24px;height:24px;margin-left:2px;padding:0;
-  border:1px solid transparent;border-radius:var(--math-radius-sm);
+  width:34px;height:34px;padding:0;
+  border:0;border-radius:var(--math-radius-md);
   background:none;color:var(--math-ink-3);cursor:pointer;
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
-}.tree-collapse:hover{border-color:var(--math-border);background:var(--math-surface);color:var(--math-foreground)}.tree-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.tree-collapse__icon{width:16px;height:16px;transition:transform 200ms cubic-bezier(.2,.8,.2,1)}.side-bar{
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.tree-collapse:hover,
+.side-collapse:hover{background:var(--math-surface);color:var(--math-foreground)}
+.tree-collapse:focus-visible,
+.side-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:-2px}
+.tree-collapse__icon,
+.side-collapse__icon{width:18px;height:18px}
+.tree-collapse__icon{transition:transform 200ms cubic-bezier(.2,.8,.2,1)}
+.tree-collapse{margin-left:2px}.side-bar{
   position:sticky;top:0;z-index:2;
   display:flex;align-items:center;gap:8px;
   padding:10px 12px 8px;
   background:var(--math-background);
   border-bottom:1px solid var(--math-border);
-}.side-bar__label{font-size:calc(12px * var(--math-fs));letter-spacing:.08em;color:var(--math-ink-3)}.side-collapse{
-  margin-left:auto;display:inline-flex;align-items:center;justify-content:center;
-  width:24px;height:24px;padding:0;
-  border:1px solid transparent;border-radius:var(--math-radius-sm);
-  background:none;color:var(--math-ink-3);cursor:pointer;
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
-}.side-collapse:hover{border-color:var(--math-border);background:var(--math-surface);color:var(--math-foreground)}.side-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.side-collapse__icon{width:15px;height:15px}/* 三栏（左右栏的收放、宽度、窄屏下藏按钮）**只在 assets/css/ide.css 里写一份**。
+}.side-bar__label{font-size:calc(12px * var(--math-fs));letter-spacing:.08em;color:var(--math-ink-3)}/* 左栏那颗多一个 margin-left（跟标题之间留一点气），右栏那颗要把自己顶到最右端。
+   **长相不在这里写** —— 上面 .tree-collapse / .side-collapse 那条是唯一真值。 */
+.side-collapse{margin-left:auto}/* 三栏（左右栏的收放、宽度、窄屏下藏按钮）**只在 assets/css/ide.css 里写一份**。
    这一段原来就是那份的逐字副本，抄进来之后再没人同步：ide.css 后来加的
    「目录收起时学段条只留当前那一个」这里没有，而这里的 --panel-right:320px
    反过来把 ide.css 的两列布局压住了（1024~1279 那条 320px 空带就是这么来的）。

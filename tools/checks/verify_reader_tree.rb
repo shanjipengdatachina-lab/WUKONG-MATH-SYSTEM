@@ -173,6 +173,39 @@ issues << 'reader.html 里又抄了一份三栏布局（那份会压住 ide.css 
 issues << 'reader.html 里还留着旧顶栏面板开关的死样式（.shell-panels / .shell-panel-btn）' if
   html_css.include?('.shell-panels') || html_css.include?('.shell-panel-btn')
 
+# 14) 两颗收起按钮的长相，与"界面上不再写快捷键"
+#     用户原话："这里换成侧边栏的那种按钮" + "左边栏搜索有快捷键去掉 / 工具栏hover的时候有的
+#     还带着快捷键的提示，去掉即可"。两头一起守。
+#     （a）按钮换成侧栏（.ide-rail__item）那一套：无边框、34px、圆角 8、图标 18、悬停只换底色、
+#         聚焦用内缩 outline；而且两栏**共用同一条规则**，各写各的迟早一边改一边忘。
+btn_css = html[/\.tree-collapse,\s*\.side-collapse\{([^}]*)\}/m, 1].to_s
+issues << '两颗收起按钮没共用同一条规则（应写成 .tree-collapse, .side-collapse）' if btn_css.empty?
+issues << '收起按钮还留着边框（侧栏那套无边框，靠悬停换底色）' if btn_css.include?('border:1px')
+issues << '收起按钮不是 34px 方形（要跟侧栏那一排图标按钮一个分量）' unless
+  btn_css.include?('width:34px;height:34px')
+issues << '收起按钮的图标不是 18px（侧栏的图标就是 18px）' unless
+  html[/\.tree-collapse__icon,\s*\.side-collapse__icon\{[^}]*width:18px;height:18px/m]
+issues << '收起按钮的悬停还会把边框染出来（侧栏那套只换底色）' if
+  html[/\.tree-collapse:hover,[\s\S]{0,80}?border-color:/m]
+#     （b）收起态的目录头只剩那颗按钮：上下留白 ×2 + 34 不能超过目录头的高度（--tree-head-h），
+#         超了就会被固定高度裁掉一点。这条是算出来的（18+34+12=64 > 60 才会去改成 13px）。
+head_pad = css[/\.reader-shell\[data-left="hidden"\] \.tree-head\s*\{[^}]*padding:\s*(\d+)px 0/m, 1]
+head_h = html[/--tree-head-h:\s*(\d+)px/, 1]
+issues << '收起态目录头的上下留白丢了（那颗按钮就贴到顶了）' if head_pad.nil?
+if head_pad && head_h
+  issues << "收起态目录头装不下那颗 34px 按钮（留白 #{head_pad}×2 + 34 > 头高 #{head_h}）" if
+    head_pad.to_i * 2 + 34 > head_h.to_i
+end
+#     （c）提示语里不再写按键 —— **守的是设置 title 的那两行**，不是整份文件：
+#         文件头的注释里本来就写着"⌘/Ctrl + B 切左栏"，整份搜会被自己的注释顶红（踩过这个坑）。
+fs_title = shell[/btn\.setAttribute\('title',\s*([^;]*)\);/, 1].to_s
+issues << '「全屏」按钮的提示语里又带上了按键（应只是「全屏模式 / 退出全屏」）' if
+  fs_title.include?('⌘') || fs_title.include?('Esc')
+side_title = shell[/sideBtn\.setAttribute\('title',\s*([^;]*)\);/, 1].to_s
+issues << '右栏那颗按钮的提示语里又带上了快捷键（应只是「展开右栏 / 隐藏右栏」）' if
+  side_title.include?('⌘')
+issues << '右栏那颗按钮在 HTML 里的初始 title 还带着快捷键' if html.include?('title="隐藏右栏（')
+
 puts '左栏目录: 手写 %d 行（应为 0）· 学段按钮 %d 个（默认 初中）' % [body.scan(/class="ch-row"/).size, chips.size]
 puts "册 / 板块: #{books} 册 + #{tracked} 个板块，全部带 stage 标记"
 puts issues.empty? ? '章节页体检全部通过 ✓' : issues.map { |i| "  ✗ #{i}" }.join("\n")

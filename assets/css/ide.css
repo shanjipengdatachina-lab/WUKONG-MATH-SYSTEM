@@ -101,12 +101,8 @@ body { padding-left: var(--ide-rail-w); }
 }
 .ide-rail:hover .ide-rail__label,
 .ide-rail:focus-within .ide-rail__label { opacity: 1; }
-.ide-rail__kbd {
-  flex: none; font-size:calc(11px * var(--math-fs)); color: var(--math-ink-4);
-  opacity: 0; transition: opacity 130ms cubic-bezier(.2,.8,.2,1);
-}
-.ide-rail:hover .ide-rail__kbd,
-.ide-rail:focus-within .ide-rail__kbd { opacity: 1; }
+/* 这里原来还有一条 .ide-rail__kbd（悬停侧栏时在「搜索」右边露出的 ⌘K 角标）。
+   用户要求去掉界面上的快捷键提示，角标随之删掉 —— 键照旧好使，只是不再到处写给人看。 */
 
 /* 全屏按钮：两个图标按状态切换（避免重绘 lucide） */
 .ide-rail__icon--fs-off { display: none; }
@@ -193,7 +189,11 @@ html[data-embed] .ide-rail { display: none; }
   .reader-tree { display: flex; flex-direction: column; overflow: hidden; }
   .tree-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
 
-  .reader-shell[data-left="hidden"] .tree-head { justify-content: center; padding: 18px 0 12px; }
+  /* 收起态：目录头只剩那颗「展开」按钮，居中。
+     上下各 13px 是按目录头的高度（--tree-head-h:60px）减去按钮的 34px 算出来的：
+     留成 18px 的话内容 18+34+12=64 > 60，按钮会被固定高度裁掉一点。
+     按钮本身那 34px 的长相在 reader.html 里跟 .side-collapse 共用一条（照侧栏那套）。 */
+  .reader-shell[data-left="hidden"] .tree-head { justify-content: center; padding: 13px 0; }
   .reader-shell[data-left="hidden"] .tree-head__title,
   .reader-shell[data-left="hidden"] .tree-head__meta,
   .reader-shell[data-left="hidden"] .tree-head__icon,
@@ -216,7 +216,7 @@ html[data-embed] .ide-rail { display: none; }
      于是有了这句话：「为什么右边栏没有了」。现在两栏对称：左栏收起留 56px 带展开按钮，
      右栏也留 56px 带展开按钮 —— 用户那句"各自的顶部都有了"这样才真的成立。 */
   .reader-shell[data-right="hidden"] .reader-side { overflow: hidden; }
-  .reader-shell[data-right="hidden"] .side-bar { justify-content: center; padding: 18px 0 12px; }
+  .reader-shell[data-right="hidden"] .side-bar { justify-content: center; padding: 13px 0; }
   .reader-shell[data-right="hidden"] .side-bar__label { display: none; }
   .reader-shell[data-right="hidden"] .reader-side > *:not(.side-bar) { display: none; }
   .reader-shell[data-right="hidden"] .side-collapse { margin-left: 0; }

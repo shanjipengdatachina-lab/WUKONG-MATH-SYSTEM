@@ -37,6 +37,11 @@ issues << '缺底部工具条 .mm-dock' unless graph.include?('class="mm-dock"')
   issues << "工具条缺 ##{id}" unless graph.include?("id=\"#{id}\"")
 end
 issues << '工具条按钮没有自绘提示（应用 data-mm-tip，不要系统 title）' unless graph.include?('data-mm-tip=')
+# 提示气泡里不许再出现按键（用户原话："工具栏hover的时候有的还带着快捷键的提示，去掉即可"）。
+# 「适应窗口」原来写的是「适应窗口 ⇧1」。**⇧1 本身照旧好使**，只是不再写在气泡里。
+mm_tips = graph.scan(/data-mm-tip="([^"]*)"/).flatten
+issues << '图谱工具条的提示里还带着按键（气泡里不该出现 ⌘ / ⇧ / 单个字母键）' if
+  mm_tips.any? { |t| t =~ /[⌘⇧]| [A-Za-z]\z/ }
 dock = graph[/<div class="mm-dock".*?<\/div>\s*<\/div>\s*<\/section>/m].to_s
 issues << '工具条里还有系统 title 气泡' if dock =~ /\stitle="/
 

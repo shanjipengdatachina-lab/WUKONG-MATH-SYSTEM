@@ -817,11 +817,15 @@
     layoutSaveMenu();
   }
 
-  /* 题面控件的位置：贴在题面框**上沿的外面**、右端与题面右缘对齐。
-     跟着板面的平移缩放走（它是题面的一部分，跟题面一起搬），所以用 boardToScreen 换算 ——
-     分析面板那一类"工具窗口"用的是屏幕像素，两者不是一回事。
-     贴到板顶放不下时压回可视区（题面拖到最上面的时候），不让它出界；
-     left / top 各夹一道，窗口变窄、缩放变化都不会把它甩出去。 */
+  /* 题面控件的位置：**贴在题面框之内的右上角**（往里缩 6px），右端与题面右缘对齐。
+     为什么必须在框内（用户原话："题目的关闭按钮和拖动按钮要在题目的范围内，要不然点不到"）：
+     控件原来落在框**上面 6px 的外面**，而指针从题面挪向控件时会先经过那 6px 的空档 ——
+     那一刻指针既不在题面里、也还没进控件，画布的 pointerleave 就把 problemHover 收掉了，
+     控件当场消失，于是**永远点不到**。放进框内，指针从题面直接滑到控件上，
+     `relatedTarget` 就是控件自己（画布 pointerleave 里那条判断会兜住），底和控件都留着。
+     跟着板面的平移缩放走（它是题面的一部分，跟题面一起搬），所以用 boardToScreen 换算；
+     夹两道：**先在框内夹**（题目再窄也不许越出去，越出去就点不到了），
+     再夹一道可视区（题面被拖到板外/放得很大时，控件至少还留在板面上）。 */
   function layoutProblemCtl(ctx) {
     var el = problemCtlEl();
     if (!el || !el.style) return;
@@ -831,10 +835,15 @@
     var wrapH = wrap.clientHeight || state.view.h;
     var w = el.offsetWidth || 50;
     var h = el.offsetHeight || 24;
-    var x = boardToScreen(ctx.box.x + ctx.box.w, ctx.box.y).x - w;
-    var y = boardToScreen(ctx.box.x, ctx.box.y).y - h - 6;
-    el.style.left = Math.min(Math.max(4, x), Math.max(4, wrapW - w - 4)) + 'px';
-    el.style.top = Math.min(Math.max(4, y), Math.max(4, wrapH - h - 4)) + 'px';
+    var PAD = 6;                                  /* 往框里缩一点，别压着边线 */
+    var boxL = boardToScreen(ctx.box.x, ctx.box.y).x;
+    var boxT = boardToScreen(ctx.box.x, ctx.box.y).y;
+    var boxR = boardToScreen(ctx.box.x + ctx.box.w, ctx.box.y).x;
+    var boxB = boardToScreen(ctx.box.x, ctx.box.y + ctx.box.h).y;
+    var x = Math.max(boxL, Math.min(boxR - w - PAD, wrapW - w - PAD));
+    var y = Math.max(boxT, Math.min(boxT + PAD, wrapH - h - PAD, boxB - h));
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
   }
 
   function layoutPanel(ctx) {
@@ -2673,10 +2682,11 @@
         press(b, Math.abs(parseFloat(b.getAttribute('data-wb-grid')) - state.gridSize) < 0.01);
       });
     }
-    /* 工具条那个网格按钮仍是纯开关，但气泡跟上当前档：不开设置也知道现在是哪档 */
+    /* 工具条那个网格按钮仍是纯开关，但气泡跟上当前档：不开设置也知道现在是哪档。
+       气泡里不再跟按键（原来尾巴上有个 G）—— 用户要求去掉界面上的快捷键提示。 */
     var gridBtn = byId('wb-grid');
     if (gridBtn && gridBtn.setAttribute) {
-      gridBtn.setAttribute('data-wb-tip', '网格 · ' + gridSizeKey() + ' G');
+      gridBtn.setAttribute('data-wb-tip', '网格 · ' + gridSizeKey());
     }
     var stat = byId('wb-stat');
     if (stat) stat.textContent = '笔画 ' + state.strokes.length + ' · 可撤销 ' + state.actions.length;

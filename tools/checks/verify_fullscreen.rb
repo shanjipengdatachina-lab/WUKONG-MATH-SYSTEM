@@ -17,7 +17,10 @@ pages.each do |path|
   with_btn << base
 
   issues << "#{base}: 全屏按钮缺 aria-pressed" unless html.include?('id="toggle-fullscreen" aria-pressed="false"')
-  issues << "#{base}: 全屏按钮缺 title" unless html.include?('title="全屏模式（Esc 退出）"')
+  # 提示语里不再写按键（原来是「全屏模式（Esc 退出）」）—— 用户要求去掉界面上的快捷键提示。
+  issues << "#{base}: 全屏按钮缺 title" unless html.include?('title="全屏模式"')
+  issues << "#{base}: 全屏按钮的 title 里又带上了按键（应只是「全屏模式」）" if
+    html.include?('title="全屏模式（')
   issues << "#{base}: 全屏按钮缺图标（maximize/minimize）" unless
     html.include?('data-lucide="maximize"') && html.include?('data-lucide="minimize"')
   issues << "#{base}: 全屏按钮缺文字标签" unless html.include?('<span class="ide-rail__label">全屏</span>')

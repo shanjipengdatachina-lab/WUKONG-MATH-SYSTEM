@@ -1737,19 +1737,27 @@ WB.redraw();
 eq(ctl17.hidden, false, '鼠标压到题面上 → 控件露出来');
 assert(ctl17.style.left && ctl17.style.top, '控件的位置是算出来写上去的（不是靠 CSS 摆的）');
 
-/* 贴在题面框**上沿的外面**、右端对齐题面右缘 —— 不占演算区，这是这块设计的硬要求 */
+/* 贴在题面框**之内**的右上角 —— 用户原话："题目的关闭按钮和拖动按钮要在题目的范围内，
+   要不然点不到"。为什么"在范围内"是硬要求而不是审美：控件原来在框上面 6px 的外面，
+   指针从题面挪过去要先跨过那 6px 空档，一跨出去题面就判定"离开了"，控件当场消失 ——
+   于是它永远点不到（这一条只能这么量：位置必须在框内，且贴着右上角）。 */
 var v17 = WB.view();
 var box17 = WB.problemLayout();
 var ctlW17 = 50, ctlH17 = 24;   /* 桩里量不到 offsetWidth/Height，取代码里的兜底值 */
-var expL17 = Math.min(Math.max(4, v17.x + (box17.x + box17.w) * v17.scale - ctlW17),
-                      Math.max(4, 1200 - ctlW17 - 4));
-var expT17 = Math.min(Math.max(4, v17.y + box17.y * v17.scale - ctlH17 - 6),
-                      Math.max(4, 700 - ctlH17 - 4));
-eq(Math.round(parseFloat(ctl17.style.left)), Math.round(expL17), '控件右端对齐题面右缘');
-eq(Math.round(parseFloat(ctl17.style.top)), Math.round(expT17), '控件落在题面上沿之上（不压正文）');
-var boxTop17 = v17.y + box17.y * v17.scale;
-assert(parseFloat(ctl17.style.top) + ctlH17 <= boxTop17 + 0.01 || parseFloat(ctl17.style.top) === 4,
-  '控件整个在题面框外面（题面贴到板顶时才允许压回 4px）');
+var boxL17 = v17.x + box17.x * v17.scale;
+var boxR17 = v17.x + (box17.x + box17.w) * v17.scale;
+var boxT17 = v17.y + box17.y * v17.scale;
+var boxB17 = v17.y + (box17.y + box17.h) * v17.scale;
+var ctlL17a = parseFloat(ctl17.style.left);
+var ctlT17a = parseFloat(ctl17.style.top);
+assert(ctlL17a >= boxL17 - 0.01 && ctlL17a + ctlW17 <= boxR17 + 0.01,
+  '控件横向在题面框之内（左 ' + Math.round(ctlL17a) + ' ≥ ' + Math.round(boxL17) +
+  '，右 ' + Math.round(ctlL17a + ctlW17) + ' ≤ ' + Math.round(boxR17) + '）');
+assert(ctlT17a >= boxT17 - 0.01 && ctlT17a + ctlH17 <= boxB17 + 0.01,
+  '控件纵向也在题面框之内（上 ' + Math.round(ctlT17a) + ' ≥ ' + Math.round(boxT17) +
+  '，下 ' + Math.round(ctlT17a + ctlH17) + ' ≤ ' + Math.round(boxB17) + '）');
+assert(Math.abs((ctlL17a + ctlW17) - boxR17) <= 8 && Math.abs(ctlT17a - boxT17) <= 8,
+  '控件贴着题面框的右上角（离右缘、上缘都在 8px 内）');
 
 /* 跟着板面平移缩放走：题面搬了，控件跟着搬（它不是"屏幕像素的工具窗口"） */
 var ctlL17 = parseFloat(ctl17.style.left);
@@ -1760,6 +1768,26 @@ assert(Math.round(parseFloat(ctl17.style.left)) === Math.round(ctlL17 + 120),
   '题面右移 120 → 控件也右移 120（跟着板面走）');
 eq(Math.round(parseFloat(ctl17.style.top)), Math.round(ctlT17), '横向移动不改变纵向位置');
 WB.state.problemAt.x = WB.state.problemAt.x - 120;
+WB.redraw();
+
+/* 缩到很小的时候，题面在屏幕上还没控件宽 —— 这时**框左缘 / 上缘那两道夹子**才见真章：
+   只按右缘算的话（x = 右缘 - 宽），x 会跑到框左缘的左边去，控件又浮到框外、又点不到。
+   框比控件还小的时候"整个塞进去"是做不到的（控件 50px、框这里只有 13px），
+   所以这一档的保证是**左缘 / 上缘绝不舍到框外**（宁可往右下溢一点，也不飘到框左上方去）。 */
+var keepScale17 = WB.state.view.scale;
+WB.state.view.scale = 0.08;
+WB.redraw();
+var v17b = WB.view();
+var b17b = WB.problemLayout();
+var bL17b = v17b.x + b17b.x * v17b.scale;
+var bT17b = v17b.y + b17b.y * v17b.scale;
+var cL17b = parseFloat(ctl17.style.left);
+var cT17b = parseFloat(ctl17.style.top);
+assert(cL17b >= bL17b - 0.01,
+  '缩到 8%（框比控件还小）时，控件左缘仍不舍到框外（左 ' + cL17b.toFixed(1) + ' ≥ ' + bL17b.toFixed(1) + '）');
+assert(cT17b >= bT17b - 0.01,
+  '缩到 8% 时，控件上缘也仍在框内（上 ' + cT17b.toFixed(1) + ' ≥ ' + bT17b.toFixed(1) + '）');
+WB.state.view.scale = keepScale17;
 WB.redraw();
 
 /* 指针停在控件上时不许自己消失：不然会出现"鼠标正压着它、它却没了"，点不着还一闪一闪 */

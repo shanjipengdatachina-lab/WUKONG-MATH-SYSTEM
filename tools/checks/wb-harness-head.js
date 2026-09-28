@@ -107,7 +107,7 @@ bankPanelEl.hidden = true;
 var bankToggleEl = elById('wb-bank-toggle');
 bankToggleEl.setAttribute('aria-pressed', 'false');
 bankToggleEl.setAttribute('aria-controls', 'wb-bank');
-bankToggleEl.setAttribute('title', '题库（⌘/Ctrl + B）');
+bankToggleEl.setAttribute('title', '题库');
 var bankHeadEl = elById('wb-bank-head');
 var bankCloseEl = elById('wb-bank-close');
 bankCloseEl.setAttribute('aria-label', '关闭题库');

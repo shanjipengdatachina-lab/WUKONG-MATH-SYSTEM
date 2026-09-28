@@ -2,6 +2,10 @@
 # 白板页体检
 ROOT = (ENV['WKMATH_ROOT'] || File.expand_path('../..', __dir__)).dup.force_encoding('UTF-8')
 html = File.read(File.join(ROOT, 'whiteboard.html'), encoding: 'UTF-8')
+# 引擎源码在一开头就读进来：守线是**按段落一条条加的**，谁先谁后不固定 ——
+# 原来它读在中段，前面某条守线用到 wbjs 就 `NameError` 崩了，
+# 而崩掉的体检脚本一行 ✗ 都不打，"没跑完"被当成了"没红灯"（2026-09-29 真踩过这一下）。
+wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 
 issues = []
 %w[header nav main aside section div ul li button canvas label p a].each do |tag|
@@ -131,9 +135,16 @@ zoom_seq = html_bare[/id="wb-zoom-in"[\s\S]{0,300}?id="wb-zoom-fit"[\s\S]{0,300}
 issues << '「适应内容」不在「放大」右边（要求的顺序：缩小 · 读数 · 放大 · 适应内容）' if zoom_seq.empty?
 issues << '「适应内容」没走工具条按钮那一套样式' unless zoom_seq.include?('class="wb-dock__btn" id="wb-zoom-fit"')
 issues << '「适应内容」的图标不是 maximize-2（应与图谱「适应窗口」同一个）' unless zoom_seq.include?('data-lucide="maximize-2"')
-issues << '「适应内容」的提示里丢了 ⇧1 快捷键' unless zoom_seq.include?('data-wb-tip="适应内容 ⇧1"')
-issues << '「适应内容」还留在「画笔设置」浮层里（旧位置没清干净）' if
-  html[/class="wb-pop"[\s\S]*?id="wb-zoom-fit"/]
+# 「提示气泡里不许再出现按键」（用户原话："工具栏hover的时候有的还带着快捷键的提示，去掉即可"）。
+# 以前是有的带、有的不带（撤销 ⌘Z / 题库 ⌘B / 适应内容 ⇧1 带，显示题面 / 放大不带），
+# 一悬停就觉得不齐。**快捷键本身照旧好使**，只是不再写在提示里。
+tips = html.scan(/data-(?:wb|mm)-tip="([^"]*)"/).flatten
+issues << '工具条提示里还带着按键（气泡里不该出现 ⌘ / ⇧ / 单个字母键）' if
+  tips.any? { |t| t =~ /[⌘⇧]| [A-Za-z]\z/ }
+issues << '网格按钮的静态气泡里又跟上了按键（应只是「网格 · 疏/中/密」）' unless
+  html[/data-wb-tip="网格 · (疏|中|密)"/]
+wbjs_tip = wbjs[/gridBtn\.setAttribute\('data-wb-tip',([^;]*)\)/, 1].to_s
+issues << '网格气泡的动态那一段仍把按键拼在后面（+ \' G\'）' if wbjs_tip.include?("' G'")
 issues << '.wb-view-btn 成了死样式（那个按钮已经挪到工具条上）' if html.include?('.wb-view-btn{')
 
 # 紧凑度：浮层 / 工具条 / 设置面板都收过一档，别又松回去
@@ -224,7 +235,6 @@ issues << '分析 / 答案的样式没放进独立 style 块' unless html.includ
   issues << "右侧竖条的 #{id} 没挂自绘提示（光一个图标看不出是干什么的）" unless
     html[/id="#{id}"[^>]*data-wb-tip/]
 end
-wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 issues << '笔粗 / 橡皮按钮仍用系统 title' if wbjs.include?('title="笔粗') || wbjs.include?('title="橡皮')
 
 # 全屏已并到侧栏：工具条不留全屏，专注模式（wb-focus）那套一并清掉
@@ -481,6 +491,16 @@ issues << '题面的拖动指纹是假的（没走 beginProblemDrag，按上去�
   wbjs[/pctlGrip[\s\S]{0,400}?beginProblemDrag\(e\)/m]
 issues << '画布上那条把手没走 beginProblemDrag（两个入口必须同一条路）' unless
   wbjs[/hitProblemHandle\(pt\.x, pt\.y\)\)\s*\{\s*beginProblemDrag\(e\);/m]
+# 控件必须在题面框**之内**（用户原话："题目的关闭按钮和拖动按钮要在题目的范围内，要不然点不到"）。
+# 为什么"在范围内"是硬要求而不是审美：原来它落在框**上面 6px 的外面**，指针从题面挪过去要先
+# 跨过那 6px 空档 —— 一跨出去题面就判定"离开了"、控件当场消失，于是永远点不到。
+# 守线盯两个**夹子**：x 要从框左缘往上夹（只按右缘算的话，缩放小/题目短时控件比框还宽，
+# 就又浮到框外去了），y 要同时夹在框的上缘与下缘之间。
+# （真正的几何断言在 wb-check 第 17 节：把缩放调到 0.08 再量一次，专门踩这两种情况。）
+issues << '题面控件的 x 没夹进题面框的左右边（只按右缘算，窄题/小缩放下会浮到框外）' unless
+  wbjs[/var x = Math\.max\(boxL, Math\.min\(boxR - w - PAD/m]
+issues << '题面控件的 y 没夹在题面框的上下沿之间' unless
+  wbjs[/var y = Math\.max\(boxT, Math\.min\(boxT \+ PAD[\s\S]{0,60}?boxB - h/m]
 
 # 分析必须跟着题走（用户原话："分析是针对当前的题目做的分析；所以当用户切换题目的时候，
 # 分析窗口是自动更新的"）。两处一起守：

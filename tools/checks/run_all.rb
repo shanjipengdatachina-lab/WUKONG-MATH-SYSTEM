@@ -1,6 +1,7 @@
 # encoding: UTF-8
 Encoding.default_external = Encoding::UTF_8 if Encoding.default_external != Encoding::UTF_8
 $stdout.set_encoding('UTF-8') if $stdout.respond_to?(:set_encoding)
+require 'open3'
 
 # 一键自检：拼装断言脚本 → 跑 JS 断言 → 跑静态体检 → 输出汇总
 #   ruby tools/checks/run_all.rb            # 全部
@@ -59,6 +60,9 @@ puts "\n== 体检 =="
 # 体检脚本的失败标记统一是「✗」。这些红灯原来不吃进退出码，于是"页面被改坏了"
 # 也照样退出 0 —— 2026-09-28 就因为这条差点漏过一次（reader.html 被误删了正文，
 # 断言全绿、退出码 0，只有 verify_bridges 在喊）。现在红灯单独统计、单独报、也影响退出码。
+# 2026-09-29 又补一环：**体检脚本"没跑完"也得算红灯**。中途抛错时它一行 ✗ 都不打，
+# 只数 ✗ 就会把"这条守线根本没执行"当成"没红灯"（那天 verify_whiteboard.rb 里
+# 一条新守线用了个还没定义的变量，脚本 NameError 崩了，run_all 照样报"体检无红灯"）。
 problems = []
 %w[verify_brand.rb verify_rail.rb verify_reader_tree.rb verify_whiteboard.rb
    verify_fullscreen.rb verify_graph.rb verify_bridges.rb verify_forum.rb
@@ -66,11 +70,16 @@ problems = []
   path = File.join(DIR, b)
   next unless File.exist?(path)
   next unless keep?(File.basename(b, '.rb'))
-  log = sh("ruby #{path}")
+  out, err, st = Open3.capture3('ruby', path, chdir: ROOT)
+  log = (out.to_s + err.to_s).force_encoding('UTF-8')
   puts "  --- #{b}"
   log.lines.each { |l| puts '      ' + l.delete("\n") unless l.strip.empty? }
   red = log.lines.grep(/✗/).size
-  problems << [b, red] if red.positive?
+  # 判据：退出码非 0、却又一条 ✗ 都没有 = 崩了。
+  # （有 ✗ 的那种非 0 退出是 verify_display / verify_graph 自己 exit 1 的约定，不算崩。）
+  crashed = st.exitstatus.to_i != 0 && red.zero?
+  puts "      （这个体检脚本没跑完：退出码 #{st.exitstatus}，一条 ✗ 都没打）" if crashed
+  problems << [b, crashed ? 1 : red] if red.positive? || crashed
 end
 
 # ---------- 5. 汇总 ----------
