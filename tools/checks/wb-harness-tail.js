@@ -1044,6 +1044,13 @@ eq2(Math.round(parseFloat(panel12.style.top) - winT12), 60, '面板纵向也跟�
 assert(!!WB.state.winAt.panel && Math.round(WB.state.winAt.panel.x - winL12) === 60,
   '面板的位置真的记下来了（state.winAt.panel）');
 
+/* ---- 浮窗宽度只有一个数（用户问："面板宽度是不是应该一致"） ----
+   真机上量得到 offsetWidth，桩里量不到 —— 走的是 defaultWinAt 里那个兜底宽度。
+   兜底要是给两个窗口两个数（原来分析面板 260 / 转译 320），
+   并排一开就是一个宽一个窄。x = 画布宽 - 让位 - 宽度，宽度相同 x 才相同。 */
+eq2(WB.defaultWinAt('panel').x, WB.defaultWinAt('ink').x,
+  '两个浮窗的兜底宽度是同一个数（并排一开才一样宽）');
+
 /* 关键：面板**不跟题目走**（"这个分析是可以拖动的""题目周围干干净净"） */
 var px12 = WB.state.problemAt.x;
 var panelL12 = panel12.style.left;

@@ -281,11 +281,11 @@ body{padding-top:0}
 /* MM-SHARED-BEGIN */
 /* ---------- 悬浮题库面板（可拖动） ---------- */
 .mm-card{position:absolute;left:20px;bottom:80px;z-index:7;
-  width:300px;max-width:calc(100% - 40px);
+  width:var(--math-float-w);max-width:calc(100% - 24px);
   max-height:min(560px,72vh);
   display:flex;flex-direction:column;
   overflow:hidden;
-  border:1px solid var(--math-border);border-radius:16px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-background);
   box-shadow:0 16px 44px rgba(15,23,42,.16);}
 .mm-card[hidden]{display:none}

@@ -809,7 +809,10 @@
   function defaultWinAt(which) {
     var el = winEl(which);
     var side = byId('wb-side');
-    var w = (el && el.offsetWidth) || (which === 'ink' ? 320 : 260);
+    /* 兜底宽度 = CSS 里的 --wb-float-w（四个浮窗共用一个宽度）。
+       正常情况下量得到 offsetWidth 就用真实值，这里是量不到时的退路，两个窗口必须给同一个数，
+       不然一开就发现"一个宽一个窄"。 */
+    var w = (el && el.offsetWidth) || 320;
     var reserve = ((side && side.offsetWidth) || 44) + 18 + 16;
     var wrapW = wrap.clientWidth || state.view.w;
     return {

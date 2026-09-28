@@ -341,7 +341,8 @@ issues << '面板的长内容不能自己滚（超出画布的部分就够不着
 #   容器圆角 = --math-radius-lg（16px，跟底部工具条 / 题库面板 .wb-bank 的 16px 同档）
 #   里面的按钮与条目 = --math-radius-md（8px，跟 .wb-item / .wb-dock__btn 同档）
 #   标题 13px（跟 .wb-bank__title 同档，比正文大一档）· 正文 13.5px
-{ '.wb-panel' => '分析答案面板', '.wb-menu' => '保存菜单', '.wb-ink' => '转译窗口' }.each do |sel, name|
+{ '.wb-panel' => '分析答案面板', '.wb-menu' => '保存菜单', '.wb-ink' => '转译窗口',
+  '.wb-bank' => '题库面板', '.wb-pop' => '画笔设置浮层' }.each do |sel, name|
   issues << "#{name} #{sel} 的圆角没统一（容器应为 16px = --math-radius-lg）" unless
     html[/#{Regexp.escape(sel)}\{[^}]*border-radius:var\(--math-radius-lg\)/m]
 end
@@ -357,6 +358,53 @@ issues << '转译窗口标题字号不是 13px（跟其它面板标题不齐）'
   html[/\.wb-ink__title\{[^}]*font-size:calc\(13px \* var\(--math-fs\)\)/m]
 issues << '条目正文没跟题库条目同一档（应 13.5px）' unless
   html[/\.wb-tile__text\{[^}]*font-size:calc\(13.5px \* var\(--math-fs\)\)/m]
+
+# 浮窗宽度只有一个数（用户问："面板宽度是不是应该一致"）。
+# 四个浮窗原来各写各的：分析答案 280 / 题库 300 / 画笔设置 320 / 转写 360 —— 并排一开就不齐。
+# 令牌落在 tokens.css 的 --math-float-w，两页共用；图谱页那两张同源卡片由
+# build_graph_css.rb 同步（verify_graph.rb 逐条比规则体，忘了重跑生成器那里就会红）。
+# **一个选择器可能有好几条规矩（窄屏覆盖、上限、定位……），每一条都要看** ——
+# 这条守线第一版只看了第一条，真机上题库仍被窄屏那条撑成满屏，守线却是绿的。
+tokens_css = File.read(File.join(ROOT, 'assets/css/tokens.css'), encoding: 'UTF-8')
+issues << '浮窗宽度没有令牌（tokens.css 里找不到 --math-float-w）' unless
+  tokens_css[/--math-float-w:\s*\d+px/]
+
+# 窄屏**只有一条**破例，而且要点名：名单类那一块（题库）摊到整屏（左 12 右 12）——
+# 读长名单比挤成 320 好用。图谱页那两张同源卡片窄屏下同样摊满（verify_graph.rb 那头也守着），
+# 阅读框（分析答案 / 转写）任何时候都不破例。这条例外是**点名允许**的，不是漏网。
+narrow = html[/@media \(max-width:1023px\)\{[\s\S]*?\n\}/m].to_s
+issues << '窄屏那段没了（浮窗在窄屏下会跑回老位置）' if narrow.empty?
+issues << '窄屏下题库不再摊满整屏了（两页的名单类卡片就不同源了）' unless
+  narrow[/\.wb-bank\{[^}]*left:12px;right:12px[^}]*[;}]\s*width:auto/]
+
+{ '.wb-bank' => '题库面板', '.wb-pop' => '画笔设置浮层',
+  '.wb-panel' => '分析答案面板', '.wb-ink' => '转写窗口' }.each do |sel, name|
+  bodies = html.scan(/#{Regexp.escape(sel)}\{([^}]*)\}/m).flatten
+  issues << "#{name} #{sel} 一条样式都没有" if bodies.empty?
+  bodies.each do |body|
+    # 把这条规矩里**每一条** width 都拿出来看，不能只看第一条：
+    # 反证时踩中过 —— 补一条 `.wb-bank{width:300px}`，`width` 前面那个 `;` 在捕获段之外，
+    # 旧写法取不到，那条新规矩整个漏过去（守线常绿）。
+    body.scan(/(?:\A|;)\s*width:([^;}]+)/).flatten.each do |raw|
+      w = raw.strip
+      next if w == 'var(--math-float-w)'           # 走令牌 —— 正确
+      next if sel == '.wb-bank' && w == 'auto' && body.include?('left:12px;right:12px') # 上面那条窄屏破例
+      issues << "#{name} #{sel} 里有一条写着死宽度的规矩（width:#{w}）—— 浮窗宽度只能走 var(--math-float-w)"
+    end
+  end
+  issues << "#{name} #{sel} 缺一条窄窗兜底（max-width:calc(100% - 24px)）" unless
+    bodies.any? { |b| b[/[;{]\s*width:var\(--math-float-w\)/] && b.include?('max-width:calc(100% - 24px)') }
+end
+fallback = wbjs[/var w = \(el && el\.offsetWidth\) \|\| ([^;]+);/, 1].to_s
+issues << '找不到浮窗的兜底宽度（defaultWinAt 里没有那一行）' if fallback.empty?
+issues << '两个浮窗的兜底宽度按窗口分岔了（并排一开就是一个宽一个窄）' if fallback.include?('which')
+
+# 抓手指纹：分析答案面板的标题栏上有，转写窗口原来漏了 ——
+# 两块是同屏并排的（都在右侧、都能拖），长相要一样：指纹挂在最右端、收起按钮的右边。
+issues << '转写窗口的标题栏没有抓手指纹（.wb-ink__grip 不存在）' unless
+  html[/<i data-lucide="grip-vertical" class="wb-ink__grip"/]
+issues << '转写窗口的抓手指纹没挂在标题栏最右端（应紧跟在收起按钮之后）' unless
+  html[/class="wb-ink__close"[\s\S]{0,160}?class="wb-ink__grip"/]
 
 # 拖动抓手必须躲开标题栏里的控件（用户反馈："点击关闭都没有效果"）。
 # ✕ 与 tab 都长在标题栏里面，抓手要是不躲：pointerdown 里的 setPointerCapture 会把后面那个

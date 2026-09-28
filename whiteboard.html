@@ -19,11 +19,11 @@
 /* ---------- 悬浮题库面板（可拖动） ---------- */
 .wb-bank{
   position:absolute;left:20px;bottom:80px;z-index:7;
-  width:300px;max-width:calc(100% - 40px);
+  width:var(--math-float-w);max-width:calc(100% - 24px);
   max-height:min(560px,72vh);
   display:flex;flex-direction:column;
   overflow:hidden;
-  border:1px solid var(--math-border);border-radius:16px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-background);
   box-shadow:0 16px 44px rgba(15,23,42,.16);
 }
@@ -103,6 +103,9 @@
 .wb-list::-webkit-scrollbar-thumb{background:var(--math-surface-2);border-radius:8px}
 
 /* ---------- 白板 ---------- */
+/* 浮窗宽度只有一个数：四个浮窗全取 --math-float-w（定义在 tokens.css）。
+   以前各写各的（280 / 300 / 320 / 360），两个浮窗并排一开就不齐 ——
+   用户原话「面板宽度是不是应该一致」。改宽度只改令牌那一处。 */
 .wb-stage{position:relative;height:100vh;min-width:0}
 .wb-canvas-wrap{
   position:absolute;inset:0;overflow:hidden;
@@ -235,9 +238,9 @@
 .wb-pop{
   position:absolute;left:50%;bottom:74px;z-index:6;
   transform:translateX(-50%);
-  width:min(320px,calc(100% - 24px));
+  width:var(--math-float-w);max-width:calc(100% - 24px);
   padding:12px 14px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-lg,16px);
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-background);
   box-shadow:0 14px 36px rgba(15,23,42,.16);
 }
@@ -299,7 +302,11 @@
   overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
 }
 
-/* ---------- 窄屏：画布依旧独占整屏，题库面板只在宽度上收一点 ---------- */
+/* ---------- 窄屏：画布依旧独占整屏；浮窗按需要挪位置 ----------
+   唯一破例的是**名单类**那一块：窄屏下它摊到整屏（左 12 右 12），
+   读一份长名单比挤成 320 好用。这条不是白板自己发明的 ——
+   图谱页那两张同源的卡片（.mm-card--info / .mm-card--search）窄屏下同样摊满，
+   两页一条心；分析答案面板与转写窗口是**阅读框**，任何时候都保持 --math-float-w。 */
 @media (max-width:1023px){
   .reader-shell.wb-shell{grid-template-columns:minmax(0,1fr)}
   .wb-dock{bottom:12px;opacity:.9;border-radius:12px}
@@ -379,7 +386,7 @@
    里面的 tab 是 4px，比别的面板小一圈；标题又跟正文一样大（12.5），层次是平的。 */
 .wb-panel{
   position:absolute;left:0;top:0;z-index:4;
-  width:280px;padding:8px 10px 9px;
+  width:var(--math-float-w);max-width:calc(100% - 24px);padding:8px 10px 9px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-popover);box-shadow:var(--math-shadow-1);
   /* 上限 8 步 × 大字号时，内容能高过整块画布 —— 不封顶的话底下那截就够不着了。
@@ -743,6 +750,7 @@
               <span class="wb-ink__title">手写转文字</span>
               <span class="wb-ink__badge" id="wb-ink-badge">演示</span>
               <button type="button" class="wb-ink__close" id="wb-ink-close" aria-label="收起转文字面板">×</button>
+              <i data-lucide="grip-vertical" class="wb-ink__grip" aria-hidden="true"></i>
             </div>
             <p class="wb-ink__note" id="wb-ink-note"></p>
             <ol class="wb-ink__steps" id="wb-ink-steps"></ol>
@@ -846,7 +854,7 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
    尺寸规矩跟分析答案面板同一套：容器 16px 圆角、标题 13px、里面的格子 8px 圆角。
    文字那格是 contenteditable —— 识别一定会出错，必须能改。 */
 .wb-ink{
-  position:absolute;z-index:5;width:min(360px,calc(100% - 16px));
+  position:absolute;z-index:5;width:var(--math-float-w);max-width:calc(100% - 24px);
   padding:10px 12px 11px;border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-background);box-shadow:0 10px 28px rgba(15,23,42,.14);
 }
@@ -866,6 +874,11 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
   font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
 .wb-ink__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+/* 抓手指纹：分析答案面板的标题栏上有，转译窗口原来漏了 ——
+   这两块是**同屏并排**的（都在右侧、都能拖），长得就该一样：指纹挂在标题栏最右端、收起按钮的右边。
+   题库那张卡片（以及图谱页那两张同源的卡片）是更早的一版，指纹在左端 —— 那一栏没有 tab 抢地方，
+   左边那点空正好放得下，这一版没动它。 */
+.wb-ink__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
 /* 转文字面板里的条目是**另一种**排法：编号是「第 1 步」这种文字标签（进不了 17px 圆点），
    正文是一格可改的输入框。所以这里按 .wb-ink 限定作用域另写一套 ——
    千万别写成不带前缀的 .wb-tile__no：那是三处共用的那套，会连分析 / 答案一起改掉

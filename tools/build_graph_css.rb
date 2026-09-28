@@ -90,9 +90,16 @@ end
 shared = lines.join("\n")
 
 html = File.read(GR, encoding: 'UTF-8')
+abort 'graph.html 里找不到 MM-SHARED 标记' unless html.include?('/* MM-SHARED-BEGIN */')
 html2 = html.sub(/\/\* MM-SHARED-BEGIN \*\/.*?\/\* MM-SHARED-END \*\//m,
                  "/* MM-SHARED-BEGIN */\n#{shared}\n/* MM-SHARED-END */")
-abort 'graph.html 里找不到 MM-SHARED 标记' if html2 == html
+# 白板没动过的时候，产物跟上一次一模一样 —— 这**不是错误**（脚本本来就该能重复跑）。
+# 原来这里用"没变化"当"找不到标记"的判据，重跑一次就会报"找不到 MM-SHARED 标记"，
+# 把人往错的方向带（真出过：以为标记丢了，其实是本来就同步好了）。
+if html2 == html
+  puts "共享样式已经是最新的（#{picked.size} 条规则，没有改动）"
+  exit 0
+end
 File.write(GR, html2)
 
 puts "已写入 #{picked.size} 条规则（类名前缀 wb- → mm-）："
