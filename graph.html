@@ -390,6 +390,21 @@ body{padding-top:0}
 }
 /* MM-SHARED-END */
 
+/* ---------- 图谱对工具条的局部修正（写在共享区之外，白板不受影响） ----------
+   共享样式是从白板生成的：白板的组按钮里只放图标，34px 正好装下。
+   图谱的组按钮多了一个文字状态（「总览」「到章」），继续用固定 34px 会把文字挤出
+   按钮的盒子 —— 换句话说，文字右半边看着在按钮里，其实点不到。
+   册筛选的书名（「七年级（下）」六个字）也远比白板的「画笔 / 荧光笔」长，
+   共享的 146px 宽度会把书名压到贴着右侧那个数字。
+   两处都按内容放宽：宽度跟随内容，字多长就多宽，不写死。 */
+.mm-dock__btn--group{width:auto;min-width:34px;gap:5px;padding:0 9px 0 7px}
+#mm-book-menu,
+#mm-level-menu{width:max-content;padding:5px;max-width:min(240px,calc(100vw - 40px))}
+#mm-book-menu .mm-flyout__item,
+#mm-level-menu .mm-flyout__item{height:28px;padding:0 8px;gap:9px}
+#mm-book-menu .mm-flyout__label,
+#mm-level-menu .mm-flyout__label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* 节点信息面板：贴右侧；搜索面板：贴左上 */
 .mm-dock__label{min-width:26px;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums}
 .mm-dock__btn--group[aria-expanded="true"] .mm-dock__label{color:var(--math-foreground)}

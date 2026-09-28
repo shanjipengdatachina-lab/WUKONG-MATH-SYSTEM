@@ -118,6 +118,23 @@ tip_b = graph[/\[data-mm-tip\]::after\{([^}]*)\}/m, 1].to_s.gsub(/\s+/, ' ').str
 issues << '悬浮提示气泡与白板不一致' unless tip_a == tip_b && !tip_a.empty?
 compared += 1
 
+# ---------- 8. 工具条尺寸：组按钮要装得下文字，浮层不能被书名挤爆 ----------
+# 这是一次真实回归：共享样式来自白板，白板的组按钮只有图标（34px 正好），
+# 图谱的组按钮多了一个文字状态，继续用固定宽度会把文字挤出可点区域。
+issues << '图谱的组按钮还是被钉在固定宽度上（文字会被挤出可点区域）' unless
+  graph.include?('.mm-dock__btn--group{width:auto')
+issues << '册筛选 / 层级浮层没按内容自适应宽度（书名会被压到贴着右侧数字）' unless
+  graph.include?('#mm-level-menu{width:max-content')
+issues << '浮层没留兜底最大宽度（超长书名会把浮层撑破）' unless
+  graph.include?('max-width:min(240px,calc(100vw - 40px))')
+issues << '浮层行高没拉开（26px 装 12.5px 中文偏挤）' unless
+  graph.include?('height:28px;padding:0 8px;gap:9px')
+
+# 反面：这些修正必须写在共享区之外，否则下次重新生成样式就被冲掉
+shared = graph[/\/\* MM-SHARED-BEGIN \*\/(.*?)\/\* MM-SHARED-END \*\//m, 1].to_s
+issues << '工具条修正被写进了共享区（重新生成样式时会被覆盖）' if
+  shared.include?('width:max-content') || shared.include?('--group{width:auto')
+
 puts "图谱页体检：#{issues.empty? ? '通过' : '发现问题'}"
 puts "  与白板逐条比对的样式：#{compared} 条"
 unless issues.empty?
