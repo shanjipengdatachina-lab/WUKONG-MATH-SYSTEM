@@ -61,6 +61,8 @@ need = {
   '题面文字镜像（无障碍）' => 'id="wb-problem-text"',
   '板面选择器' => 'id="wb-themes"',
   '板面选择器样式' => '.wb-theme{',
+  '网格疏密区' => 'id="wb-grids"',
+  '网格疏密选择器样式' => '.wb-grid{',
   '画布底色跟着主题' => 'background:var(--wb-board,#fff)',
   '题库脚本' => 'whiteboard-problems.js',
   '分析按钮' => 'id="wb-act-analysis"',
@@ -195,6 +197,29 @@ issues << '工具条里还留着全屏按钮（应与侧栏统一）' if dock_on
 issues << '仍残留 wb-focus 专注模式样式' if html.include?('wb-focus')
 issues << 'whiteboard.js 仍在自管全屏' if wbjs.include?('function toggleFull') || wbjs.include?('function setFocus')
 issues << 'whiteboard.js 没监听全屏切换（全屏后画布要重排）' unless wbjs.include?("'fullscreenchange'")
+
+# 网格疏密三档：三档必须齐、数值必须和 js 里的梯子对得上，
+# 预览方块的疏密方向不能写反（20 那档格子最小），样式同样不许进共享区。
+GRID_LADDER = [20, 40, 80].freeze
+GRID_LADDER.each do |size|
+  issues << "网格疏密少了 #{size} 这一档" unless html.include?(".wb-grid[data-wb-grid=\"#{size}\"] .wb-grid__chip")
+end
+chip_px = GRID_LADDER.map { |s| html[/\.wb-grid\[data-wb-grid="#{s}"\] \.wb-grid__chip\{background-size:([\d.]+)px/, 1].to_f }
+if chip_px.any? { |v| v <= 0 }
+  issues << "网格预览方块缺 background-size（有两档看起来一样密）"
+elsif !(chip_px[0] < chip_px[1] && chip_px[1] < chip_px[2])
+  issues << "网格预览方块的疏密写反了（应 20 最密 → 80 最疏，实际 #{chip_px.join(' / ')}px）"
+end
+GRID_LADDER.each do |size|
+  issues << "js 里的网格梯子少了 #{size}" unless wbjs.include?("value: #{size}") || wbjs[/var GRID_SIZES[\s\S]*?\];/].to_s.include?("value: #{size}")
+end
+issues << '网格疏密是"顺手把网格打开"的（网格关着时选一档要能看到变化）' unless
+  wbjs.include?('if (!state.grid) state.grid = true;')
+issues << '网格疏密样式跑进了 wb-styles（会被抄到图谱当死规则）' if
+  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-grid\{/m]
+# 设置面板又高了一行，矮屏上必须有个"放不下就自己滚"的兜底，不能把顶上一截切掉
+issues << '设置面板没有兜底滚动（矮屏上会被切掉顶部，够不着上面那一行）' unless
+  html[/\.wb-pop\{max-height:calc\(100vh - \d+px\);overflow-y:auto/]
 
 flyout_h = 4 * 26 + 3 * 1 + 2 * 4 + 2
 puts "浮层尺寸: 146 × #{flyout_h}px（原 172 × 148px，面积 -33%）"

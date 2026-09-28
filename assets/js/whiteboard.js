@@ -80,6 +80,14 @@
     { value: 26, label: '中' },
     { value: 44, label: '大' }
   ];
+  /* 网格疏密三档：世界单位。中档就是原来的 40 —— 所以默认观感一点不变，
+     只是把原来写死的那个数变成了可选项。 */
+  var GRID_SIZES = [
+    { value: 20, label: '小' },
+    { value: 40, label: '中' },
+    { value: 80, label: '大' }
+  ];
+  var DEFAULT_GRID_SIZE = 40;
   var HIGHLIGHT_WIDTH = 18;      // 荧光标记的笔宽（世界单位）
   var SHAPE_TOOLS = ['line', 'arrow', 'rect', 'ellipse'];
   /* 工具分组（仿 PS：同类工具收进一个格子，点开再选，省工具条空间） */
@@ -138,6 +146,7 @@
     width: WIDTHS[1].value,
     eraser: ERASERS[1].value,
     grid: false,
+    gridSize: DEFAULT_GRID_SIZE,  // 网格疏密：20 | 40 | 80
     showProblem: true,
     problemId: null,
     problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
@@ -315,9 +324,14 @@
   }
 
   /* ---------- 绘制 ---------- */
+  /* 网格疏密 = 三档选出来的基数，下面那两条随缩放自动加密 / 减疏的修正一字不改：
+     格子始终落在 14～96 屏幕像素之间这条保证，对三档一视同仁。
+     代价是三档在离得很远或放得很大时会趋于同一个疏密 —— 这是躲不掉的，
+     要保证"格子看得清"，就只能落在有限区间里，区间里再怎么排也会撞。
+     为"永远不同"把格子画到 7px 那种糊掉的程度，是更坏的选择。 */
   function drawGrid() {
     var v = state.view;
-    var step = 40;
+    var step = state.gridSize || DEFAULT_GRID_SIZE;
     while (step * v.scale < 14) step *= 2;
     while (step * v.scale > 96) step /= 2;
     var left = (0 - v.x) / v.scale;
@@ -1553,6 +1567,27 @@
     persist();
     syncUI();
   }
+  /* 选网格疏密。决定 #4：顺手把网格打开 ——
+     网格关着时选一档却"屏幕上什么都没变"，会被当成没生效。
+     这和既有习惯一致：正在用橡皮时点颜色，会自动切回画笔。 */
+  function setGridSize(value) {
+    var v = parseFloat(value);
+    var hit = null;
+    GRID_SIZES.forEach(function (g) { if (Math.abs(g.value - v) < 0.01) hit = g; });
+    if (!hit) return false;                 // 不在梯子里的值一律不认
+    state.gridSize = hit.value;
+    if (!state.grid) state.grid = true;     // 顺手打开
+    redraw();
+    persist();
+    syncUI();
+    toast('网格 · ' + hit.label);
+    return true;
+  }
+  function gridSizeKey() {
+    var s = '';
+    GRID_SIZES.forEach(function (g) { if (Math.abs(g.value - state.gridSize) < 0.01) s = g.label; });
+    return s || '中';
+  }
   function setShowProblem(on) {
     state.showProblem = !!on;
     redraw();
@@ -1737,6 +1772,17 @@
         press(b, Math.abs(parseFloat(b.getAttribute('data-wb-eraser')) - state.eraser) < 0.01);
       });
     }
+    var gridBox = byId('wb-grids');
+    if (gridBox && gridBox.querySelectorAll) {
+      Array.prototype.forEach.call(gridBox.querySelectorAll('[data-wb-grid]'), function (b) {
+        press(b, Math.abs(parseFloat(b.getAttribute('data-wb-grid')) - state.gridSize) < 0.01);
+      });
+    }
+    /* 工具条那个网格按钮仍是纯开关，但气泡跟上当前档：不开设置也知道现在是哪档 */
+    var gridBtn = byId('wb-grid');
+    if (gridBtn && gridBtn.setAttribute) {
+      gridBtn.setAttribute('data-wb-tip', '网格 · ' + gridSizeKey() + ' G');
+    }
     var stat = byId('wb-stat');
     if (stat) stat.textContent = '笔画 ' + state.strokes.length + ' · 可撤销 ' + state.actions.length;
     zoomLabel();
@@ -1836,6 +1882,16 @@
           Math.max(7, Math.round(e.value * 0.42)) + 'px"></span></button>';
       }).join('');
     }
+    /* 网格疏密：预览方块用 CSS 渐变画格子，格子大小写在各档自己的规则里。
+       方向必须是"数值越小、格子越密"，写反了这条就成了误导。 */
+    var gridBox = byId('wb-grids');
+    if (gridBox) {
+      gridBox.innerHTML = GRID_SIZES.map(function (g) {
+        return '<button type="button" class="wb-grid" data-wb-grid="' + g.value + '"' +
+          ' data-wb-tip="网格 · ' + esc(g.label) + '" aria-label="网格疏密' + esc(g.label) + '" aria-pressed="false">' +
+          '<span class="wb-grid__chip" aria-hidden="true"></span>' + esc(g.label) + '</button>';
+      }).join('');
+    }
   }
 
   function bind(id, fn) {
@@ -1887,6 +1943,14 @@
         var t = e.target;
         var btn = t && t.closest ? t.closest('[data-wb-eraser]') : null;
         if (btn) setEraser(btn.getAttribute('data-wb-eraser'));
+      });
+    }
+    var gridBox = byId('wb-grids');
+    if (gridBox && gridBox.addEventListener) {
+      gridBox.addEventListener('click', function (e) {
+        var t = e.target;
+        var btn = t && t.closest ? t.closest('[data-wb-grid]') : null;
+        if (btn) setGridSize(btn.getAttribute('data-wb-grid'));
       });
     }
     var filters = byId('wb-books');
@@ -1962,6 +2026,7 @@
         width: state.width,
         eraser: state.eraser,
         grid: state.grid,
+        gridSize: state.gridSize,
         theme: state.theme,
         showProblem: state.showProblem,
         problemId: state.problemId,
@@ -1993,6 +2058,12 @@
     if (typeof d.width === 'number') state.width = d.width;
     if (typeof d.eraser === 'number') state.eraser = d.eraser;
     state.grid = !!d.grid;
+    /* 网格疏密：不在三档里就保持默认 40，别让旧数据把板面弄成奇怪的格子 */
+    if (typeof d.gridSize === 'number') {
+      GRID_SIZES.forEach(function (g) {
+        if (Math.abs(g.value - d.gridSize) < 0.01) state.gridSize = g.value;
+      });
+    }
     /* 板面主题：不在三套里就回落白板，别让旧数据把白板弄崩 */
     if (THEME_KEYS.indexOf(d.theme) >= 0) state.theme = d.theme;
     if (typeof d.showProblem === 'boolean') state.showProblem = d.showProblem;
@@ -2094,7 +2165,7 @@
   window.__WB__ = {
     state: state,
     bank: bank,
-    config: { COLORS: COLORS, WIDTHS: WIDTHS, ERASERS: ERASERS, SHAPE_TOOLS: SHAPE_TOOLS, GROUPS: GROUPS, TOOL_GROUPS: TOOL_GROUPS },
+    config: { COLORS: COLORS, WIDTHS: WIDTHS, ERASERS: ERASERS, GRID_SIZES: GRID_SIZES, SHAPE_TOOLS: SHAPE_TOOLS, GROUPS: GROUPS, TOOL_GROUPS: TOOL_GROUPS },
     COLORS: COLORS,
     themes: themes,
     theme: theme,
@@ -2125,6 +2196,8 @@
     setWidth: setWidth,
     setEraser: setEraser,
     setGrid: setGrid,
+    setGridSize: setGridSize,
+    gridSizes: function () { return GRID_SIZES; },
     setShowProblem: setShowProblem,
     setPopover: setPopover,
     popoverOpen: popoverOpen,

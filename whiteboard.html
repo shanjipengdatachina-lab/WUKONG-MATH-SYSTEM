@@ -460,7 +460,7 @@
               <i data-lucide="trash-2"></i>
             </button>
             <span class="wb-dock__sep" aria-hidden="true"></span>
-            <button type="button" class="wb-dock__btn" id="wb-grid" aria-pressed="false" data-wb-tip="网格 G" aria-label="网格">
+            <button type="button" class="wb-dock__btn" id="wb-grid" aria-pressed="false" data-wb-tip="网格 · 中 G" aria-label="网格">
               <i data-lucide="grid-3x3"></i>
             </button>
             <button type="button" class="wb-dock__btn" id="wb-problem-toggle" aria-pressed="true" data-wb-tip="显示题面" aria-label="题面">
@@ -490,6 +490,11 @@
             <div class="wb-pop__row">
               <span class="wb-pop__label">板面</span>
               <div class="wb-themes" id="wb-themes" role="group" aria-label="板面"></div>
+            </div>
+            <div class="wb-pop__row">
+              <span class="wb-pop__label">网格</span>
+              <div class="wb-grids" id="wb-grids" role="group" aria-label="网格疏密"
+                   title="格子始终会自动保持在看得清的疏密范围内，所以离得很远或放得很大时，三档会趋于同一个疏密。"></div>
             </div>
             <div class="wb-pop__row">
               <span class="wb-pop__label">颜色</span>
@@ -573,6 +578,10 @@ body{padding-top:0}
     <style id="wb-page-styles">
 /* 18(工具条离底) + 46(工具条高) + 12(间隙) = 76 */
 body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
+/* 设置面板多了一行「网格」后更高了（真机 281px）。它靠 bottom:74px 往上长，
+   矮屏上要把顶上一截切掉 —— 给个兜底：超过可视高度就自己滚，绝不切。
+   654px 高的窗口下这条不会生效（281 < 554），只在极矮的窗口里兜底。 */
+.wb-pop{max-height:calc(100vh - 100px);overflow-y:auto;overscroll-behavior:contain}
 /* 板面选择器：三个小色块按钮，色块就是那块板的底色。 */
 .wb-themes{display:flex;gap:6px}
 .wb-theme{
@@ -588,6 +597,29 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
   flex:none;width:14px;height:14px;border-radius:4px;
   border:1px solid var(--math-border);
 }
+/* 网格疏密：三个小按钮，块里那格"预览"就是这个疏密画出来的样子。
+   方向必须是数值越小格子越密（20 → 4px，80 → 9px），写反了就是误导。
+   三档在极端缩放下会被自动疏密修正拉到同一档，这一点在说明里如实写了。 */
+.wb-grids{display:flex;gap:6px}
+.wb-grid{
+  display:inline-flex;align-items:center;gap:5px;
+  border:1px solid var(--math-border);border-radius:6px;
+  background:none;cursor:pointer;font:inherit;font-size:12px;line-height:1;
+  padding:4px 7px;color:var(--math-ink-3);
+}
+.wb-grid:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-grid:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-grid.is-on{border-color:transparent;background:var(--math-primary-tint);color:var(--math-primary)}
+.wb-grid__chip{
+  flex:none;width:14px;height:14px;border-radius:4px;
+  border:1px solid var(--math-border);
+  background-image:
+    linear-gradient(to right,var(--math-border) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--math-border) 1px,transparent 1px);
+}
+.wb-grid[data-wb-grid="20"] .wb-grid__chip{background-size:4px 4px}
+.wb-grid[data-wb-grid="40"] .wb-grid__chip{background-size:6px 6px}
+.wb-grid[data-wb-grid="80"] .wb-grid__chip{background-size:9px 9px}
     </style>
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/ide-shell.js"></script>

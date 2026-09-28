@@ -1040,4 +1040,109 @@ WB.clearAll();
 WB.setTheme('white');
 WB.redraw();
 
+/* ============================================================
+   14. 网格三档：小 20 / 中 40 / 大 80
+   ------------------------------------------------------------
+   三档只换"基数"，drawGrid() 里那两条随缩放自动加密 / 减疏的修正一字不改。
+   断言分两路，缺一不可：
+     a) 量**画出来的线**的间距（不是量状态里的数）—— 否则把 gridSize 存下来、
+        drawGrid() 里继续写死 40，一样能过。
+     b) 把缩放从 0.15 拉到 8，三档的实际间距始终落在 14～96 像素内。
+   ============================================================ */
+var GS = WB.config.GRID_SIZES;
+assert(GS && GS.length === 3, '网格梯子有三档（实际 ' + (GS ? GS.length : '没有') + ' 档）');
+assert(GS && GS.map(function (g) { return g.value; }).join(',') === '20,40,80',
+  '三档是 20 / 40 / 80（实际 ' + (GS ? GS.map(function (g) { return g.value; }).join(' / ') : '') + '）');
+assert(WB.state.gridSize === 40, '默认中档 40（实际 ' + WB.state.gridSize + '）');
+
+/* 量竖直网格线的间距：清空笔迹、收起题面，板上就只剩网格线了。
+   桩记录的是 moveTo / lineTo 的**原始参数**，也就是世界坐标 ——
+   真正的画布上世界坐标要经过 setTransform 的 scale 才是屏幕像素，
+   所以这里必须自己乘一次 scale，否则量到的是世界单位（缩放一变就对不上）。 */
+function gridStepPx() {
+  __ctxCalls.segs.length = 0;
+  WB.redraw();
+  var scale = WB.state.view.scale;
+  var xs = [];
+  __ctxCalls.segs.forEach(function (s) {
+    if (s.x0 === s.x1 && xs.indexOf(s.x0) < 0) xs.push(s.x0);
+  });
+  xs.sort(function (a, b) { return a - b; });
+  return xs.length > 1 ? (xs[1] - xs[0]) * scale : 0;
+}
+
+WB.clearAll();
+WB.setShowProblem(false);
+WB.setGrid(true);
+WB.state.view.scale = 1;
+
+WB.setGridSize(20);
+var stepSmall = gridStepPx();
+assert(Math.abs(stepSmall - 20) < 0.001,
+  '一百%下小档画出来的格子间距 = 20px（实际 ' + stepSmall + '）—— 量的是画出来的线，不是状态里的数');
+WB.setGridSize(40);
+var stepMid = gridStepPx();
+assert(Math.abs(stepMid - 40) < 0.001, '中档 = 40px（实际 ' + stepMid + '）—— 与改动前的观感一致');
+WB.setGridSize(80);
+var stepBig = gridStepPx();
+assert(Math.abs(stepBig - 80) < 0.001, '大档 = 80px（实际 ' + stepBig + '）');
+assert(stepSmall < stepMid && stepMid < stepBig, '疏密方向对：小档格子最小、大档最大');
+
+/* 疏密保证：三档 × 整条缩放范围 */
+var clampBad = [];
+[20, 40, 80].forEach(function (size) {
+  [0.15, 0.25, 0.5, 1, 2, 4, 8].forEach(function (k) {
+    WB.state.view.scale = k;
+    WB.setGridSize(size);
+    var d = gridStepPx();
+    if (!(d >= 14 - 0.01 && d <= 96 + 0.01)) clampBad.push(size + '@' + k + 'x=' + Math.round(d * 100) / 100);
+  });
+});
+assert(clampBad.length === 0,
+  '缩放 0.15～8 之间三档的格子间距始终在 14～96px 内（越界的：' + (clampBad.join(' ') || '没有') + '）');
+WB.state.view.scale = 1;
+
+/* 决定 #4：选疏密顺手把网格打开；但点颜色 / 笔粗不该把网格带开 */
+WB.setGrid(false);
+WB.setGridSize(80);
+assert(WB.state.grid === true, '网格关着时选一档 → 顺手把网格打开（实际 ' + WB.state.grid + '）');
+WB.setGrid(false);
+WB.setColor(WB.COLORS[0].value);
+assert(WB.state.grid === false, '选颜色不会把网格带开（只有选疏密才联动）');
+WB.setWidth(WB.WIDTHS[0].value);
+assert(WB.state.grid === false, '选笔粗也不会把网格带开');
+
+/* 拾取器内容：三档都在，且预览方块是"数值小的更密" */
+var gridHtml = elById('wb-grids').innerHTML;
+assert(gridHtml.indexOf('data-wb-grid="20"') >= 0 && gridHtml.indexOf('data-wb-grid="40"') >= 0 &&
+  gridHtml.indexOf('data-wb-grid="80"') >= 0, '设置里的网格拾取器生成了三档');
+assert(gridHtml.indexOf('wb-grid__chip') >= 0, '每档带一个疏密预览方块（不用点开就知道哪档更密）');
+
+/* 落盘与恢复：坏值一律不生效，恢复之后疏密必然落在梯子里 */
+WB.setGridSize(20);
+var storedG = JSON.parse(window.localStorage.getItem('wkmath.whiteboard.v1'));
+assert(storedG.gridSize === 20, '疏密写进本地存储（实际 ' + (storedG ? storedG.gridSize : '没写') + '）');
+WB.state.gridSize = 40;
+WB.restore();
+assert(WB.state.gridSize === 20, '刷新后恢复存过的疏密（实际 ' + WB.state.gridSize + '）');
+/* restore 在启动时跑，那一刻 state.gridSize 就是默认的 40。
+   存了个不在梯子里的值（55）时不能被采纳 —— 否则 drawGrid 会拿到 55 这个基数，
+   一百%下画出来的格子是 55px，跑到梯子外面去了。 */
+window.localStorage.setItem('wkmath.whiteboard.v1',
+  JSON.stringify({ gridSize: 55, grid: true, strokes: [] }));
+WB.state.gridSize = 40;
+WB.restore();
+assert(WB.state.gridSize === 40,
+  '存了个不在梯子里的疏密（55）→ 不采纳，保持默认中档 40（实际 ' + WB.state.gridSize + '）');
+WB.state.gridSize = 40;
+WB.restore();
+assert([20, 40, 80].indexOf(WB.state.gridSize) >= 0, '恢复之后疏密一定落在梯子里');
+assert(WB.setGridSize(55) === false, '不在梯子里的值传进来，直接不认（返回 false）');
+
+/* 收尾：把板面恢复到默认，免得影响后面的检查 */
+WB.setShowProblem(true);
+WB.setGridSize(40);
+WB.setGrid(true);
+WB.redraw();
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

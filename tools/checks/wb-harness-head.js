@@ -10,7 +10,7 @@ function assert(ok, label) {
   if (!ok) __fail = true;
 }
 var __fail = false;
-var __ctxCalls = { stroke: 0, fill: 0, clear: 0, fillText: 0, texts: [], strokeTfs: [], arcs: [] };
+var __ctxCalls = { stroke: 0, fill: 0, clear: 0, fillText: 0, texts: [], strokeTfs: [], arcs: [], segs: [], pt: null };
 
 function mkEl(tag) {
   var self = {
@@ -55,7 +55,15 @@ var ctx = {
   fillRect: function () { __ctxCalls.clear++; },
   save: function () { __tfStack.push(tfNow()); },
   restore: function () { if (__tfStack.length) __tf = __tfStack.pop(); },
-  beginPath: function () {}, moveTo: function () {}, lineTo: function () {},
+  /* 线段要记下来：网格间距这类"画出来的东西"只能量坐标。
+     只记"画了几次线"是量不出疏密的 —— 把 gridSize 存下来却在 drawGrid 里
+     继续写死 40，数次数一样过。每个 beginPath 重置起点，避免跨路径连出一条假线。 */
+  beginPath: function () { __ctxCalls.pt = null; },
+  moveTo: function (x, y) { __ctxCalls.pt = { x: x, y: y }; },
+  lineTo: function (x, y) {
+    if (__ctxCalls.pt) __ctxCalls.segs.push({ x0: __ctxCalls.pt.x, y0: __ctxCalls.pt.y, x1: x, y1: y });
+    __ctxCalls.pt = { x: x, y: y };
+  },
   quadraticCurveTo: function () {}, ellipse: function () {},
   /* arc 要记下来：笔尖 / 橡皮那个圈的半径就藏在这里，不记就只能数"画了几笔"，
      量不到"圈有多大"（而圈的大小正是这个功能唯一要守住的东西）。 */
