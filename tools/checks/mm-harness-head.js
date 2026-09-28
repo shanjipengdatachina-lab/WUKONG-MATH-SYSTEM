@@ -132,28 +132,38 @@ var zoomLabelEl = elById('mm-zoom-label');
 var totalEl = elById('mm-total');
 totalEl.setAttribute('data-mm-total', '');
 
-/* 浮层里的选项（与真实 HTML 一一对应） */
-var BOOKS = ['', '七年级（上）', '七年级（下）', '八年级（上）', '八年级（下）', '九年级（上）', '九年级（下）'];
-var bookItems = BOOKS.map(function (book) {
+/* 浮层里的选项。
+   注意：册 / 领域两项名单现在由 mindmap.js 按学段**现建**（createElement），
+   不再是 HTML 里写死的一排 —— 所以桩里只给容器，不给现成的项：
+   要断言就去问 MM.bookItems() / MM.fieldItems()，那才是真身。
+   学段那四项是固定的，仍按真实 HTML 预置。 */
+var stageItems = ['primary', 'junior', 'senior', 'olympiad'].map(function (code) {
   var item = mkEl('button');
-  item.setAttribute('data-book', book);
+  item.setAttribute('data-stage', code);
   item.setAttribute('aria-pressed', 'false');
   return item;
 });
+var stageMenuEl = elById('mm-stage-menu');
+stageMenuEl.setAttribute('hidden', '');
 var levelItems = [2, 3, 99].map(function (depth) {
   var item = mkEl('button');
   item.setAttribute('data-fold', String(depth));
   item.setAttribute('aria-pressed', 'false');
   return item;
 });
+var stageBtnEl = elById('mm-stage-btn');
+stageBtnEl.setAttribute('aria-expanded', 'false');
+var stageLabelEl = elById('mm-stage-label');
+var bookPaneEl = elById('mm-book-pane');
+var fieldPaneEl = elById('mm-field-pane');
+if (fieldPaneEl) fieldPaneEl.setAttribute('hidden', '');
 
 var qsaMap = {};
-qsaMap['#mm-book-menu [data-book]'] = bookItems;
+qsaMap['#mm-stage-menu [data-stage]'] = stageItems;
 qsaMap['#mm-level-menu [data-fold]'] = levelItems;
 qsaMap[', .segmented__item'] = [];
 
-/* 分法切换条 + 两栏名单（与真实 HTML 一一对应）。
-   桩的 qsa 是按"选择器字符串"精确取数组的，所以这里必须把名字写全。 */
+/* 分法切换条（与真实 HTML 一一对应；桩的 qsa 按选择器字符串精确取数组） */
 var axisEl = elById('mm-axis');
 var axisItems = ['book', 'field'].map(function (key) {
   var item = mkEl('button');
@@ -162,23 +172,7 @@ var axisItems = ['book', 'field'].map(function (key) {
   axisEl.appendChild(item);
   return item;
 });
-var axisPanes = ['book', 'field'].map(function (key) {
-  var pane = mkEl('div');
-  pane.setAttribute('data-axis-pane', key);
-  if (key !== 'book') pane.setAttribute('hidden', '');
-  return pane;
-});
-/* 体系那一栏：总览 + 三个课标领域（与 graph.html 里的四项一致） */
-var FIELD_NAMES = ['', '图形与几何', '数与代数', '统计与概率'];
-var fieldItems = FIELD_NAMES.map(function (name) {
-  var item = mkEl('button');
-  item.setAttribute('data-field', name);
-  item.setAttribute('aria-pressed', 'false');
-  return item;
-});
 qsaMap['#mm-axis [data-axis]'] = axisItems;
-qsaMap['#mm-book-menu [data-axis-pane]'] = axisPanes;
-qsaMap['#mm-book-menu [data-field]'] = fieldItems;
 
 /* ---- DOM 骨架：给浮层挂上类名和父链 ----
    真实页面里节点面板、定位面板、工具条都是 .mm-canvas 的子元素，事件会冒泡到画布。

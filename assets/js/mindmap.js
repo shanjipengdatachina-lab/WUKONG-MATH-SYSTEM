@@ -53,11 +53,12 @@
   };
 
   var KIND_LABEL = {
-    root: '总览', book: '册', field: '体系', chapter: '章', section: '节', group: '栏目',
+    root: '总览', stage: '学段', book: '册', track: '板块', field: '体系',
+    chapter: '章', section: '节', group: '栏目',
     point: '知识点', method: '方法', error: '易错点', exam: '考点'
   };
 
-  var BOXED = { root: 1, book: 1, field: 1, chapter: 1 };
+  var BOXED = { root: 1, stage: 1, book: 1, track: 1, field: 1, chapter: 1 };
   var DOTTED = { point: 1, method: 1, error: 1, exam: 1 };
 
   /* ------------------------------------------------------------------ *
@@ -128,29 +129,105 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 3. 筛选范围：按册（年级教材）或按课标领域（几何 / 代数 / 统计与概率）
+   * 3. 筛选范围：学段 → 册（教材册次）或课标领域
    * ------------------------------------------------------------------ */
 
-  /* scopeKey 是"当前只看哪一块"：'' 是总览，册名或领域名。
-     两个分法共用这一个变量 —— 它本身就是可判别的（册名 vs 领域名），
-     不需要再造一个"当前是哪个分法"的开关去跟它同步。 */
+  /* 四个学段（与 tools/build-math-tree.rb 的 STAGES 一一对应）。
+     学段是"册"上的一个字段，不是树上的一层 —— 加一层会让折叠档位、面板统计、
+     阅读器、默认深度全部往后挪一格，而收益为零：学段是大分区，
+     不会有人在同一屏里既展开"高中"又展开"必修一"。
+     所以选中学段时，用一个**合成根**把它当成整张图的根（复用"按领域分"那套机制）。 */
+  var STAGES = [
+    { code: 'primary', name: '小学数学', short: '小学' },
+    { code: 'junior', name: '初中数学', short: '初中' },
+    { code: 'senior', name: '高中数学', short: '高中' },
+    { code: 'olympiad', name: '竞赛数学', short: '竞赛' }
+  ];
+  var STAGE_CODES = STAGES.map(function (s) { return s.code; });
+
+  /* 两个分法在每个学段里叫什么。竞赛只有板块，第二栏没有。 */
+  var AXIS_TITLE = {
+    primary: { book: '教材册次', field: '四大领域' },
+    junior: { book: '年级教材', field: '几何代数' },
+    senior: { book: '教材册次', field: '课标主题' },
+    olympiad: { book: '四大板块', field: null }
+  };
+
+  /* 册 / 板块的短名（挂在章号前面用，也和工具条上的字一致） */
+  var BOOK_SHORT = {
+    /* 小学：一二三年级是 2024 新版、四五六年级是 2013 旧版（按"当前在用"取） */
+    '一年级上册': '一上', '一年级下册': '一下',
+    '二年级上册': '二上', '二年级下册': '二下',
+    '三年级上册': '三上', '三年级下册': '三下',
+    '四年级上册': '四上', '四年级下册': '四下',
+    '五年级上册': '五上', '五年级下册': '五下',
+    '六年级上册': '六上', '六年级下册': '六下',
+    /* 初中 */
+    '七年级（上）': '七上', '七年级（下）': '七下',
+    '八年级（上）': '八上', '八年级（下）': '八下',
+    '九年级（上）': '九上', '九年级（下）': '九下',
+    /* 高中：人教A版是按册的（必修两册 + 选择性必修三册），不是按年级 */
+    '必修第一册': '必修一', '必修第二册': '必修二',
+    '选择性必修第一册': '选必一', '选择性必修第二册': '选必二', '选择性必修第三册': '选必三'
+  };
+
+  function stageOf(code) {
+    for (var i = 0; i < STAGES.length; i++) { if (STAGES[i].code === code) return STAGES[i]; }
+    return STAGES[1];   // 认不出来就回初中（现在的内容都是初中的）
+  }
+
+  /* 某个学段的册 / 板块（按数据里的顺序） */
+  function booksOf(code) {
+    return DATA.kids.filter(function (b) { return b.stage === code; });
+  }
+
+  var STAGE_SCOPES = {};
+  /* 学段的合成根：depth 0（与总根同层），孩子是该学段的册 —— 列位置不用特判 */
+  function stageScope(code) {
+    if (STAGE_SCOPES[code]) return STAGE_SCOPES[code];
+    var kids = booksOf(code);
+    if (!kids.length) return null;
+    var agg = { book: 0, track: 0, chapter: 0, section: 0, group: 0, point: 0, method: 0, error: 0, exam: 0 };
+    kids.forEach(function (b) {
+      Object.keys(b.agg || {}).forEach(function (k) { agg[k] += b.agg[k]; });
+      agg[b.kind] = (agg[b.kind] || 0) + 1;
+    });
+    var node = {
+      id: 's:' + code,
+      name: stageOf(code).name,
+      kind: 'stage',
+      depth: 0,
+      parent: null,
+      kids: kids,
+      children: kids,
+      hasChildren: true,
+      agg: agg,
+      kidsSet: kids.reduce(function (m, b) { m[b.id] = true; return m; }, {})
+    };
+    STAGE_SCOPES[code] = node;
+    return node;
+  }
+
+  /* 当前只看哪一块：'' 是这一学段的总览，册名或领域名。
+     两个分法共用这一个变量 —— 它本身就可判别，不需要再造一个开关去同步。 */
   var scopeKey = '';
 
-  /* 领域名 → 图里那个合成根。体系是"看法"，不是真的父节点：
-     章的真实父节点还是册，所以信息面板里的路径照实显示
-     「初中数学 / 八年级（下） / 平行四边形」—— 这里不编造层级。 */
+  /* 领域名 → 图里那个合成根。**按学段缓存**：同一个「数与代数」在小学和初中
+     都有，不分开缓存就会串台（小学点"数与代数"，出来的却是初中的 13 章）。 */
   var FIELD_SCOPES = {};
-  /* 列表与工具条上用短名，图里的节点名仍用课标全称（和"册"一致：
-     名单里写「七年级（上）」，工具条上写「七上」） */
-  var FIELD_SHORT = { '数与代数': '代数', '图形与几何': '几何', '统计与概率': '统计与概率' };
-  /* 固定顺序：几何在前（用户说的就是"几何代数"） */
-  var FIELD_ORDER = ['图形与几何', '数与代数', '统计与概率'];
+  /* 列表与工具条上用短名，图里的节点名仍用课标全称 */
+  var FIELD_SHORT = {
+    '数与代数': '代数', '图形与几何': '几何', '统计与概率': '统计与概率', '综合与实践': '综合实践',
+    '预备知识': '预备', '函数': '函数', '几何与代数': '几何代数',
+    '概率与统计': '概率统计', '数学建模活动与数学探究活动': '建模探究'
+  };
 
-  function fieldScope(name) {
-    if (FIELD_SCOPES[name]) return FIELD_SCOPES[name];
+  function fieldScope(stageCode, name) {
+    var cacheKey = stageCode + ':' + name;
+    if (FIELD_SCOPES[cacheKey]) return FIELD_SCOPES[cacheKey];
     var kids = [];
-    DATA.kids.forEach(function (book) {
-      (book.kids || []).forEach(function (ch) { if (ch.field === name) kids.push(ch); });
+    booksOf(stageCode).forEach(function (b) {
+      (b.kids || []).forEach(function (ch) { if (ch.field === name) kids.push(ch); });
     });
     if (!kids.length) return null;
     var agg = { chapter: 0, section: 0, group: 0, point: 0, method: 0, error: 0, exam: 0 };
@@ -159,7 +236,7 @@
     });
     agg.chapter = kids.length;
     var node = {
-      id: 'f:' + name,
+      id: 'f:' + cacheKey,
       name: name,
       kind: 'field',
       /* 与"册"同层（depth 1），所以列位置、字号、盒子这些全都不用特判 */
@@ -175,34 +252,43 @@
          误判成"在别处"，然后把筛选清掉。 */
       kidsSet: kids.reduce(function (m, ch) { m[ch.id] = true; return m; }, {})
     };
-    FIELD_SCOPES[name] = node;
+    FIELD_SCOPES[cacheKey] = node;
     return node;
   }
 
-  /* 数据里出现过的领域名（按 FIELD_ORDER 排，未知的排在最后） */
-  function fieldNames() {
-    var seen = {}, out = [];
-    DATA.kids.forEach(function (book) {
-      (book.kids || []).forEach(function (ch) {
-        if (ch.field && !seen[ch.field]) { seen[ch.field] = true; out.push(ch.field); }
-      });
+  /* 某学段里出现过的领域名，按这个顺序列（数据里没有的领域不列 ——
+     列了却没内容是骗人的）。
+     初中的顺序是"几何在前"：那一栏的名字就叫「几何代数」，名字与列表对得上，
+     这是上次定下的；小学与高中按课标自己的顺序。 */
+  var FIELD_ORDER = {
+    primary: ['数与代数', '图形与几何', '统计与概率', '综合与实践'],
+    junior: ['图形与几何', '数与代数', '统计与概率'],
+    senior: ['预备知识', '函数', '几何与代数', '概率与统计', '数学建模活动与数学探究活动'],
+    olympiad: []
+  };
+
+  function fieldNames(stageCode) {
+    var seen = {};
+    booksOf(stageCode).forEach(function (b) {
+      (b.kids || []).forEach(function (ch) { if (ch.field) seen[ch.field] = true; });
     });
-    out.sort(function (a, b) {
-      var ai = FIELD_ORDER.indexOf(a), bi = FIELD_ORDER.indexOf(b);
-      return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
-    });
-    return out;
+    var order = FIELD_ORDER[stageCode] || [];
+    return order.filter(function (f) { return seen[f]; });
   }
 
   function isFieldScope(key) {
-    return !!key && fieldNames().indexOf(key) >= 0;
+    return !!key && fieldNames(currentStage).indexOf(key) >= 0;
   }
 
+  var currentStage = 'junior';
+
+  /* 当前这一屏的根：先定学段，再看范围 */
   function rootScope() {
-    if (!scopeKey) return DATA;
-    var book = DATA.kids.filter(function (b) { return b.name === scopeKey; })[0];
+    var base = stageScope(currentStage) || DATA;
+    if (!scopeKey) return base;
+    var book = base.kids.filter(function (b) { return b.name === scopeKey; })[0];
     if (book) return book;
-    return fieldScope(scopeKey) || DATA;
+    return fieldScope(currentStage, scopeKey) || base;
   }
 
   /* 目标在不在当前范围里。除了沿父链，还要看合成根那张孩子索引 —— 见 kidsSet 的说明。 */
@@ -224,18 +310,18 @@
   var H_GAP = 46;
 
   function fontSize(kind) {
-    if (kind === 'root') return 15;
-    if (kind === 'book' || kind === 'chapter') return 14;
+    if (kind === 'root' || kind === 'stage') return 15;
+    if (kind === 'book' || kind === 'track' || kind === 'chapter') return 14;
     return 13;
   }
   function nodeHeight(kind) {
-    if (kind === 'root') return 38;
-    if (kind === 'book') return 30;
+    if (kind === 'root' || kind === 'stage') return 38;
+    if (kind === 'book' || kind === 'track') return 30;
     return 26;
   }
   function nodePad(kind) {
-    if (kind === 'root') return 16;
-    if (kind === 'book') return 14;
+    if (kind === 'root' || kind === 'stage') return 16;
+    if (kind === 'book' || kind === 'track') return 14;
     return 11;
   }
 
@@ -248,10 +334,21 @@
     return width;
   }
 
+  /* 章号前面挂上册的短名（八下 18）。
+     跨学段之后光看 04 / 05 / 07 更看不懂 —— 那些号是各自册内编的，
+     必修两册排到第 10 章、选择性必修又从头排。竞赛的章不编号，返回空。 */
+  function labelNo(node) {
+    if (!node || !node.no) return '';
+    if (node.kind !== 'chapter') return node.no;
+    var book = node.parent;
+    var short = book ? BOOK_SHORT[book.name] : '';
+    return short ? (short + ' ' + node.no) : node.no;
+  }
+
   function nodeWidth(node) {
     var size = fontSize(node.kind);
     var width = measure(node.name, size);
-    if (node.no) width += measure(node.no, size * 0.84) + 7;
+    if (node.no) width += measure(labelNo(node), size * 0.84) + 7;
     if (BOXED[node.kind]) return width + nodePad(node.kind) * 2 + 6;
     if (DOTTED[node.kind]) return width + 13;
     return width;
@@ -443,9 +540,10 @@
     }
 
     if (node.no) {
+      var noText = labelNo(node);
       parts.push('<text class="mm-no" x="' + cursorX + '" y="' + textY + '" font-size="' +
-        (size * 0.84).toFixed(1) + '">' + esc(node.no) + '</text>');
-      cursorX += measure(node.no, size * 0.84) + 7;
+        (size * 0.84).toFixed(1) + '">' + esc(noText) + '</text>');
+      cursorX += measure(noText, size * 0.84) + 7;
     }
 
     var toneAttr = node.tone ? ' data-tone="' + node.tone + '"' : '';
@@ -554,7 +652,11 @@
     var rows = [];
     var leafKinds = node.kind === 'point' || node.kind === 'method' || node.kind === 'error' || node.kind === 'exam';
 
-    if (node.kind === 'root' || node.kind === 'book' || node.kind === 'field') {
+    if (node.kind === 'stage') {
+      rows.push([node.agg.track ? '板块' : '册', (node.agg.book || 0) + (node.agg.track || 0)]);
+      rows.push(['章', agg.chapter]);
+    }
+    if (node.kind === 'root' || node.kind === 'book' || node.kind === 'track' || node.kind === 'field') {
       rows.push(['章', agg.chapter]);
     }
     if (node.kind !== 'section' && node.kind !== 'group' && !leafKinds) {
@@ -581,9 +683,18 @@
     var tone = node.tone ? ' data-tone="' + node.tone + '"' : '';
 
     // 面板本身是悬浮的：编号放标题栏，正文里是类型徽标 + 名称
-    if (panelNo) panelNo.textContent = node.no || '';
+    if (panelNo) panelNo.textContent = labelNo(node) || node.no || '';
     html.push('<span class="mm-panel__kind"' + tone + '>' + KIND_LABEL[node.kind] + '</span>');
     html.push('<h2 class="mm-panel__title">' + esc(node.name) + '</h2>');
+
+    /* 目录待核的节点：如实说明为什么这里是空的。
+       空着不说会被当成"忘了做"，而有依据的空缺和没做是两件事。 */
+    if (node.pending) {
+      html.push('<p class="mm-pending">目录待核：' + esc(node.pending) + '</p>');
+    }
+    if (node.source) {
+      html.push('<p class="mm-source">目录来源：' + esc(node.source) + '</p>');
+    }
 
     // 定位路径（可点击逐级回跳）
     var chain = pathOf(node);
@@ -964,6 +1075,10 @@
   var searchClose = qs('#mm-search-close');
   var bookBtn = qs('#mm-book-btn');
   var bookMenu = qs('#mm-book-menu');
+  var stageBtn = qs('#mm-stage-btn');
+  var stageMenu = qs('#mm-stage-menu');
+  var bookPane = qs('#mm-book-pane');
+  var fieldPane = qs('#mm-field-pane');
   var levelBtn = qs('#mm-level-btn');
   var levelMenu = qs('#mm-level-menu');
   var helpBtn = qs('#mm-help-btn');
@@ -972,14 +1087,9 @@
 
   var SCOPE_KEY = 'wkmath.graph.scope';
   var AXIS_KEY = 'wkmath.graph.axis';
+  var STAGE_KEY = 'wkmath.graph.stage';
   var AXES = ['book', 'field'];
   var axis = 'book';            // 当前浮层里看的是哪一栏：book | field
-  var BOOK_SHORT = {
-    '': '总览',
-    '七年级（上）': '七上', '七年级（下）': '七下',
-    '八年级（上）': '八上', '八年级（下）': '八下',
-    '九年级（上）': '九上', '九年级（下）': '九下'
-  };
   var LEVEL_SHORT = { 2: '到章', 3: '到节', 99: '全部' };
   var levelDepth = 2;
 
@@ -1004,57 +1114,178 @@
     return '七年级（下）';
   }
 
+  /* 默认学段：记过就用记过的，没有就初中（现在的内容都是初中的）。
+     存了个认不出来的值也回初中。 */
+  function initialStage() {
+    var saved = readStore(STAGE_KEY);
+    return STAGE_CODES.indexOf(saved) >= 0 ? saved : 'junior';
+  }
+
   // 默认聚焦：看过哪册 / 哪个体系就记哪个；没记过就按学生当前年级；未登录给总览
   function initialScope() {
     var saved = readStore(SCOPE_KEY);
     if (saved !== null && saved !== '') {
-      /* 存的是册名或领域名 —— 不认识的值一律当没存（旧数据 / 手改过的存储），
-         否则 rootScope() 会落到总览，而工具条上却写着那个不认识的名字。 */
-      if (BOOK_SHORT[saved] || isFieldScope(saved)) return saved;
+      /* 存的是册名或领域名 —— 不认识的值一律当没存（旧数据 / 手改过的存储，
+         也可能是上一学段的册名，换学段后那个名字在这里不存在）。 */
+      var inStage = booksOf(currentStage).some(function (b) { return b.name === saved; });
+      if (inStage || isFieldScope(saved)) return saved;
       return '';
     }
     if (saved === '') return '';
-    return signedIn() ? studentGrade() : '';
+    return signedIn() && currentStage === 'junior' ? studentGrade() : '';
   }
 
-  /* 当前范围落在哪一栏。范围本身就能说明：册名 → 年级教材，领域名 → 几何代数。
+  /* 当前范围落在哪一栏。范围本身就能说明：册名 → 教材册次，领域名 → 课标主题。
      这样不会出现"选中的那一项在看不见的那一栏里"。
-     参数可传一个范围进去 —— 启动时要用"存储里那个范围"来算，
-     不能只看现场的 scopeKey（那一刻还没赋值）。 */
+     参数可传一个范围进去 —— 启动时要用"存储里那个范围"来算。 */
   function axisOfScope(key) {
     var k = (key === undefined) ? scopeKey : (key || '');
     if (!k) return '';
     if (isFieldScope(k)) return 'field';
-    return BOOK_SHORT[k] ? 'book' : '';
+    return booksOf(currentStage).some(function (b) { return b.name === k; }) ? 'book' : '';
   }
 
-  /* 启动时的那一栏：先看范围属于哪一栏；范围是总览时用记着的那一栏，最后兜到年级教材。
-     这里刻意从 initialScope() 现算 —— 它等价于"刷新一次页面会落在哪一栏"。 */
+  /* 启动时的那一栏：先看范围属于哪一栏；范围是总览时用记着的那一栏，最后兜到册那一栏。 */
   function initialAxis() {
     var derived = axisOfScope(initialScope());
     if (derived) return derived;
     var saved = readStore(AXIS_KEY);
-    return AXES.indexOf(saved) >= 0 ? saved : 'book';
+    if (AXES.indexOf(saved) < 0) return 'book';
+    /* 竞赛没有第二栏，别把 axis 停在 field 上 */
+    if (saved === 'field' && !(AXIS_TITLE[currentStage] || {}).field) return 'book';
+    return saved;
   }
 
   /* 范围在工具条与列表上的短名 */
   function scopeShort() {
-    return BOOK_SHORT[scopeKey] || FIELD_SHORT[scopeKey] || '总览';
+    if (!scopeKey) return '总览';
+    return BOOK_SHORT[scopeKey] || FIELD_SHORT[scopeKey] || scopeKey;
+  }
+
+  function stageBooksWord() { return currentStage === 'olympiad' ? '板块' : '册'; }
+
+  /* 数一棵子树里有多少节点（给说明文字用；一千多个节点，一次遍历无所谓） */
+  function countNodes(scope) {
+    var n = 0;
+    (function walkCount(x) {
+      n++;
+      (x.kids || []).forEach(walkCount);
+    })(scope);
+    return n;
   }
 
   /* aria-pressed 给读屏，is-on 给眼睛：两个都要设。
-     只设 aria-pressed 的话，视觉上打开浮层看不出当前选的是哪一册 / 哪一档。
-     .mm-flyout__item.is-on 的样式是从白板共享过来的，白板那边一直这么用。 */
+     只设 aria-pressed 的话，视觉上打开浮层看不出当前选的是哪一项。 */
   function markOn(el, on) {
     if (!el || !el.classList) return;
     if (on) el.classList.add('is-on');
     else el.classList.remove('is-on');
   }
 
+  function toggleHidden(el, hide) {
+    if (!el) return;
+    el.hidden = !!hide;
+    if (hide) { if (el.setAttribute) el.setAttribute('hidden', 'hidden'); }
+    else if (el.removeAttribute) el.removeAttribute('hidden');
+  }
+
+  function refreshIcons() {
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      try { window.lucide.createIcons(); } catch (err) { /* 忽略 */ }
+    }
+  }
+
+  /* ---------- 浮层里的两项名单：按学段整块重建 ----------
+     为什么不在 HTML 里写死：四学段合计 27 本册 / 4 个板块，
+     写死就是把数据抄两遍，而且换学段时一定会有一半对不上。 */
+  function bookEntries() {
+    var list = [{ value: '', label: '总览 · 全部' + stageBooksWord(), icon: 'layout-grid' }];
+    booksOf(currentStage).forEach(function (b) {
+      list.push({
+        value: b.name,
+        label: b.name,
+        icon: b.kind === 'track' ? 'shapes' : 'book',
+        note: b.pending ? '待核' : ((b.kids || []).length ? '' : '暂空')
+      });
+    });
+    return list;
+  }
+
+  function fieldEntries() {
+    var list = [{ value: '', label: '总览 · 全部' + stageBooksWord(), icon: 'layout-grid' }];
+    fieldNames(currentStage).forEach(function (f) {
+      list.push({ value: f, label: f, icon: 'shapes', note: '' });
+    });
+    return list;
+  }
+
+  var bookItems = [];      // 当前学段在浮层里那一栏的元素（重建时整体换掉）
+  var fieldItems = [];
+
+  function mkItems(pane, attrName, entries) {
+    var items = [];
+    if (!pane) return items;
+    if (pane.innerHTML !== undefined) pane.innerHTML = '';
+    entries.forEach(function (row) {
+      var el = document.createElement('button');
+      el.className = 'mm-flyout__item';
+      el.setAttribute('type', 'button');
+      el.setAttribute(attrName, row.value);
+      el.setAttribute('aria-pressed', 'false');
+      el.innerHTML = '<i data-lucide="' + esc(row.icon) + '"></i>' +
+        '<span class="mm-flyout__label">' + esc(row.label) + '</span>' +
+        (row.note ? '<span class="mm-flyout__note">' + esc(row.note) + '</span>' : '');
+      if (el.addEventListener) {
+        el.addEventListener('click', function () {
+          setBookFilter(row.value);
+          closeMenus();
+        });
+      }
+      if (pane.appendChild) pane.appendChild(el);
+      items.push(el);
+    });
+    return items;
+  }
+
+  function buildMenu() {
+    bookItems = mkItems(bookPane, 'data-book', bookEntries());
+    fieldItems = mkItems(fieldPane, 'data-field', fieldEntries());
+    /* 分法条上的字样跟着学段走；竞赛没有第二栏，整条收起来 */
+    var titles = AXIS_TITLE[currentStage] || AXIS_TITLE.junior;
+    var axes = qsa('#mm-axis [data-axis]');
+    (axes || []).forEach(function (el) {
+      var k = el.getAttribute('data-axis') || '';
+      var t = (k === 'book') ? titles.book : titles.field;
+      if (el.textContent !== undefined) el.textContent = t || '';
+      toggleHidden(el, !t);
+    });
+    toggleHidden(qs('#mm-axis'), !titles.field);
+    refreshIcons();
+  }
+
+  /* 换学段：范围归零、名单重建、图重新落位。
+     最后这一步不能省 —— 不重新 fit 的话画布还停在上一学段的坐标上，看着像一张空板。 */
+  function setStage(code) {
+    if (STAGE_CODES.indexOf(code) < 0) return false;
+    if (code === currentStage) return true;
+    currentStage = code;
+    scopeKey = '';
+    if (!(AXIS_TITLE[code] || {}).field) axis = 'book';
+    else if (AXES.indexOf(axis) < 0) axis = 'book';
+    writeStore(STAGE_KEY, code);
+    writeStore(SCOPE_KEY, '');
+    buildMenu();
+    syncScope();
+    render({ fit: true });
+    toast('切到' + stageOf(code).short, 'info', 1400);
+    return true;
+  }
+
   /* 分法切换：只换名单，不动图 —— 图要等你点具体某一项才变。
      这和"点开浮层只是看看"是一致的。 */
   function setAxis(next) {
     if (AXES.indexOf(next) < 0) return false;
+    if (next === 'field' && !(AXIS_TITLE[currentStage] || {}).field) return false;   // 竞赛没有第二栏
     axis = next;
     writeStore(AXIS_KEY, next);
     syncScope();
@@ -1074,20 +1305,15 @@
       markOn(item, on);
     });
     /* 两栏名单：一次只露一栏 */
-    qsa('#mm-book-menu [data-axis-pane]').forEach(function (pane) {
-      var on = (pane.getAttribute('data-axis-pane') || '') === axis;
-      if (on) { if (pane.removeAttribute) pane.removeAttribute('hidden'); pane.hidden = false; }
-      else { if (pane.setAttribute) pane.setAttribute('hidden', ''); pane.hidden = true; }
-    });
+    toggleHidden(bookPane, axis !== 'book');
+    toggleHidden(fieldPane, axis !== 'field');
 
-    /* 册那一栏 */
-    qsa('#mm-book-menu [data-book]').forEach(function (item) {
+    bookItems.forEach(function (item) {
       var on = (item.getAttribute('data-book') || '') === scopeKey && axis === 'book';
       item.setAttribute('aria-pressed', String(on));
       markOn(item, on);
     });
-    /* 体系那一栏 */
-    qsa('#mm-book-menu [data-field]').forEach(function (item) {
+    fieldItems.forEach(function (item) {
       var on = (item.getAttribute('data-field') || '') === scopeKey && axis === 'field';
       item.setAttribute('aria-pressed', String(on));
       markOn(item, on);
@@ -1097,19 +1323,48 @@
       item.setAttribute('aria-pressed', String(on));
       markOn(item, on);
     });
-    if (bookBtn) bookBtn.setAttribute('data-mm-tip', '只看某一册或某一体系 · 当前 ' + scopeShort());
+
+    /* 学段按钮 */
+    var stageLabel = qs('#mm-stage-label');
+    if (stageLabel) stageLabel.textContent = stageOf(currentStage).short;
+    if (stageBtn) stageBtn.setAttribute('data-mm-tip', '选学段 · 当前 ' + stageOf(currentStage).short);
+    qsa('#mm-stage-menu [data-stage]').forEach(function (item) {
+      var on = (item.getAttribute('data-stage') || '') === currentStage;
+      item.setAttribute('aria-pressed', String(on));
+      markOn(item, on);
+    });
+
+    if (bookBtn) {
+      var titles = AXIS_TITLE[currentStage] || AXIS_TITLE.junior;
+      bookBtn.setAttribute('data-mm-tip', '只看某一' + stageBooksWord() +
+        (titles.field ? '或某一课标主题' : '') + ' · 当前 ' + scopeShort());
+    }
     if (levelBtn) levelBtn.setAttribute('data-mm-tip', '显示到哪一层 · 当前 ' + (LEVEL_SHORT[levelDepth] || '到章'));
+
     if (scopeNote) {
+      var st = stageOf(currentStage);
+      var titles2 = AXIS_TITLE[currentStage] || AXIS_TITLE.junior;
       if (isFieldScope(scopeKey)) {
-        var node = fieldScope(scopeKey);
-        scopeNote.textContent = '当前按「' + FIELD_SHORT[scopeKey] + '」体系看，共 ' + node.kids.length +
-          ' 章（课标名：' + scopeKey + '）；点工具条第一个按钮可换分法。';
+        var fnode = fieldScope(currentStage, scopeKey);
+        scopeNote.textContent = '当前看的是' + st.short + '的「' + scopeKey + '」，共 ' + fnode.kids.length +
+          ' 章；点工具条的「' + (titles2.book || '册') + '」按钮可换。';
       } else if (scopeKey) {
-        scopeNote.textContent = '当前按 ' + scopeKey + ' 聚焦' + (signedIn() ? '（学生当前年级）' : '') + '；点工具条第一个按钮可换册。';
-      } else if (signedIn()) {
-        scopeNote.textContent = '已登录：默认聚焦学生当前年级（' + studentGrade() + '），这里看的是总览。';
+        scopeNote.textContent = '当前聚焦' + st.short + '的「' + scopeKey + '」' +
+          (signedIn() && currentStage === 'junior' ? '（学生当前年级）' : '') +
+          '；点工具条的「' + (titles2.book || '册') + '」按钮可换。';
       } else {
-        scopeNote.textContent = '未登录：先看总览，六册与各章一目了然；登录后默认聚焦自己的年级。';
+        var books = booksOf(currentStage);
+        var chs = books.reduce(function (n, b) { return n + (b.kids || []).length; }, 0);
+        var pend = books.filter(function (b) { return b.pending; }).length;
+        var scope = stageScope(currentStage);
+        scopeNote.textContent = '当前看' + st.short + '：' + books.length + ' ' + stageBooksWord() + ' · ' +
+          chs + ' 章 · ' + countNodes(scope) + ' 个节点' +
+          (pend ? '（其中 ' + pend + ' 本目录待核，名单里标着）' : '') +
+          '；点工具条第一个按钮可换学段。' +
+          /* 按年级默认聚焦这件事只发生在初中（别的学段没有"学生当前年级"这回事） */
+          (currentStage === 'junior'
+            ? (signedIn() ? '默认聚焦学生当前年级。' : '未登录：先看总览，登录后默认聚焦自己的年级。')
+            : '');
       }
     }
   }
@@ -1125,12 +1380,14 @@
     toast(next ? '只看 ' + (FIELD_SHORT[next] || next) : '显示全部六册', 'info', 1600);
   }
 
+  /* 启动顺序有讲究：先定学段，再定范围（范围要在学段里校验），最后定分法那一栏 */
+  currentStage = initialStage();
   scopeKey = initialScope();
   axis = initialAxis();
 
   /* ---- 浮层：一次只开一个 ---- */
   function menuPairs() {
-    return [[bookBtn, bookMenu], [levelBtn, levelMenu], [helpBtn, helpMenu]];
+    return [[stageBtn, stageMenu], [bookBtn, bookMenu], [levelBtn, levelMenu], [helpBtn, helpMenu]];
   }
   function closeMenus() {
     menuPairs().forEach(function (pair) {
@@ -1146,28 +1403,22 @@
     menu.removeAttribute('hidden');
     btn.setAttribute('aria-expanded', 'true');
   }
+  if (stageBtn) stageBtn.addEventListener('click', function () { toggleMenu(stageBtn, stageMenu); });
   if (bookBtn) bookBtn.addEventListener('click', function () { toggleMenu(bookBtn, bookMenu); });
   if (levelBtn) levelBtn.addEventListener('click', function () { toggleMenu(levelBtn, levelMenu); });
   if (helpBtn) helpBtn.addEventListener('click', function () { toggleMenu(helpBtn, helpMenu); });
 
+  /* 学段那四项是固定的，写在 HTML 里；册 / 领域两项名单由 buildMenu() 按学段现建 */
+  qsa('#mm-stage-menu [data-stage]').forEach(function (item) {
+    item.addEventListener('click', function () {
+      setStage(item.getAttribute('data-stage'));
+      closeMenus();
+    });
+  });
+
   /* 分法切换条 */
   qsa('#mm-axis [data-axis]').forEach(function (item) {
     item.addEventListener('click', function () { setAxis(item.getAttribute('data-axis')); });
-  });
-
-  qsa('#mm-book-menu [data-book]').forEach(function (item) {
-    item.addEventListener('click', function () {
-      setBookFilter(item.getAttribute('data-book'));
-      closeMenus();
-    });
-  });
-
-  /* 体系那一栏：和册一样，选了就收起浮层 */
-  qsa('#mm-book-menu [data-field]').forEach(function (item) {
-    item.addEventListener('click', function () {
-      setBookFilter(item.getAttribute('data-field'));
-      closeMenus();
-    });
   });
 
   /* ---- 面板开合：悬停工具条上的按钮或点节点 ---- */
@@ -1285,7 +1536,26 @@
   window.__MM__ = {
     scope: { get: function () { return scopeKey; }, set: setBookFilter, initial: initialScope },
     axis: { get: function () { return axis; }, set: setAxis, initial: initialAxis, keys: AXES },
-    fields: fieldNames,
+    stage: {
+      get: function () { return currentStage; },
+      set: setStage,
+      initial: initialStage,
+      keys: STAGE_CODES,
+      list: function () {
+        return STAGES.map(function (s) { return { code: s.code, name: s.name, short: s.short }; });
+      }
+    },
+    stageOf: function (code) { var s = stageOf(code || currentStage); return { code: s.code, name: s.name, short: s.short }; },
+    stageScope: stageScope,
+    stageBooksWord: stageBooksWord,
+    axisTitle: function () { return AXIS_TITLE[currentStage] || AXIS_TITLE.junior; },
+    booksOf: function (code) { return booksOf(code || currentStage).map(function (b) { return b.name; }); },
+    books: function () { return booksOf(currentStage).map(function (b) { return b.name; }); },
+    bookItems: function () { return bookItems; },
+    fieldItems: function () { return fieldItems; },
+    labelNo: labelNo,
+    buildMenu: buildMenu,
+    fields: function (code) { return fieldNames(code || currentStage); },
     fieldScope: fieldScope,
     fieldShort: function (name) { return FIELD_SHORT[name || ''] || name || ''; },
     fieldOf: function (chapterName) {
@@ -1301,7 +1571,6 @@
     level: { get: function () { return levelDepth; }, set: setFold },
     signedIn: signedIn,
     studentGrade: studentGrade,
-    books: DATA.kids.map(function (book) { return book.name; }),
     shortOf: function (name) { return name ? (BOOK_SHORT[name] || FIELD_SHORT[name] || name) : '总览'; },
     syncScope: syncScope,
     setBookFilter: setBookFilter,
@@ -1364,6 +1633,7 @@
    * ------------------------------------------------------------------ */
 
   function boot() {
+    buildMenu();          // 册 / 领域两项名单按当前学段先建出来
     syncScope();
     renderEmptyPanel();
     render({ fit: true });

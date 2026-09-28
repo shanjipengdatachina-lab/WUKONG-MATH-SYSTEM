@@ -7,6 +7,10 @@
      右栏 · 本页目录    列出中栏正文的 h2 / h3 小标题，滚动高亮，点击定位
 
    依赖：assets/js/math-tree.js（window.MATH_TREE，由 tools/build-math-tree.rb 生成）
+
+   四学段的处理：数据是四个学段合在一起的（27 册 / 169 章），但一屏只该看见
+   一册的那一套 —— 左栏的册 / 章 / 节按当前学段现建，默认初中。学段键与知识图谱
+   共用（wkmath.graph.stage），在那边选了高中，过来这边也是高中，不用再选一次。
    ========================================================================== */
 (function () {
   'use strict';
@@ -14,6 +18,9 @@
   var TREE = window.MATH_TREE;
   var art = document.getElementById('knowledge-point');
   var treeEl = document.getElementById('chapter-tree');
+  var treeBody = document.getElementById('tree-body');
+  var treeMeta = document.getElementById('tree-meta');
+  var stageBar = document.getElementById('tree-stage');
   var outlineBlock = document.getElementById('page-outline');
   var outlineList = document.getElementById('outline-list');
   if (!TREE || !art || !treeEl) return;
@@ -24,30 +31,295 @@
   var authoredHTML = art.innerHTML;
 
   /* ------------------------------------------------------------------ *
-   * 1. 数据索引
+   * 0. 学段：一屏只列一个学段的那几册（默认初中）
+   * ------------------------------------------------------------------ */
+
+  var STAGES = [
+    { code: 'primary', short: '小学', name: '小学数学', word: '册' },
+    { code: 'junior', short: '初中', name: '初中数学', word: '册' },
+    { code: 'senior', short: '高中', name: '高中数学', word: '册' },
+    { code: 'olympiad', short: '竞赛', name: '竞赛数学', word: '板块' }
+  ];
+  var STAGE_KEY = 'wkmath.graph.stage';   // 与图谱同一个键：两边记住的是同一件事
+  var DEFAULT_STAGE = 'junior';
+
+  function readStore(key) {
+    try { return window.localStorage.getItem(key); } catch (err) { return null; }
+  }
+  function writeStore(key, value) {
+    try { window.localStorage.setItem(key, value); } catch (err) { /* 忽略 */ }
+  }
+
+  function stageInfo(code) {
+    for (var i = 0; i < STAGES.length; i++) {
+      if (STAGES[i].code === code) return STAGES[i];
+    }
+    return null;
+  }
+
+  /* 注意：这里读的是 math-tree.js 的原始节点（children），不是 mindmap.js 加工后的
+     kids —— 图谱那页才跑 mindmap.js，这页没有它。 */
+  function booksOf(code) {
+    return (TREE.children || []).filter(function (book) { return book.stage === code; });
+  }
+
+  /* 存了个认不出来的值就回初中（跟图谱一致） */
+  function initialStage() {
+    var saved = readStore(STAGE_KEY);
+    return stageInfo(saved) ? saved : DEFAULT_STAGE;
+  }
+  var currentStage = initialStage();
+
+  /* 当前学段摆开来长什么样：哪几册、每册里的章用什么键。
+     键要能在学段内唯一定位一章，因为章号本身不一定唯一 ——
+     初中是一路 01-29 排下来的，小学按单元每册从 01 重来，高中必修 / 选必各自排，
+     竞赛干脆不编号。用章号当键就会串册（点小学第一册第 1 单元翻到别的册去），
+     所以只在不重复时才用章号，否则用「册序号 c 章序号」。 */
+  var LAYOUT_CACHE = {};
+
+  function layoutOf(code) {
+    if (LAYOUT_CACHE[code]) return LAYOUT_CACHE[code];
+
+    var books = booksOf(code);
+    var seen = {};
+    var chapters = 0;
+
+    books.forEach(function (book) {
+      (book.children || []).forEach(function (node) {
+        if (node.kind === 'chapter' && node.no) seen[node.no] = (seen[node.no] || 0) + 1;
+      });
+    });
+
+    var keys = books.map(function (book, bi) {
+      return (book.children || []).map(function (node, ci) {
+        if (node.kind === 'chapter') chapters += 1;
+        return (node.no && seen[node.no] === 1) ? node.no : ('b' + bi + 'c' + ci);
+      });
+    });
+
+    LAYOUT_CACHE[code] = { books: books, keys: keys, chapters: chapters };
+    return LAYOUT_CACHE[code];
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 1. 数据索引（只索引当前学段）
    * ------------------------------------------------------------------ */
 
   var chapterByNo = {};
-  var chapterOfSection = {};
 
-  (TREE.children || []).forEach(function (book) {
-    (book.children || []).forEach(function (chapter) {
-      if (chapter.kind !== 'chapter') return;
-      chapterByNo[chapter.no] = { book: book, chapter: chapter };
-      (chapter.children || []).forEach(function (node) {
-        if (node.no) chapterOfSection[node.no] = chapter.no;
+  function buildIndex() {
+    chapterByNo = {};
+    var layout = layoutOf(currentStage);
+    layout.books.forEach(function (book, bi) {
+      (book.children || []).forEach(function (chapter, ci) {
+        if (chapter.kind !== 'chapter') return;
+        var key = layout.keys[bi][ci];
+        chapterByNo[key] = { book: book, chapter: chapter, key: key };
       });
     });
-  });
+  }
 
   function secId(no) {
     return 'sec-' + String(no).replace(/\./g, '-');
+  }
+  /* 没有编号的节（小学、竞赛的活动栏目）就用「父章键 + 序号」兜底，不然整章的锚点会挤成一个 */
+  function secIdOf(node, index, chapterKey) {
+    return node.no ? secId(node.no) : ('sec-' + chapterKey + '-' + index);
   }
   function groupId(tone) {
     return 'grp-' + (tone || 'exam');
   }
   function itemId(sectionNo, itemNo) {
     return 'pt-' + String(sectionNo).replace(/\./g, '-') + '-' + itemNo;
+  }
+  function pointIdOf(sectionNo, sectionAnchor, item, index) {
+    var tail = item.no || String(index + 1);
+    return sectionNo
+      ? ('pt-' + String(sectionNo).replace(/\./g, '-') + '-' + tail)
+      : (sectionAnchor + '-p' + tail);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 2. 左栏 · 按学段现建目录树
+   * ------------------------------------------------------------------ */
+
+  /* 和原手写目录同一套类名（.tree-volume / .ch-row / .sec-row / .pt-row），
+     折叠与展开仍然交给 pages.js，所以现建的树和手写那棵手感完全一样。
+     data-focus 直接写死目标锚点：小学的节没有编号，靠编号推锚点会算错。 */
+  function chapterLabel(chapter) {
+    return chapter.cn ? ('第' + chapter.cn + (chapter.unit ? '单元' : '章')) : '';
+  }
+  function chapterFull(chapter) {
+    var pre = chapterLabel(chapter);
+    return pre ? (pre + ' ' + chapter.name) : chapter.name;
+  }
+  function isAuthoredChapter(code, chapter) {
+    return code === 'junior' && chapter.no === AUTHORED.chapter;
+  }
+
+  var PT_LABEL = { point: '知识点', method: '方法', error: '易错点', exam: '考点' };
+
+  function warnHTML(text, cls) {
+    return '<span class="' + cls + '" title="' + esc(text) + '">待核</span>';
+  }
+
+  function treeHTML(code) {
+    var layout = layoutOf(code);
+    var html = '';
+
+    layout.books.forEach(function (book, bi) {
+      var chapters = (book.children || []).filter(function (node) { return node.kind === 'chapter'; });
+      var body = '';
+
+      if (!chapters.length) {
+        body = '<p class="tree-note">' +
+          esc(book.pending || '这一册的小节还没收录') + '</p>';
+      } else {
+        chapters.forEach(function (chapter) {
+          var ci = (book.children || []).indexOf(chapter);
+          var key = layout.keys[bi][ci];
+          var active = isAuthoredChapter(code, chapter);
+          var activeAttr = active ? ' data-active="true" aria-current="true"' : '';
+
+          body += '<li><a class="ch-row" href="chapter.html" data-chapter="' + esc(key) + '"' + activeAttr + '>' +
+            '<span class="ch-row__num">' + esc(chapter.no || '') + '</span>' +
+            '<span class="ch-row__name">' + esc(chapter.name) + '</span>' +
+            (chapter.pending ? warnHTML(chapter.pending, 'ch-row__warn') : '') +
+            '</a>';
+
+          var sections = chapter.children || [];
+          if (sections.length) {
+            /* 当前正在读的那一章默认摊开，其余收起（和设计稿一致） */
+            body += '<ul class="section-list" data-subtree="' + (active ? 'expanded' : 'collapsed') + '">';
+            sections.forEach(function (node, si) {
+              var anchor = node.kind === 'group'
+                ? groupId(node.tone)
+                : secIdOf(node, si, key);
+              var secActive = active && node.no === AUTHORED.section;
+              var isGroup = node.kind === 'group';
+
+              body += '<li><a class="sec-row" href="reader.html"' +
+                ' data-section="' + esc(isGroup ? node.tone : (node.no || '')) + '"' +
+                ' data-focus="' + esc(anchor) + '"' +
+                (secActive ? ' data-active="true" aria-current="true"' : '') + '>' +
+                '<span class="sec-row__num">' + esc(node.no || '') + '</span>' +
+                '<span class="sec-row__name">' + esc(node.name) + '</span></a>';
+
+              var items = node.children || [];
+              if (items.length) {
+                body += '<ul class="point-list" data-subtree="' + (secActive ? 'expanded' : 'collapsed') + '">';
+                items.forEach(function (item, ii) {
+                  var itemActive = secActive && item.no === AUTHORED.point;
+                  body += '<li><a class="pt-row" href="reader.html"' +
+                    ' data-point="' + esc(item.no || String(ii + 1)) + '"' +
+                    ' data-focus="' + esc(pointIdOf(node.no, anchor, item, ii)) + '"' +
+                    (itemActive ? ' data-active="true" aria-current="true"' : '') + '>' +
+                    '<span class="pt-row__idx">' + esc(PT_LABEL[item.kind] || '知识点') + '</span>' +
+                    '<span class="pt-row__num">' + esc(item.no || String(ii + 1)) + '</span>' +
+                    '<span class="pt-row__name">' + esc(item.name) + '</span></a></li>';
+                });
+                body += '</ul>';
+              }
+              body += '</li>';
+            });
+            body += '</ul>';
+          }
+          body += '</li>';
+        });
+      }
+
+      html += '<section class="tree-volume">' +
+        '<div class="volume-head">' +
+        '<span class="volume-head__name">' + esc(book.name) + '</span>' +
+        (book.pending ? warnHTML(book.pending, 'volume-head__warn') : '') +
+        '<i data-lucide="chevron-down" class="volume-head__icon"></i>' +
+        '</div>' +
+        '<ul class="chapter-list" data-subtree="expanded">' + body + '</ul>' +
+        '</section>';
+    });
+
+    return html;
+  }
+
+  function metaText(code) {
+    var layout = layoutOf(code);
+    var info = stageInfo(code) || {};
+    var pending = layout.books.filter(function (book) { return book.pending; }).length;
+    return layout.books.length + ' ' + (info.word || '册') + ' · ' +
+      layout.chapters + ' 章' + (pending ? ' · ' + pending + ' 待核' : '');
+  }
+
+  function paintStage() {
+    if (stageBar && stageBar.querySelectorAll) {
+      Array.prototype.forEach.call(stageBar.querySelectorAll('[data-stage]'), function (chip) {
+        var on = chip.getAttribute('data-stage') === currentStage;
+        chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+        if (on) chip.className = 'tree-stage__chip is-on';
+        else chip.className = 'tree-stage__chip';
+      });
+    }
+    if (treeMeta) {
+      var info = stageInfo(currentStage);
+      treeMeta.textContent = metaText(currentStage);
+      treeMeta.setAttribute('title', (info ? info.name : '') + ' · ' + metaText(currentStage));
+    }
+  }
+
+  /* 重建之后要重新绑一次折叠逻辑 —— 旧节点随 innerHTML 一起没了。
+     首次（DOMContentLoaded 之前）不绑：pages.js 那边本来就会绑一次，
+     这边再绑一次就成了点一下展开又被点回去。 */
+  var treeBound = false;
+
+  function mountTree() {
+    if (!treeBody) return;
+    treeBody.innerHTML = treeHTML(currentStage);
+    var api = window.MathSite;
+    if (api && api.icons) api.icons();
+    if (treeBound && api && api.initReaderTree) api.initReaderTree();
+  }
+
+  function markActiveKey(key) {
+    if (!treeBody || !treeBody.querySelector) return;
+    var row = treeBody.querySelector('.ch-row[data-chapter="' + key + '"]');
+    if (row) markActive(row);
+  }
+
+  /* 换学段之后中间栏回到哪儿：初中回到手写正文（设计稿的初始状态），
+     其余学段落到第一册第一章。 */
+  function showStageHome() {
+    if (currentStage === DEFAULT_STAGE) {
+      showAuthored();
+      return;
+    }
+    var layout = layoutOf(currentStage);
+    for (var bi = 0; bi < layout.books.length; bi++) {
+      var kids = layout.books[bi].children || [];
+      for (var ci = 0; ci < kids.length; ci++) {
+        if (kids[ci].kind !== 'chapter') continue;
+        var key = layout.keys[bi][ci];
+        renderChapter(chapterByNo[key]);
+        markActiveKey(key);
+        return;
+      }
+    }
+  }
+
+  function setStage(code) {
+    if (!stageInfo(code) || code === currentStage) return;
+    currentStage = code;
+    writeStore(STAGE_KEY, code);
+    buildIndex();
+    paintStage();
+    mountTree();
+    showStageHome();
+  }
+
+  if (stageBar && stageBar.addEventListener) {
+    stageBar.addEventListener('click', function (event) {
+      var chip = event.target.closest ? event.target.closest('[data-stage]') : null;
+      if (!chip || !stageBar.contains(chip)) return;
+      setStage(chip.getAttribute('data-stage'));
+    });
   }
 
   function esc(value) {
@@ -80,18 +352,18 @@
    * 2. 生成中栏正文
    * ------------------------------------------------------------------ */
 
-  function itemsHTML(node, chapterNo, sectionNo) {
+  function itemsHTML(node, chapter, anchor) {
     var items = node.children || [];
     if (!items.length) {
       return '<p class="sec-empty">本节暂无收录条目。</p>';
     }
     var html = '<ol class="points-list">';
-    items.forEach(function (it) {
-      var isAuthored = sectionNo === AUTHORED.section &&
-        it.no === AUTHORED.point &&
-        chapterNo === AUTHORED.chapter;
-      html += '<li class="points-list__item" id="' + itemId(sectionNo, it.no) + '">' +
-        '<span class="points-list__num">' + esc(it.no) + '</span>' +
+    items.forEach(function (it, ii) {
+      var isAuthored = chapter.no === AUTHORED.chapter &&
+        node.no === AUTHORED.section &&
+        it.no === AUTHORED.point;
+      html += '<li class="points-list__item" id="' + pointIdOf(node.no, anchor, it, ii) + '">' +
+        '<span class="points-list__num">' + esc(it.no || String(ii + 1)) + '</span>' +
         '<p class="points-list__text">' + esc(it.name) +
         (isAuthored ? ' <a class="pt-detail" href="#" data-authored="1">图文详解 →</a>' : '') +
         '</p></li>';
@@ -99,31 +371,62 @@
     return html + '</ol>';
   }
 
+  /* 待核与来源：这份目录要给学生看，哪儿还没核到、目录从哪来，正文里都说清 */
+  function sourceHTML(source) {
+    if (/^https?:\/\//.test(source)) {
+      return '<a href="' + esc(source) + '" target="_blank" rel="noopener">' + esc(source) + '</a>';
+    }
+    return esc(source);
+  }
+
+  function notesHTML(book, chapter) {
+    var html = '';
+    var pending = chapter.pending || book.pending;
+    if (pending) {
+      html += '<p class="kp-pending"><span class="kp-pending__tag">待核</span>' + esc(pending) + '</p>';
+    }
+    if (book.source) {
+      html += '<p class="kp-source">目录来源：' + sourceHTML(book.source) + '</p>';
+    }
+    return html;
+  }
+
   function renderChapter(entry, focusId) {
+    if (!entry) return;
     var book = entry.book;
     var chapter = entry.chapter;
     var st = chapterStats(chapter);
-    var meta = ['本章共 ' + st.sections + ' 节', st.points + ' 个知识点'];
+
+    var meta = [];
+    if (st.sections) meta.push('本章共 ' + st.sections + ' 节');
+    else if (!(chapter.children || []).length) meta.push('这一章目前只有章节框架，小节还没收录');
+    else meta.push('本章共 0 节');
+    if (st.points) meta.push(st.points + ' 个知识点');
     if (st.methods) meta.push(st.methods + ' 个方法');
     if (st.errors) meta.push(st.errors + ' 个易错点');
     if (st.exams) meta.push(st.exams + ' 个考点');
 
+    var index = [];
+    if (chapter.no) index.push('第 ' + chapter.no + (chapter.unit ? '单元' : '章'));
+    index.push(book.name);
+
     var html = '<nav class="breadcrumb" aria-label="面包屑">' +
       '<span class="breadcrumb__item">' + esc(book.name) + '</span>' +
       '<span class="breadcrumb__sep">／</span>' +
-      '<span class="breadcrumb__item">第' + esc(chapter.cn) + '章 ' + esc(chapter.name) + '</span>' +
+      '<span class="breadcrumb__item">' + esc(chapterFull(chapter)) + '</span>' +
       '</nav>';
 
-    html += '<p class="kp-index">第 ' + esc(chapter.no) + ' 章 · ' + esc(book.name) + '</p>';
+    html += '<p class="kp-index">' + esc(index.join(' · ')) + '</p>';
     html += '<h1 class="kp-title">' + esc(chapter.name) + '</h1>';
     html += '<p class="kp-def">' + esc(meta.join(' · ')) + '。点击右栏「本页目录」可定位到任意一节。</p>';
+    html += notesHTML(book, chapter);
 
-    (chapter.children || []).forEach(function (node) {
-      var id = node.no ? secId(node.no) : groupId(node.tone);
+    (chapter.children || []).forEach(function (node, si) {
+      var anchor = node.kind === 'group' ? groupId(node.tone) : secIdOf(node, si, entry.key);
       var label = node.no ? node.no + '　' + node.name : node.name;
-      html += '<section class="kp-block" id="' + id + '">' +
+      html += '<section class="kp-block" id="' + anchor + '">' +
         '<h2 class="sec-title">' + esc(label) + '</h2>' +
-        itemsHTML(node, chapter.no, node.no) +
+        itemsHTML(node, chapter, anchor) +
         '</section>';
     });
 
@@ -263,6 +566,8 @@
     var focusId = null;
     var secNo = '';
     var pointNo = '';
+    /* 现建的树直接把目标锚点写在 data-focus 上（小学的节没有编号，推不出来） */
+    var focusAttr = row.getAttribute ? row.getAttribute('data-focus') : null;
 
     if (row.classList.contains('ch-row')) {
       chapterNo = row.getAttribute('data-chapter');
@@ -270,7 +575,9 @@
       var chRow = chapterRowOf(row);
       chapterNo = chRow ? chRow.getAttribute('data-chapter') : null;
       secNo = row.getAttribute('data-section') || '';
-      if (!secNo || secNo === 'method' || secNo === 'error') {
+      if (focusAttr) {
+        focusId = focusAttr;
+      } else if (!secNo || secNo === 'method' || secNo === 'error') {
         focusId = groupId(secNo === 'error' ? 'error' : 'method');
       } else {
         focusId = secId(secNo);
@@ -281,7 +588,8 @@
       chapterNo = ownerRow ? ownerRow.getAttribute('data-chapter') : null;
       secNo = secRow ? (secRow.getAttribute('data-section') || '') : '';
       pointNo = row.getAttribute('data-point') || '';
-      focusId = secNo ? itemId(secNo, pointNo) : null;
+      if (focusAttr) focusId = focusAttr;
+      else focusId = secNo ? itemId(secNo, pointNo) : null;
     }
 
     if (!chapterNo) return;
@@ -346,6 +654,16 @@
   /* ------------------------------------------------------------------ *
    * 6. 启动
    * ------------------------------------------------------------------ */
+
+  buildIndex();
+  paintStage();
+  mountTree();
+  /* 记着的学段不是初中，中栏也跟着换成那一套的第一章 */
+  if (currentStage !== DEFAULT_STAGE) showStageHome();
+
+  /* pages.js 要到 DOMContentLoaded 才绑折叠逻辑，它绑的就是刚建出来的这棵树。
+     那之后再重建（换学段）就得由我们补绑一次 —— 这里只是把开关拨上去。 */
+  document.addEventListener('DOMContentLoaded', function () { treeBound = true; });
 
   buildOutline();
   syncOutline();

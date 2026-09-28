@@ -51,8 +51,12 @@ issues << '定位面板缺标题栏' unless graph.include?('id="mm-search-head"'
 issues << 'board-link.js 依赖的 #mm-panel 不见了（题目旁边的小按钮会失效）' unless graph.include?('id="mm-panel"')
 
 # ---------- 4. 浮层内容 ----------
-books = graph.scan(/data-book="/).size
-issues << "册浮层应有 7 项（总览 + 六册），实际 #{books}" unless books == 7
+# 册与领域那两份名单现在由 mindmap.js 按当前学段现建（学段不同，名单就不同，
+# 写死一份必然和另外三个学段对不上），所以这里守的是"容器在、名单不在"。
+issues << '缺册名单容器 #mm-book-pane' unless graph.include?('id="mm-book-pane"')
+issues << '缺领域名单容器 #mm-field-pane' unless graph.include?('id="mm-field-pane"')
+issues << "册 / 领域名单不该再写死在 HTML 里（现有 #{graph.scan(/data-book="/).size} 项，应由 mindmap.js 现建）" if
+  graph.scan(/data-book="/).size.positive?
 folds = graph.scan(/data-fold="/).size
 issues << "层级浮层应有 3 档，实际 #{folds}" unless folds == 3
 %w[mm-help__title mm-help__list mm-help__legend mm-help__note].each do |cls|
@@ -60,8 +64,11 @@ issues << "层级浮层应有 3 档，实际 #{folds}" unless folds == 3
 end
 
 # ---------- 5. mindmap.js 的接线 ----------
+# 注：册 / 领域名单现在是现建的（点开浮层才建），所以"选项监听"不再是 qsa + forEach 那一套，
+# 而是 mkItems 里逐个绑 + 一条 math:select 代理（别的页面就是这样点名让图谱跳过去）。
+# 那两件事由下面 5b 守。
 {
-  '册浮层选项监听' => "qsa('#mm-book-menu [data-book]')",
+  '册筛选联动 math:select' => "document.addEventListener('math:select'",
   '层级浮层选项监听' => "qsa('#mm-level-menu [data-fold]')",
   '状态同步 syncScope' => 'function syncScope()',
   '默认年级 initialScope' => 'function initialScope()',
@@ -76,20 +83,59 @@ end
   issues << "mindmap.js 还引用已删除的 #{stale}" if mini.include?(stale)
 end
 
-# ---------- 5b. 筛选范围的分法切换（年级教材 / 几何代数） ----------
-# 数据那边：每一章都得带课标领域，而且三个体系加起来正好是全部 29 章（不重不漏）。
+# ---------- 5b. 筛选范围的分法切换（册次 / 领域） ----------
+# 数据那边：每一章都得带课标领域（竞赛除外，它没有课标领域，四个板块本身就是分区）。
 # 漏一章不会报错、只会安静地少一块，所以必须在这里守着。
 tree = File.read(File.join(ROOT, 'assets/js/math-tree.js'), encoding: 'UTF-8')
-chap_lines = tree.scan(/kind: "chapter"[^}]*/)
-issues << "math-tree.js 里章数不是 29（实际 #{chap_lines.size}）" unless chap_lines.size == 29
-missing_field = chap_lines.reject { |l| l.include?('field: "') }
-issues << "有 #{missing_field.size} 章没带课标领域（图谱的体系那一栏会少一块）" unless missing_field.empty?
-# 本机 Ruby 是 2.6（系统自带），没有 Hash#tally，手数一遍
-field_counts = Hash.new(0)
-chap_lines.each { |l| field_counts[l[/field: "([^"]+)"/, 1]] += 1 }
-issues << "课标领域不止三个（实际 #{field_counts.keys.join('、')}）" unless field_counts.size == 3
-issues << "领域章数不是 13 / 13 / 3，加起来对不上 29（实际 #{field_counts.map { |k, v| "#{k}:#{v}" }.join(' ')}）" unless
-  field_counts['图形与几何'] == 13 && field_counts['数与代数'] == 13 && field_counts['统计与概率'] == 3
+
+# 按册 / 板块切片，顺手把每片的学段读出来 —— 学段只是册上的一栏，
+# 所以章本身不带学段，只能从所属的那一片推。
+stage_books = Hash.new(0)
+stage_chapters = Hash.new(0)
+stage_text = Hash.new { |h, k| h[k] = [] }
+tree.split(/(?=\{ name: "[^"]*", kind: "(?:book|track)", stage: )/m).each do |slice|
+  code = slice[/\{ name: "[^"]*", kind: "(?:book|track)", stage: "(\w+)"/, 1]
+  next if code.nil?
+  stage_books[code] += 1
+  stage_chapters[code] += slice.scan(/kind: "chapter"/).size
+  stage_text[code] << slice
+end
+
+# 四个学段的账。对不上就是数据被动过 —— 要么改数据，要么把这里一起改。
+EXPECT_BOOKS = { 'primary' => 12, 'junior' => 6, 'senior' => 5, 'olympiad' => 4 }.freeze
+EXPECT_CHAPTERS = { 'primary' => 88, 'junior' => 29, 'senior' => 22, 'olympiad' => 30 }.freeze
+EXPECT_BOOKS.each do |code, n|
+  issues << "#{code} 的册 / 板块数不是 #{n}（实际 #{stage_books[code]}）" unless stage_books[code] == n
+  issues << "#{code} 的章数不是 #{EXPECT_CHAPTERS[code]}（实际 #{stage_chapters[code]}）" unless
+    stage_chapters[code] == EXPECT_CHAPTERS[code]
+end
+issues << "四个学段加起来不是 27 册 / 169 章（实际 #{stage_books.values.sum} 册 / #{stage_chapters.values.sum} 章）" unless
+  stage_books.values.sum == 27 && stage_chapters.values.sum == 169
+
+# 领域：小学 4 个、初中 3 个、高中 5 个；竞赛不带领域。
+EXPECT_FIELDS = {
+  'primary' => ['数与代数', '图形与几何', '统计与概率', '综合与实践'],
+  'junior' => ['数与代数', '图形与几何', '统计与概率'],
+  'senior' => ['预备知识', '函数', '几何与代数', '概率与统计', '数学建模活动与数学探究活动']
+}.freeze
+EXPECT_FIELDS.each do |code, names|
+  lines = stage_text[code].join.scan(/kind: "chapter"[^}]*/)
+  no_field = lines.reject { |l| l.include?('field: "') }
+  issues << "#{code} 有 #{no_field.size} 章没带课标领域（体系那一栏会少一块）" unless no_field.empty?
+  # 本机 Ruby 是 2.6（系统自带），没有 Hash#tally，手数一遍
+  tally = Hash.new(0)
+  lines.each { |l| tally[l[/field: "([^"]+)"/, 1]] += 1 }
+  issues << "#{code} 的领域名单不是 #{names.join(' / ')}（实际 #{tally.keys.join(' / ')}）" unless
+    tally.keys.sort == names.sort
+  unknown = tally.keys.reject { |k| names.include?(k) }
+  issues << "#{code} 出现了没登记的领域：#{unknown.join('、')}" unless unknown.empty?
+end
+junior_tally = Hash.new(0)
+stage_text['junior'].join.scan(/kind: "chapter"[^}]*/).each { |l| junior_tally[l[/field: "([^"]+)"/, 1]] += 1 }
+issues << "初中的领域章数不是 13 / 13 / 3（实际 #{junior_tally.map { |k, v| "#{k}:#{v}" }.join(' ')}）" unless
+  junior_tally['图形与几何'] == 13 && junior_tally['数与代数'] == 13 && junior_tally['统计与概率'] == 3
+issues << '竞赛的章不该带课标领域（板块本身就是分区）' if
+  stage_text['olympiad'].join.scan(/kind: "chapter"[^}]*field:/).any?
 
 # 页面那边：分法条 + 两栏名单
 issues << '筛选浮层里没有分法切换条 #mm-axis' unless graph.include?('id="mm-axis"')
@@ -103,12 +149,8 @@ issues << '分法条的两格没有 aria-pressed（读屏看不出当前按哪�
 issues << '两栏名单缺 data-axis-pane' unless graph.scan(/data-axis-pane="/).size == 2
 issues << '体系那一栏默认该收着（hidden）' unless
   graph[/data-axis-pane="field"[^>]*hidden/]
-fields_in_page = graph.scan(/data-field="([^"]*)"/).flatten
-issues << "体系那一栏应有 4 项（总览 + 三个体系），实际 #{fields_in_page.size}" unless fields_in_page.size == 4
-%w[图形与几何 数与代数 统计与概率].each do |name|
-  issues << "体系那一栏少了「#{name}」" unless fields_in_page.include?(name)
-end
-issues << '体系那一栏缺「总览 · 全部体系」' unless fields_in_page.include?('')
+issues << '体系那一栏不该再写死名单（学段不同体系不同，应由 mindmap.js 现建）' if
+  graph.scan(/data-field="[^"]+"/).any?
 issues << '图例里没有「体系」这一行' unless graph.include?('lg--field')
 issues << '推理节点样式缺 .mm-node--field' unless graph.include?('.mm-node--field .mm-node__box')
 issues << '分法切换的样式跑进了共享区（重新生成样式时会被冲掉）' if
@@ -124,12 +166,61 @@ issues << '分法把浮层标成 role=menu（菜单里必须放 menuitem，这�
   '分法切换 setAxis' => 'function setAxis(',
   '分法记忆 AXIS_KEY' => "AXIS_KEY = 'wkmath.graph.axis'",
   '分法条监听' => "qsa('#mm-axis [data-axis]')",
-  '体系项监听' => "qsa('#mm-book-menu [data-field]')"
+  '册名单按当前学段现建' => "mkItems(bookPane, 'data-book'",
+  '领域名单按当前学段现建' => "mkItems(fieldPane, 'data-field'",
+  '名单项点击接上了筛选' => 'setBookFilter(row.value)'
 }.each do |label, needle|
   issues << "mindmap.js 缺#{label}" unless mini.include?(needle)
 end
 issues << '没有把课标领域也认作合法范围（initialScope 会把它当坏数据丢掉）' unless
   mini.include?('isFieldScope(saved)')
+
+# ---------- 5c. 学段：工具条最前面的那一格 ----------
+# 用户的要求：进图先选学段。所以它在工具条最前面，而且四个选项固定在 HTML 里
+# （学段不天天变），册 / 领域两份名单跟着学段现建。
+stage_items = graph.scan(/data-stage="(\w+)"/).flatten
+issues << "学段浮层不是四项：#{stage_items.inspect}" unless stage_items == %w[primary junior senior olympiad]
+issues << '缺学段按钮 #mm-stage-btn' unless graph.include?('id="mm-stage-btn"')
+issues << '缺学段浮层 #mm-stage-menu' unless graph.include?('id="mm-stage-menu"')
+issues << '学段按钮没有 aria-controls 指向浮层' unless graph.include?('aria-controls="mm-stage-menu"')
+issues << '学段按钮缺当前值标签 #mm-stage-label' unless graph.include?('id="mm-stage-label"')
+issues << '学段按钮没有自绘提示 data-mm-tip（别用系统 title）' unless
+  graph[/id="mm-stage-btn"[\s\S]{0,200}?data-mm-tip=/]
+issues << '默认没按在初中上（未登录先给初中）' unless
+  graph =~ /data-stage="junior" aria-pressed="true"/
+# 位置：必须在最前面（册 / 层级 / 搜索这些都排在它后面）
+issues << '学段按钮不在工具条最前面（用户要求：先选学段）' unless
+  dock.index('mm-stage-btn') && dock.index('mm-book-btn') &&
+  dock.index('mm-stage-btn') < dock.index('mm-book-btn')
+issues << '图例里没有「学段」这一行' unless graph.include?('lg--stage')
+issues << '图例里没有「板块」这一行' unless graph.include?('lg--track')
+%w[lg--stage lg--track].each do |cls|
+  issues << "图例色块 .#{cls} 没有样式（会退化成默认空块）" unless graph.include?(".#{cls}{")
+end
+issues << '学段节点样式缺 .mm-node--stage' unless graph.include?('.mm-node--stage .mm-node__box')
+issues << '板块节点样式缺 .mm-node--track' unless graph.include?('.mm-node--track .mm-node__box')
+issues << '待核提示样式缺 .mm-flyout__note' unless graph.include?('.mm-flyout__note{')
+issues << '目录来源样式缺 .mm-source' unless graph.include?('.mm-source{')
+issues << '学段 / 板块的样式跑进了共享区（重新生成样式时会被冲掉）' if
+  shared.include?('--stage .mm-node__box') || shared.include?('.mm-flyout__note')
+issues << '说明里没提小学 / 竞赛（用户看不出这图覆盖四个学段）' unless
+  graph =~ /mm-help__text[\s\S]{0,400}小学[\s\S]{0,400}竞赛/
+{
+  '学段合成根 stageScope' => 'function stageScope(',
+  '学段记忆 STAGE_KEY' => "STAGE_KEY = 'wkmath.graph.stage'",
+  '学段切换 setStage' => 'function setStage(',
+  '按学段取册 booksOf' => 'function booksOf(code)',
+  '册 / 领域名单现建 buildMenu' => 'function buildMenu(',
+  '章号挂册短名 labelNo' => 'function labelNo(node)',
+  '册 / 板块的量词 stageBooksWord' => 'function stageBooksWord(',
+  '按学段变的分法标题 AXIS_TITLE' => 'var AXIS_TITLE = {',
+  '学段项监听' => "qsa('#mm-stage-menu [data-stage]')"
+}.each do |label, needle|
+  issues << "mindmap.js 缺#{label}" unless mini.include?(needle)
+end
+# 合成分法的缓存必须按学段分开，不然同名领域会跨学段混在一起
+issues << '体系合成根的缓存没按学段分开（同名领域会跨学段串）' unless
+  mini.include?("stageCode + ':' + name")
 
 # ---------- 6. 会话（登录后按学生年级） ----------
 {
@@ -217,9 +308,9 @@ next_group_i = book_i ? graph.index('<div class="mm-dock__group">', book_i) : ni
 book_menu = book_i ? graph[book_i...(next_group_i || graph.length)].to_s : ''
 issues << '图谱里找不到册筛选浮层' if book_menu.empty?
 issues << '册筛选里又出现了快捷键徽标（0~6 并未绑定任何键）' if book_menu.include?('<kbd>')
-# 正面：捕获必须扫到浮层最后一项 —— 否则上面那条守线只是看着还在
-issues << '册筛选浮层的捕获没扫到最后一个册（守线范围被截断了）' unless
-  book_menu.include?('九年级（下）')
+# 正面：捕获必须扫到浮层最后那一栏 —— 否则上面那条守线只是看着还在
+issues << '册筛选浮层的捕获没扫到最后一栏（守线范围被截断了）' unless
+  book_menu.include?('id="mm-book-pane"') && book_menu.include?('id="mm-field-pane"')
 
 level_menu = graph[/<div class="mm-flyout" id="mm-level-menu".*?<\/div>/m].to_s
 issues << '层级浮层的快捷键徽标被误删了（⇧2 / ⇧3 / ⇧4 是真绑定的，要留）' unless

@@ -1,13 +1,460 @@
 /* ==========================================================================
-   初中数学知识网络 —— 脑图数据
+   数学知识网络 —— 脑图数据（小学 / 初中 / 高中 / 竞赛）
    --------------------------------------------------------------------------
    本文件由 tools/build-math-tree.rb 自动生成，请勿手工编辑。
-   数据源：人教版初中数学知识结构.md（本站自己的教材结构资料）
+   数据源：四份教材结构文件（见生成器里的 STAGES）——
+     人教版小学数学知识结构.md / 人教版初中数学知识结构.md
+     人教版高中数学知识结构.md / 竞赛数学章节框架.md
    重新生成：ruby tools/build-math-tree.rb
+
+   每个"册"节点带 stage（学段）与 source（目录来源），章带 field（课标领域）。
+   图谱的学段切换与"按领域分"都靠这两栏。
    ========================================================================== */
 
-window.MATH_TREE = { name: "初中数学", kind: "root", children: [
-{ name: "七年级（上）", kind: "book", children: [
+window.MATH_TREE = { name: "数学知识网络", kind: "root", children: [
+{ name: "一年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4534.html", children: [
+{ name: "数学游戏", kind: "chapter", field: "综合与实践", children: [
+{ name: "在校园里找一找", kind: "section" },
+{ name: "在操场上玩一玩", kind: "section" },
+{ name: "在教室里认一认", kind: "section" },
+{ name: "在教室里玩一玩", kind: "section" }
+      ] },
+{ name: "5以内数的认识和加、减法", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "1~5的认识", kind: "section" },
+{ name: "比大小", kind: "section" },
+{ name: "第几", kind: "section" },
+{ name: "分与合", kind: "section" },
+{ name: "1~5的加、减法", kind: "section" },
+{ name: "0的认识和加、减法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "6~10的认识和加、减法", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "6~9的认识", kind: "section" },
+{ name: "分与合", kind: "section" },
+{ name: "6和7的加、减法", kind: "section" },
+{ name: "8和9的加、减法", kind: "section" },
+{ name: "10的认识", kind: "section" },
+{ name: "10的加、减法", kind: "section" },
+{ name: "连加、连减", kind: "section" },
+{ name: "加、减混合", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "认识立体图形", kind: "chapter", pending: "新版这一单元的小节没核到（来源页只列到单元名）", no: "03", field: "图形与几何", cn: "三", unit: true },
+{ name: "11~20的认识", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "10的再认识", kind: "section" },
+{ name: "11~20的认识", kind: "section" },
+{ name: "简单加、减法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "20以内的进位加法", kind: "chapter", no: "05", field: "数与代数", cn: "五", unit: true, children: [
+{ name: "9加几", kind: "section" },
+{ name: "8、7、6加几", kind: "section" },
+{ name: "5、4、3、2加几", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "复习与关联", kind: "chapter", no: "06", field: "综合与实践", cn: "六", unit: true, children: [
+{ name: "整理复习", kind: "section" },
+{ name: "应用提升", kind: "section" }
+      ] }
+    ] },
+{ name: "一年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4535.html", children: [
+{ name: "认识平面图形", kind: "chapter", pending: "新版这一单元的小节没核到", no: "01", field: "图形与几何", cn: "一", unit: true },
+{ name: "20以内的退位减法", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "十几减9", kind: "section" },
+{ name: "十几减8、7、6", kind: "section" },
+{ name: "十几减5、4、3、2", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "100以内数的认识", kind: "chapter", no: "03", field: "数与代数", cn: "三", unit: true, children: [
+{ name: "数数、数的组成", kind: "section" },
+{ name: "数的顺序、比较大小", kind: "section" },
+{ name: "简单的加、减法", kind: "section" },
+{ name: "摆一摆，想一想", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "100以内的口算加、减法", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "口算加法", kind: "section" },
+{ name: "口算减法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "100以内的笔算加、减法", kind: "chapter", no: "05", field: "数与代数", cn: "五", unit: true, children: [
+{ name: "笔算加法", kind: "section" },
+{ name: "笔算减法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "数量间的加减关系", kind: "chapter", pending: "新版这一单元的小节没核到", no: "06", field: "数与代数", cn: "六", unit: true },
+{ name: "欢乐购物街", kind: "chapter", field: "综合与实践", children: [
+{ name: "认识人民币", kind: "section" },
+{ name: "买卖我做主", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "复习与关联", kind: "chapter", no: "07", field: "综合与实践", cn: "七", unit: true, children: [
+{ name: "整理复习", kind: "section" },
+{ name: "应用提升", kind: "section" }
+      ] }
+    ] },
+{ name: "二年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4536.html", children: [
+{ name: "分类与整理", kind: "chapter", pending: "新版这一单元的小节没核到", no: "01", field: "统计与概率", cn: "一", unit: true },
+{ name: "1~6的表内乘法", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "乘法的初步认识", kind: "section" },
+{ name: "5的乘法口诀", kind: "section" },
+{ name: "2、3、4的乘法口诀", kind: "section" },
+{ name: "乘加、乘减", kind: "section" },
+{ name: "6的乘法口诀", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "1~6的表内除法", kind: "chapter", no: "03", field: "数与代数", cn: "三", unit: true, children: [
+{ name: "平均分", kind: "section" },
+{ name: "除法", kind: "section" },
+{ name: "用2~6的乘法口诀求商", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "校园小导游", kind: "chapter", field: "综合与实践", children: [
+{ name: "认识东、南、西、北", kind: "section" },
+{ name: "校园小导游", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "厘米和米", kind: "chapter", pending: "新版这一单元的小节没核到", no: "04", field: "图形与几何", cn: "四", unit: true },
+{ name: "身体上的尺子", kind: "chapter", field: "综合与实践", children: [
+{ name: "身体上的长度", kind: "section" },
+{ name: "身体上的尺子", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "7~9的表内乘、除法", kind: "chapter", no: "05", field: "数与代数", cn: "五", unit: true, children: [
+{ name: "7~9的乘法口诀", kind: "section" },
+{ name: "用7~9的乘法口诀求商", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "复习与关联", kind: "chapter", no: "06", field: "综合与实践", cn: "六", unit: true, children: [
+{ name: "整理复习", kind: "section" },
+{ name: "应用提升", kind: "section" }
+      ] }
+    ] },
+{ name: "二年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4537.html", pending: "2024 新版目录未核到。旧版目录与现行新版对不上，填了等于给错书，所以先留空" },
+{ name: "三年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4538.html", children: [
+{ name: "观察物体", kind: "chapter", pending: "新版这一单元的小节没核到", no: "01", field: "图形与几何", cn: "一", unit: true },
+{ name: "混合运算", kind: "chapter", pending: "新版这一单元的小节没核到", no: "02", field: "数与代数", cn: "二", unit: true },
+{ name: "毫米、分米和千米", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
+{ name: "毫米、分米的认识", kind: "section" },
+{ name: "千米的认识", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "曹冲称象的故事", kind: "chapter", field: "综合与实践", children: [
+{ name: "认识质量单位", kind: "section" },
+{ name: "称重我很行", kind: "section" },
+{ name: "称重大挑战", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "多位数乘一位数", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "口算乘法", kind: "section" },
+{ name: "笔算乘法", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "数字编码", kind: "chapter", field: "综合与实践", children: [
+{ name: "认识数字编码", kind: "section" },
+{ name: "编制学号", kind: "section" },
+{ name: "小讲堂", kind: "section" }
+      ] },
+{ name: "线和角", kind: "chapter", no: "05", field: "图形与几何", cn: "五", unit: true, children: [
+{ name: "线段、射线、直线", kind: "section" },
+{ name: "角的认识", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "分数的初步认识", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "几分之一", kind: "section" },
+{ name: "几分之几", kind: "section" },
+{ name: "分数的简单计算", kind: "section" },
+{ name: "进一步认识分数", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "复习与关联", kind: "chapter", no: "07", field: "综合与实践", cn: "七", unit: true, children: [
+{ name: "整理复习", kind: "section" },
+{ name: "应用提升", kind: "section" }
+      ] }
+    ] },
+{ name: "三年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4539.html", pending: "2024 新版目录未核到。旧版目录与现行新版对不上，先留空" },
+{ name: "四年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4540.html", children: [
+{ name: "大数的认识", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "亿以内数的认识", kind: "section" },
+{ name: "数的产生及十进制计数法", kind: "section" },
+{ name: "亿以上数的认识", kind: "section" },
+{ name: "计算工具的认识", kind: "section" },
+{ name: "用计算器计算", kind: "section" },
+{ name: "亿以内数的读法和写法", kind: "section" },
+{ name: "亿以内数的大小比较和改写", kind: "section" },
+{ name: "求近似数", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "公顷和平方千米", kind: "chapter", no: "02", field: "图形与几何", cn: "二", unit: true },
+{ name: "角的度量", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
+{ name: "线段、直线、射线、角", kind: "section" },
+{ name: "角的度量", kind: "section" },
+{ name: "角的分类", kind: "section" },
+{ name: "画角", kind: "section" }
+      ] },
+{ name: "三位数乘两位数", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "三位数乘两位数笔算", kind: "section" },
+{ name: "因数中间或末尾有0的乘法", kind: "section" },
+{ name: "积的变化规律", kind: "section" },
+{ name: "单价、数量和总价", kind: "section" },
+{ name: "速度、时间和路程", kind: "section" }
+      ] },
+{ name: "平行四边形和梯形", kind: "chapter", no: "05", field: "图形与几何", cn: "五", unit: true, children: [
+{ name: "平行与垂直", kind: "section" },
+{ name: "画垂线和点到直线的距离", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "平行四边形的认识", kind: "section" },
+{ name: "梯形的认识", kind: "section" }
+      ] },
+{ name: "除数是两位数的除法", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "口算除法", kind: "section" },
+{ name: "商是一位数笔算除法", kind: "section" },
+{ name: "商是两位数笔算除法", kind: "section" },
+{ name: "商的变化规律及应用", kind: "section" },
+{ name: "用四舍五入法试商", kind: "section" },
+{ name: "除数不接近整十数的试商", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "条形统计图", kind: "chapter", no: "07", field: "统计与概率", cn: "七", unit: true },
+{ name: "数学广角—优化", kind: "chapter", no: "08", field: "综合与实践", cn: "八", unit: true, children: [
+{ name: "沏茶问题", kind: "section" },
+{ name: "烙饼问题", kind: "section" },
+{ name: "田忌赛马", kind: "section" }
+      ] },
+{ name: "总复习", kind: "chapter", no: "09", field: "综合与实践", cn: "九", unit: true },
+{ name: "1亿有多大", kind: "chapter", field: "综合与实践" },
+{ name: "神奇的莫比乌斯带", kind: "chapter", field: "综合与实践" }
+    ] },
+{ name: "四年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4541.html", children: [
+{ name: "四则运算", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "加减法的意义和各部分间的关系", kind: "section" },
+{ name: "乘除法的意义和各部分间的关系", kind: "section" },
+{ name: "括号", kind: "section" },
+{ name: "解决问题", kind: "section" }
+      ] },
+{ name: "观察物体（二）", kind: "chapter", no: "02", field: "图形与几何", cn: "二", unit: true },
+{ name: "运算定律", kind: "chapter", no: "03", field: "数与代数", cn: "三", unit: true, children: [
+{ name: "加法运算定律", kind: "section" },
+{ name: "加法运算定律的应用", kind: "section" },
+{ name: "乘法运算定律", kind: "section" },
+{ name: "乘法运算定律的应用", kind: "section" }
+      ] },
+{ name: "小数的意义和性质", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "小数的意义", kind: "section" },
+{ name: "小数的读法和写法", kind: "section" },
+{ name: "小数的性质", kind: "section" },
+{ name: "小数的大小比较", kind: "section" },
+{ name: "小数点位置移动引起小数大小的变化", kind: "section" },
+{ name: "小数与单位换算", kind: "section" },
+{ name: "小数的近似数", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "三角形", kind: "chapter", no: "05", field: "图形与几何", cn: "五", unit: true, children: [
+{ name: "三角形的特性", kind: "section" },
+{ name: "三角形的三边关系", kind: "section" },
+{ name: "三角形的分类", kind: "section" },
+{ name: "三角形的内角和", kind: "section" }
+      ] },
+{ name: "小数的加法和减法", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "小数加减法", kind: "section" },
+{ name: "小数加减混合运算", kind: "section" },
+{ name: "整数加法运算定律推广到小数", kind: "section" }
+      ] },
+{ name: "图形的运动（二）", kind: "chapter", no: "07", field: "图形与几何", cn: "七", unit: true, children: [
+{ name: "轴对称", kind: "section" },
+{ name: "平移", kind: "section" }
+      ] },
+{ name: "平均数与条形统计图", kind: "chapter", no: "08", field: "统计与概率", cn: "八", unit: true, children: [
+{ name: "平均数", kind: "section" },
+{ name: "复式条形统计图", kind: "section" },
+{ name: "营养午餐", kind: "section" }
+      ] },
+{ name: "数学广角—鸡兔同笼", kind: "chapter", no: "09", field: "综合与实践", cn: "九", unit: true },
+{ name: "总复习", kind: "chapter", no: "10", field: "综合与实践", cn: "十", unit: true }
+    ] },
+{ name: "五年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4542.html", children: [
+{ name: "小数乘法", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "小数乘整数", kind: "section" },
+{ name: "小数乘小数", kind: "section" },
+{ name: "积的近似数", kind: "section" },
+{ name: "整数乘法运算定律推广到小数", kind: "section" },
+{ name: "解决问题", kind: "section" }
+      ] },
+{ name: "位置", kind: "chapter", no: "02", field: "图形与几何", cn: "二", unit: true, children: [
+{ name: "确定位置", kind: "section" }
+      ] },
+{ name: "小数除法", kind: "chapter", no: "03", field: "数与代数", cn: "三", unit: true, children: [
+{ name: "除数是整数的小数除法", kind: "section" },
+{ name: "一个数除以小数", kind: "section" },
+{ name: "商的近似数", kind: "section" },
+{ name: "循环小数", kind: "section" },
+{ name: "用计算器探索规律", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "可能性", kind: "chapter", no: "04", field: "统计与概率", cn: "四", unit: true },
+{ name: "简易方程", kind: "chapter", no: "05", field: "数与代数", cn: "五", unit: true, children: [
+{ name: "用字母表示数", kind: "section" },
+{ name: "方程的意义", kind: "section" },
+{ name: "等式的性质", kind: "section" },
+{ name: "解方程", kind: "section" },
+{ name: "实际问题与方程", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "多边形的面积", kind: "chapter", no: "06", field: "图形与几何", cn: "六", unit: true, children: [
+{ name: "平行四边形的面积", kind: "section" },
+{ name: "三角形的面积", kind: "section" },
+{ name: "梯形的面积", kind: "section" },
+{ name: "组合图形的面积", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "数学广角—植树问题", kind: "chapter", no: "07", field: "综合与实践", cn: "七", unit: true },
+{ name: "总复习", kind: "chapter", no: "08", field: "综合与实践", cn: "八", unit: true },
+{ name: "掷一掷", kind: "chapter", field: "综合与实践" }
+    ] },
+{ name: "五年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4543.html", children: [
+{ name: "观察物体（三）", kind: "chapter", no: "01", field: "图形与几何", cn: "一", unit: true },
+{ name: "因数与倍数", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "因数和倍数", kind: "section" },
+{ name: "2、5的倍数的特征", kind: "section" },
+{ name: "3的倍数的特征", kind: "section" },
+{ name: "质数和合数", kind: "section" },
+{ name: "解决问题", kind: "section" }
+      ] },
+{ name: "长方体和正方体", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
+{ name: "长方体和正方体的认识", kind: "section" },
+{ name: "长方体和正方体的表面积", kind: "section" },
+{ name: "体积和体积单位", kind: "section" },
+{ name: "长方体和正方体的体积", kind: "section" },
+{ name: "体积单位间的进率", kind: "section" },
+{ name: "容积和容积单位", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" },
+{ name: "探索图形", kind: "section" }
+      ] },
+{ name: "分数的意义和性质", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "分数的产生、意义", kind: "section" },
+{ name: "分数与除法", kind: "section" },
+{ name: "真分数和假分数", kind: "section" },
+{ name: "分数的基本性质", kind: "section" },
+{ name: "最大公因数", kind: "section" },
+{ name: "约分", kind: "section" },
+{ name: "最小公倍数", kind: "section" },
+{ name: "通分", kind: "section" },
+{ name: "分数和小数互化", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "图形的运动（三）", kind: "chapter", no: "05", field: "图形与几何", cn: "五", unit: true, children: [
+{ name: "旋转", kind: "section" },
+{ name: "解决问题", kind: "section" }
+      ] },
+{ name: "分数的加法和减法", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "同分母分数加、减法", kind: "section" },
+{ name: "异分母分数加、减法", kind: "section" },
+{ name: "分数加减混合运算", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "打电话", kind: "section" }
+      ] },
+{ name: "折线统计图", kind: "chapter", no: "07", field: "统计与概率", cn: "七", unit: true, children: [
+{ name: "单式折线统计图", kind: "section" },
+{ name: "复式折线统计图", kind: "section" }
+      ] },
+{ name: "数学广角—找次品", kind: "chapter", no: "08", field: "综合与实践", cn: "八", unit: true },
+{ name: "总复习", kind: "chapter", no: "09", field: "综合与实践", cn: "九", unit: true }
+    ] },
+{ name: "六年级上册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4544.html", children: [
+{ name: "分数乘法", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "分数乘整数", kind: "section" },
+{ name: "分数乘分数", kind: "section" },
+{ name: "分数乘小数", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "分数四则混合运算", kind: "section" },
+{ name: "整数乘法运算定律推广到分数", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "位置与方向（二）", kind: "chapter", no: "02", field: "图形与几何", cn: "二", unit: true },
+{ name: "分数除法", kind: "chapter", no: "03", field: "数与代数", cn: "三", unit: true, children: [
+{ name: "倒数的认识", kind: "section" },
+{ name: "分数除法", kind: "section" },
+{ name: "分数混合运算", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "比", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "比的意义", kind: "section" },
+{ name: "比的基本性质", kind: "section" },
+{ name: "比的应用", kind: "section" }
+      ] },
+{ name: "圆", kind: "chapter", no: "05", field: "图形与几何", cn: "五", unit: true, children: [
+{ name: "圆的认识", kind: "section" },
+{ name: "圆的周长", kind: "section" },
+{ name: "圆的面积", kind: "section" },
+{ name: "扇形", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "百分数（一）", kind: "chapter", no: "06", field: "数与代数", cn: "六", unit: true, children: [
+{ name: "百分数的意义", kind: "section" },
+{ name: "百分数和分数、小数的互化", kind: "section" },
+{ name: "用百分数解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "扇形统计图", kind: "chapter", no: "07", field: "统计与概率", cn: "七", unit: true },
+{ name: "数学广角—数与形", kind: "chapter", no: "08", field: "综合与实践", cn: "八", unit: true },
+{ name: "总复习", kind: "chapter", no: "09", field: "综合与实践", cn: "九", unit: true },
+{ name: "确定起跑线", kind: "chapter", field: "综合与实践" },
+{ name: "节约用水", kind: "chapter", field: "综合与实践" }
+    ] },
+{ name: "六年级下册", kind: "book", stage: "primary", source: "https://www.dzkbw.org/book/4545.html", children: [
+{ name: "负数", kind: "chapter", no: "01", field: "数与代数", cn: "一", unit: true, children: [
+{ name: "认识负数", kind: "section" },
+{ name: "解决问题", kind: "section" }
+      ] },
+{ name: "百分数（二）", kind: "chapter", no: "02", field: "数与代数", cn: "二", unit: true, children: [
+{ name: "折扣", kind: "section" },
+{ name: "成数", kind: "section" },
+{ name: "税率", kind: "section" },
+{ name: "利率", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "生活与百分数", kind: "section" }
+      ] },
+{ name: "圆柱与圆锥", kind: "chapter", no: "03", field: "图形与几何", cn: "三", unit: true, children: [
+{ name: "圆柱的认识", kind: "section" },
+{ name: "圆柱的表面积", kind: "section" },
+{ name: "圆柱的体积", kind: "section" },
+{ name: "圆锥的认识", kind: "section" },
+{ name: "圆锥的体积", kind: "section" },
+{ name: "解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" }
+      ] },
+{ name: "比例", kind: "chapter", no: "04", field: "数与代数", cn: "四", unit: true, children: [
+{ name: "比例的意义", kind: "section" },
+{ name: "比例的基本性质", kind: "section" },
+{ name: "解比例", kind: "section" },
+{ name: "正比例", kind: "section" },
+{ name: "反比例", kind: "section" },
+{ name: "比例尺", kind: "section" },
+{ name: "图形的放大与缩小", kind: "section" },
+{ name: "用比例解决问题", kind: "section" },
+{ name: "整理和复习", kind: "section" },
+{ name: "自行车里的数学", kind: "section" }
+      ] },
+{ name: "数学广角—鸽巢问题", kind: "chapter", no: "05", field: "综合与实践", cn: "五", unit: true },
+{ name: "整理与复习", kind: "chapter", no: "06", field: "综合与实践", cn: "六", unit: true, children: [
+{ name: "数的认识", kind: "section" },
+{ name: "数的运算", kind: "section" },
+{ name: "式与方程", kind: "section" },
+{ name: "比和比例", kind: "section" },
+{ name: "图形的认识与测量", kind: "section" },
+{ name: "图形的运动", kind: "section" },
+{ name: "图形与位置", kind: "section" },
+{ name: "统计与概率", kind: "section" }
+      ] }
+    ] },
+{ name: "七年级（上）", kind: "book", stage: "junior", source: "本站自有教材结构资料（人教版初中数学）", children: [
 { name: "有理数", kind: "chapter", no: "01", field: "数与代数", cn: "一", children: [
 { name: "知识速查", kind: "section", no: "1.1", children: [
 { name: "正数和负数", kind: "point", no: "1" },
@@ -155,7 +602,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] }
       ] }
     ] },
-{ name: "七年级（下）", kind: "book", children: [
+{ name: "七年级（下）", kind: "book", stage: "junior", source: "本站自有教材结构资料（人教版初中数学）", children: [
 { name: "相交线与平行线", kind: "chapter", no: "05", field: "图形与几何", cn: "五", children: [
 { name: "相交线", kind: "section", no: "5.1", children: [
 { name: "邻补角与对顶角", kind: "point", no: "1" },
@@ -353,7 +800,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] }
       ] }
     ] },
-{ name: "八年级（上）", kind: "book", children: [
+{ name: "八年级（上）", kind: "book", stage: "junior", source: "本站自有教材结构资料（人教版初中数学）", children: [
 { name: "三角形", kind: "chapter", no: "11", field: "图形与几何", cn: "十一", children: [
 { name: "与三角形有关的线段", kind: "section", no: "11.1", children: [
 { name: "三角形的边", kind: "point", no: "1" },
@@ -519,7 +966,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] }
       ] }
     ] },
-{ name: "八年级（下）", kind: "book", children: [
+{ name: "八年级（下）", kind: "book", stage: "junior", source: "本站自有教材结构资料（人教版初中数学）", children: [
 { name: "二次根式", kind: "chapter", no: "16", field: "数与代数", cn: "十六", children: [
 { name: "二次根式", kind: "section", no: "16.1", children: [
 { name: "二次根式的概念", kind: "point", no: "1" },
@@ -674,7 +1121,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] }
       ] }
     ] },
-{ name: "九年级（上）", kind: "book", children: [
+{ name: "九年级（上）", kind: "book", stage: "junior", source: "本站自有教材结构资料（人教版初中数学）", children: [
 { name: "一元二次方程", kind: "chapter", no: "21", field: "数与代数", cn: "二十一", children: [
 { name: "一元二次方程", kind: "section", no: "21.1", children: [
 { name: "一元二次方程", kind: "point", no: "1" },
@@ -835,7 +1282,7 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] }
       ] }
     ] },
-{ name: "九年级（下）", kind: "book", children: [
+{ name: "九年级（下）", kind: "book", stage: "junior", source: "本站自有教材结构资料（人教版初中数学）", children: [
 { name: "概率初步", kind: "chapter", no: "25", field: "统计与概率", cn: "二十五", children: [
 { name: "随机事件与概率", kind: "section", no: "25.1", children: [
 { name: "随机事件、不可能事件、随机事件", kind: "point", no: "1" },
@@ -981,5 +1428,174 @@ window.MATH_TREE = { name: "初中数学", kind: "root", children: [
         ] },
 { name: "真题速练", kind: "group", tone: "exam" }
       ] }
+    ] },
+{ name: "必修第一册", kind: "book", stage: "senior", source: "https://www.pep.com.cn/xw/zt/px/2019/shuxue/", children: [
+{ name: "集合与常用逻辑用语", kind: "chapter", no: "01", field: "预备知识", cn: "一", children: [
+{ name: "集合的概念", kind: "section", no: "1.1" },
+{ name: "集合间的基本关系", kind: "section", no: "1.2" },
+{ name: "集合的基本运算", kind: "section", no: "1.3" },
+{ name: "充分条件与必要条件", kind: "section", no: "1.4" },
+{ name: "全称量词与存在量词", kind: "section", no: "1.5" }
+      ] },
+{ name: "一元二次函数、方程和不等式", kind: "chapter", no: "02", field: "预备知识", cn: "二", children: [
+{ name: "等式性质与不等式性质", kind: "section", no: "2.1" },
+{ name: "基本不等式", kind: "section", no: "2.2" },
+{ name: "二次函数与一元二次方程、不等式", kind: "section", no: "2.3" }
+      ] },
+{ name: "函数的概念与性质", kind: "chapter", no: "03", field: "函数", cn: "三", children: [
+{ name: "函数的概念及其表示", kind: "section", no: "3.1" },
+{ name: "函数的基本性质", kind: "section", no: "3.2" },
+{ name: "幂函数", kind: "section", no: "3.3" },
+{ name: "函数的应用（一）", kind: "section", no: "3.4" }
+      ] },
+{ name: "指数函数与对数函数", kind: "chapter", no: "04", field: "函数", cn: "四", children: [
+{ name: "指数", kind: "section", no: "4.1" },
+{ name: "指数函数", kind: "section", no: "4.2" },
+{ name: "对数", kind: "section", no: "4.3" },
+{ name: "对数函数", kind: "section", no: "4.4" },
+{ name: "函数的应用（二）", kind: "section", no: "4.5" }
+      ] },
+{ name: "三角函数", kind: "chapter", no: "05", field: "函数", cn: "五", children: [
+{ name: "任意角和弧度制", kind: "section", no: "5.1" },
+{ name: "三角函数的概念", kind: "section", no: "5.2" },
+{ name: "诱导公式", kind: "section", no: "5.3" },
+{ name: "三角函数的图象与性质", kind: "section", no: "5.4" },
+{ name: "三角恒等变换", kind: "section", no: "5.5" },
+{ name: "函数 y=Asin(ωx+φ)", kind: "section", no: "5.6" },
+{ name: "三角函数的应用", kind: "section", no: "5.7" }
+      ] },
+{ name: "建立函数模型解决实际问题", kind: "chapter", field: "数学建模活动与数学探究活动", children: [
+{ name: "数学建模活动", kind: "section" }
+      ] }
+    ] },
+{ name: "必修第二册", kind: "book", stage: "senior", source: "https://www.pep.com.cn/xw/zt/px/2019/shuxue/", children: [
+{ name: "平面向量及其应用", kind: "chapter", no: "06", field: "几何与代数", cn: "六", children: [
+{ name: "平面向量的概念", kind: "section", no: "6.1" },
+{ name: "平面向量的运算", kind: "section", no: "6.2" },
+{ name: "平面向量基本定理及坐标表示", kind: "section", no: "6.3" },
+{ name: "平面向量的应用", kind: "section", no: "6.4" }
+      ] },
+{ name: "复数", kind: "chapter", no: "07", field: "几何与代数", cn: "七", children: [
+{ name: "复数的概念", kind: "section", no: "7.1" },
+{ name: "复数的四则运算", kind: "section", no: "7.2" },
+{ name: "复数的三角表示", kind: "section", no: "7.3*" }
+      ] },
+{ name: "立体几何初步", kind: "chapter", no: "08", field: "几何与代数", cn: "八", children: [
+{ name: "基本立体图形", kind: "section", no: "8.1" },
+{ name: "立体图形的直观图", kind: "section", no: "8.2" },
+{ name: "简单几何体的表面积与体积", kind: "section", no: "8.3" },
+{ name: "空间点、直线、平面之间的位置关系", kind: "section", no: "8.4" },
+{ name: "空间直线、平面的平行", kind: "section", no: "8.5" },
+{ name: "空间直线、平面的垂直", kind: "section", no: "8.6" }
+      ] },
+{ name: "统计", kind: "chapter", no: "09", field: "概率与统计", cn: "九", children: [
+{ name: "随机抽样", kind: "section", no: "9.1" },
+{ name: "用样本估计总体", kind: "section", no: "9.2" },
+{ name: "统计案例 公司员工的肥胖情况调查分析", kind: "section", no: "9.3" }
+      ] },
+{ name: "概率", kind: "chapter", no: "10", field: "概率与统计", cn: "十", children: [
+{ name: "随机事件与概率", kind: "section", no: "10.1" },
+{ name: "事件的相互独立性", kind: "section", no: "10.2" },
+{ name: "频率与概率", kind: "section", no: "10.3" }
+      ] },
+{ name: "用向量法研究三角形的性质", kind: "chapter", field: "数学建模活动与数学探究活动", children: [
+{ name: "数学探究活动", kind: "section" }
+      ] }
+    ] },
+{ name: "选择性必修第一册", kind: "book", stage: "senior", source: "http://www.dzkbw.com/books/rjb/shuxue/gzaxzxbx1/001.htm", children: [
+{ name: "空间向量与立体几何", kind: "chapter", no: "01", field: "几何与代数", cn: "一", children: [
+{ name: "空间向量及其运算", kind: "section", no: "1.1" },
+{ name: "空间向量基本定理", kind: "section", no: "1.2" },
+{ name: "空间向量及其运算的坐标表示", kind: "section", no: "1.3" },
+{ name: "空间向量的应用", kind: "section", no: "1.4" }
+      ] },
+{ name: "直线和圆的方程", kind: "chapter", no: "02", field: "几何与代数", cn: "二", children: [
+{ name: "直线的倾斜角与斜率", kind: "section", no: "2.1" },
+{ name: "直线的方程", kind: "section", no: "2.2" },
+{ name: "直线的交点坐标与距离公式", kind: "section", no: "2.3" },
+{ name: "圆的方程", kind: "section", no: "2.4" },
+{ name: "直线与圆、圆与圆的位置关系", kind: "section", no: "2.5" }
+      ] },
+{ name: "圆锥曲线的方程", kind: "chapter", no: "03", field: "几何与代数", cn: "三", children: [
+{ name: "椭圆", kind: "section", no: "3.1" },
+{ name: "双曲线", kind: "section", no: "3.2" },
+{ name: "抛物线", kind: "section", no: "3.3" }
+      ] }
+    ] },
+{ name: "选择性必修第二册", kind: "book", stage: "senior", source: "http://www.dzkbw.com/books/rjb/shuxue/gzaxzxbx2/001.htm", children: [
+{ name: "数列", kind: "chapter", no: "04", field: "函数", cn: "四", children: [
+{ name: "数列的概念", kind: "section", no: "4.1" },
+{ name: "等差数列", kind: "section", no: "4.2" },
+{ name: "等比数列", kind: "section", no: "4.3" },
+{ name: "数学归纳法", kind: "section", no: "4.4*" }
+      ] },
+{ name: "一元函数的导数及其应用", kind: "chapter", no: "05", field: "函数", cn: "五", children: [
+{ name: "导数的概念及其意义", kind: "section", no: "5.1" },
+{ name: "导数的运算", kind: "section", no: "5.2" },
+{ name: "导数在研究函数中的应用", kind: "section", no: "5.3" }
+      ] }
+    ] },
+{ name: "选择性必修第三册", kind: "book", stage: "senior", source: "http://www.dzkbw.com/books/rjb/shuxue/gzaxzxbx3/001.htm", children: [
+{ name: "计数原理", kind: "chapter", no: "06", field: "概率与统计", cn: "六", children: [
+{ name: "分类加法计数原理与分步乘法计数原理", kind: "section", no: "6.1" },
+{ name: "排列与组合", kind: "section", no: "6.2" },
+{ name: "二项式定理", kind: "section", no: "6.3" }
+      ] },
+{ name: "随机变量及其分布", kind: "chapter", no: "07", field: "概率与统计", cn: "七", children: [
+{ name: "条件概率与全概率公式", kind: "section", no: "7.1" },
+{ name: "离散型随机变量及其分布列", kind: "section", no: "7.2" },
+{ name: "离散型随机变量的数字特征", kind: "section", no: "7.3" },
+{ name: "二项分布与超几何分布", kind: "section", no: "7.4" },
+{ name: "正态分布", kind: "section", no: "7.5" }
+      ] },
+{ name: "成对数据的统计分析", kind: "chapter", no: "08", field: "概率与统计", cn: "八", children: [
+{ name: "成对数据的统计相关性", kind: "section", no: "8.1" },
+{ name: "一元线性回归模型及其应用", kind: "section", no: "8.2" },
+{ name: "列联表与独立性检验", kind: "section", no: "8.3" }
+      ] },
+{ name: "杨辉三角的性质与应用", kind: "chapter", field: "数学建模活动与数学探究活动", children: [
+{ name: "数学探究活动", kind: "section" }
+      ] },
+{ name: "建立统计模型进行预测", kind: "chapter", field: "数学建模活动与数学探究活动", children: [
+{ name: "数学建模活动", kind: "section" }
+      ] }
+    ] },
+{ name: "代数", kind: "track", stage: "olympiad", source: "http://www.renhuiedu.cn/renhuiedu/shownews.asp?id=182", children: [
+{ name: "集合", kind: "chapter" },
+{ name: "函数与函数方程", kind: "chapter" },
+{ name: "三角函数", kind: "chapter" },
+{ name: "数列与数学归纳法", kind: "chapter" },
+{ name: "不等式", kind: "chapter" },
+{ name: "复数与向量", kind: "chapter" },
+{ name: "多项式", kind: "chapter" }
+    ] },
+{ name: "几何", kind: "track", stage: "olympiad", source: "http://www.renhuiedu.cn/renhuiedu/shownews.asp?id=182", children: [
+{ name: "平面几何", kind: "chapter" },
+{ name: "平面几何重要定理", kind: "chapter" },
+{ name: "几何变换", kind: "chapter" },
+{ name: "几何不等式与几何极值", kind: "chapter" },
+{ name: "面积与面积方法", kind: "chapter" },
+{ name: "解析几何", kind: "chapter" },
+{ name: "复数与向量方法", kind: "chapter" }
+    ] },
+{ name: "数论", kind: "track", stage: "olympiad", source: "http://www.renhuiedu.cn/renhuiedu/shownews.asp?id=182", children: [
+{ name: "整除与带余除法", kind: "chapter" },
+{ name: "素数与整数的分解", kind: "chapter" },
+{ name: "同余", kind: "chapter" },
+{ name: "中国剩余定理", kind: "chapter" },
+{ name: "不定方程与方程组", kind: "chapter" },
+{ name: "二次剩余", kind: "chapter" },
+{ name: "高斯函数与格点", kind: "chapter" },
+{ name: "完全平方数、进位制与奇偶性分析", kind: "chapter" }
+    ] },
+{ name: "组合", kind: "track", stage: "olympiad", source: "http://www.renhuiedu.cn/renhuiedu/shownews.asp?id=182", children: [
+{ name: "计数原理与排列组合", kind: "chapter" },
+{ name: "组合恒等式", kind: "chapter" },
+{ name: "抽屉原理", kind: "chapter" },
+{ name: "容斥原理", kind: "chapter" },
+{ name: "极端原理", kind: "chapter" },
+{ name: "图论", kind: "chapter" },
+{ name: "组合几何与覆盖", kind: "chapter" },
+{ name: "组合极值", kind: "chapter" }
     ] }
   ] };

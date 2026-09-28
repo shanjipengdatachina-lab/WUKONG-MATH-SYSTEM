@@ -55,6 +55,10 @@ syntax_ok = log.include?('RESULT: 全部通过')
 
 # ---------- 4. 静态体检（Ruby） ----------
 puts "\n== 体检 =="
+# 体检脚本的失败标记统一是「✗」。这些红灯原来不吃进退出码，于是"页面被改坏了"
+# 也照样退出 0 —— 2026-09-28 就因为这条差点漏过一次（reader.html 被误删了正文，
+# 断言全绿、退出码 0，只有 verify_bridges 在喊）。现在红灯单独统计、单独报、也影响退出码。
+problems = []
 %w[verify_brand.rb verify_rail.rb verify_reader_tree.rb verify_whiteboard.rb
    verify_fullscreen.rb verify_graph.rb verify_bridges.rb verify_forum.rb
    broken_links.rb residue_final.rb ia_audit.rb].each do |b|
@@ -64,6 +68,8 @@ puts "\n== 体检 =="
   log = sh("ruby #{path}")
   puts "  --- #{b}"
   log.lines.each { |l| puts '      ' + l.delete("\n") unless l.strip.empty? }
+  red = log.lines.grep(/✗/).size
+  problems << [b, red] if red.positive?
 end
 
 # ---------- 5. 汇总 ----------
@@ -72,9 +78,14 @@ bad      = rows.sum { |r| r[2] }
 crashed  = rows.reject { |r| r[4] }.map { |r| r[0] }   # 连 RESULT 行都没打到：没跑完
 puts "\n== 汇总 =="
 puts "  断言：#{total} 条，失败 #{bad} 条；JS 语法：#{syntax_ok ? '通过' : '有问题'}"
+if problems.empty?
+  puts "  体检：无红灯"
+else
+  puts "  体检红灯：#{problems.map { |b, n| "#{b} #{n} 条" }.join('、')}"
+end
 # 断言包没跑到收尾（中间抛错 / 被中断）时，它既没有 PASS 到底、也没有 FAIL 行，
 # 只统计 bad 就会把它当成"失败 0 条"放过去 —— 所以"没跑完"必须单独算红灯。
 unless crashed.empty?
   puts "  未跑完的断言包：#{crashed.join('、')}（多半是中间抛错，看上面那行的 ✘）"
 end
-exit(bad.zero? && syntax_ok && crashed.empty? ? 0 : 1)
+exit(bad.zero? && syntax_ok && crashed.empty? && problems.empty? ? 0 : 1)

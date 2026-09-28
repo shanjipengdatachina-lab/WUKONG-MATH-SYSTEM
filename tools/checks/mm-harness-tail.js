@@ -7,21 +7,61 @@ function eq(a, b, label) { assert(String(a) === String(b), label + '（期望 ' 
 function has(text, part, label) { assert(String(text).indexOf(part) !== -1, label); }
 
 assert(!!MM, '导出自查接口 window.__MM__');
-assert(!!TREE && (TREE.kids || []).length === 6, '知识树有六册');
+assert(!!TREE && (TREE.kids || []).length > 0, '知识树有内容');
+
+/* ---- 0. 四个学段：各数一遍册与章 ----
+   数错不会崩，只会让某一屏安静地少一块 —— 所以按学段分别对账。
+   下面的期望值来自核对过的教材目录，改动会被立刻发现。 */
+var STAGE_BOOKS = { primary: 12, junior: 6, senior: 5, olympiad: 4 };
+var STAGE_CHAPTERS = { primary: 88, junior: 29, senior: 22, olympiad: 30 };
+var stageTally = {};
+TREE.kids.forEach(function (b) {
+  stageTally[b.stage] = stageTally[b.stage] || { books: 0, chapters: 0 };
+  stageTally[b.stage].books++;
+  stageTally[b.stage].chapters += (b.children || []).length;
+});
+Object.keys(STAGE_BOOKS).forEach(function (code) {
+  eq(stageTally[code] ? stageTally[code].books : 0, STAGE_BOOKS[code], code + ' 的册（板块）数');
+  eq(stageTally[code] ? stageTally[code].chapters : 0, STAGE_CHAPTERS[code], code + ' 的章数');
+});
+eq(TREE.kids.length, 27, '四学段合计 27 册 / 板块');
 var chapters = 0;
 TREE.kids.forEach(function (b) { chapters += (b.children || []).length; });
-eq(chapters, 29, '一共 29 章');
+eq(chapters, 169, '四学段合计 169 章');
+assert(TREE.kids.every(function (b) { return b.stage && b.source; }),
+  '每册都带学段与目录来源（缺一个就不该生成出来）');
+var noSource = TREE.kids.filter(function (b) { return !b.source; }).map(function (b) { return b.name; });
+eq(noSource.length, 0, '没有缺来源的册（缺的：' + (noSource.join('、') || '没有') + '）');
+/* 待核的册：必须有 pending 且没有子节点 —— 不许悄悄留空 */
+var pendBad = TREE.kids.filter(function (b) { return !b.pending && !(b.children || []).length; })
+  .map(function (b) { return b.name; });
+eq(pendBad.length, 0, '空着的册必须写明"待核"（否则会被当成忘了填；实际 ' + (pendBad.join('、') || '没有') + '）');
+var pending = TREE.kids.filter(function (b) { return b.pending; }).map(function (b) { return b.name; });
+eq(pending.length, 2, '小学二下 / 三下的新版目录还没核到，如实标着两个待核（实际 ' + pending.join('、') + '）');
+/* 竞赛只到"章"一级 */
+var olympiadSections = 0;
+TREE.kids.filter(function (b) { return b.stage === 'olympiad'; }).forEach(function (b) {
+  (b.children || []).forEach(function (c) { olympiadSections += (c.children || []).length; });
+});
+eq(olympiadSections, 0, '竞赛只到「章」，一层节都没有（说好的章节框架）');
 
-/* ---- 1. 初始：未登录、没记过 → 总览 + 六册 + 各章 ---- */
+/* ---- 1. 初始：默认初中、未登录、没记过 → 学段根 + 六册 + 各章 ---- */
+eq(MM.stage.get(), 'junior', '默认落在初中（现在的内容都是初中的）');
 eq(MM.scope.get(), '', '未登录时默认看总览，而不是某一册');
 eq(bookLabelEl.textContent, '总览', '工具条上的册按钮写着"总览"');
+eq(stageLabelEl.textContent, '初中', '工具条最前面的学段按钮写着"初中"');
 eq(MM.level.get(), 2, '默认层级是"到章"');
 eq(levelLabelEl.textContent, '到章', '层级按钮写着"到章"');
-eq(MM.visible().length, 1 + 6 + chapters, '默认可见：总览 + 六册 + 29 章');
+eq(MM.visible().length, 1 + 6 + 29, '默认可见：学段根 + 六册 + 29 章（只这一屏，不含别的学段）');
+eq(MM.visible()[0].kind, 'stage', '这一屏的根是「学段」节点，不是那个总根');
+has(scopeNoteEl.textContent, '初中', '说明里写清当前看的是哪个学段');
+has(scopeNoteEl.textContent, '29 章', '说明里写了这一学段有多少章');
 has(scopeNoteEl.textContent, '未登录', '说明里写清了未登录的规则');
 eq(MM.signedIn(), false, '侧栏是"登录"时判定为未登录');
 eq(MM.studentGrade(), '七年级（下）', '演示学生的年级是七年级（下）');
-eq(MM.books.length, 6, '六册名单从数据里读出来');
+eq(MM.books().length, 6, '初中六册名单从数据里读出来');
+eq(MM.booksOf('primary').length, 12, '小学 12 册也能读出来');
+eq(MM.booksOf('olympiad').length, 4, '竞赛 4 个板块');
 
 /* ---- 2. 登录后默认聚焦学生年级 ---- */
 window.localStorage.removeItem('wkmath.graph.scope');
@@ -47,20 +87,24 @@ eq(levelMenuEl.hasAttribute('hidden'), false, '层级浮层打开');
 fire(levelBtnEl, 'click');
 eq(levelMenuEl.hasAttribute('hidden'), true, '再点一次收起');
 fire(bookBtnEl, 'click');
-fire(bookItems[3], 'click');
+/* 册那一栏的元素现在由 mindmap.js 现建，所以去问接口拿，而不是桩里那份写死的 */
+fire(MM.bookItems()[3], 'click');
 eq(MM.scope.get(), '八年级（上）', '点浮层里的"八年级（上）"就只看这一册');
 eq(bookLabelEl.textContent, '八上', '按钮上的文字跟着变成八上');
 eq(bookMenuEl.hasAttribute('hidden'), true, '选完自动收起浮层');
-eq(bookItems[3].getAttribute('aria-pressed'), 'true', '当前册的选中状态对读屏可见');
-eq(bookItems[3].classList.contains('is-on'), true, '当前册在浮层里真的高亮（is-on）');
-eq(bookItems[0].getAttribute('aria-pressed'), 'false', '其它册的选中状态是未选中');
-eq(bookItems[0].classList.contains('is-on'), false, '其它册没被误标高亮');
+eq(MM.bookItems()[3].getAttribute('aria-pressed'), 'true', '当前册的选中状态对读屏可见');
+eq(MM.bookItems()[3].classList.contains('is-on'), true, '当前册在浮层里真的高亮（is-on）');
+eq(MM.bookItems()[0].getAttribute('aria-pressed'), 'false', '其它册的选中状态是未选中');
+eq(MM.bookItems()[0].classList.contains('is-on'), false, '其它册没被误标高亮');
 eq(window.localStorage.getItem('wkmath.graph.scope'), '八年级（上）', '选择记在本机');
 assert(TOASTS.length > 0 && TOASTS[TOASTS.length - 1].indexOf('八年级（上）') !== -1, '选完给一句轻提示');
 var bookVisible = MM.visible().length;
-assert(bookVisible < 1 + 6 + chapters, '只看一册时节点数明显变少');
-fire(bookItems[0], 'click');
-eq(MM.scope.get(), '', '点"总览·六册"回到全部');
+assert(bookVisible < 1 + 6 + 29, '只看一册时节点数明显变少');
+fire(MM.bookItems()[0], 'click');
+eq(MM.scope.get(), '', '点"总览·全部册"回到全部');
+/* 换学段之后，册那一栏必须整排换掉 —— 只换数据不换名单是最容易漏的一处 */
+eq(MM.bookItems().length, 1 + 6, '初中那一栏是"总览 + 六册"共 7 项');
+eq(MM.bookItems()[6].getAttribute('data-book'), '九年级（下）', '最后一项是九年级（下）');
 
 /* ---- 5. 搜索面板 ---- */
 fire(searchToggleEl, 'click');
@@ -74,7 +118,9 @@ assert(!searchToggleEl.classList.contains('is-on'), '按钮退出激活态');
 var chapterNode = MM.visible().filter(function (n) { return n.kind === 'chapter'; })[0];
 MM.select(chapterNode.id);
 eq(MM.infoOpen(), true, '点节点后信息面板浮出来');
-eq(panelNoEl.textContent, chapterNode.no, '标题栏显示章节编号');
+/* 标题栏的编号和图里节点上的编号写法一致（都带册的短名）——
+   两处写法不同的话，一眼对不上"这是哪一个节点"。 */
+eq(panelNoEl.textContent, MM.labelNo(chapterNode), '标题栏显示章节编号（与图里同一写法）');
 has(panelBodyEl.innerHTML, chapterNode.name, '正文里是这个节点的名字');
 has(panelBodyEl.innerHTML, 'mm-panel__kind', '正文里有类型徽标');
 MM.closeInfo();
@@ -103,12 +149,12 @@ eq(levelLabelEl.textContent, '到节', '层级按钮跟着改');
 eq(levelMenuEl.hasAttribute('hidden'), true, '选完收起浮层');
 eq(levelItems[1].getAttribute('aria-pressed'), 'true', '当前档的选中状态对读屏可见');
 eq(levelItems[1].classList.contains('is-on'), true, '当前档在浮层里真的高亮（is-on）');
-assert(MM.visible().length > 1 + 6 + chapters, '展开到节后节点变多');
+assert(MM.visible().length > 1 + 6 + 29, '展开到节后节点变多');
 MM.level.set(99);
 eq(levelLabelEl.textContent, '全部', '切到"全部展开"');
 assert(MM.visible().length > 600, '全部展开后节点数上千级（实际 ' + MM.visible().length + '）');
 MM.level.set(2);
-eq(MM.visible().length, 1 + 6 + chapters, '收回"到章"后回到默认规模');
+eq(MM.visible().length, 1 + 6 + 29, '收回"到章"后回到默认规模');
 
 /* ---- 9. 快捷键 ---- */
 docFire('keydown', ev({ key: '0', code: 'Digit0', shift: true }));
@@ -128,8 +174,8 @@ eq(MM.infoOpen(), false, 'Esc 收起信息面板');
 eq(MM.searchOpen(), false, 'Esc 收起定位面板');
 eq(bookMenuEl.hasAttribute('hidden'), true, 'Esc 收起浮层');
 
-/* ---- 10. 定位跨册节点时自动放开筛选 ---- */
-fire(bookItems[3], 'click');
+/* ---- 10. 定位跨册节点时自动放开筛选（学段内的册之间） ---- */
+fire(MM.bookItems()[3], 'click');
 eq(MM.scope.get(), '八年级（上）', '先只看八上');
 var otherBookNode = TREE.kids[0].children[0];
 MM.locate(otherBookNode.id);
@@ -240,31 +286,33 @@ MM.level.set(2);
 MM.scope.set('');
 MM.axis.set('book');
 
-var FIELDS = MM.fields();
-eq(FIELDS.length, 3, '数据里有三个课标领域（实际 ' + FIELDS.length + ' 个）');
-eq(FIELDS.join(' / '), '图形与几何 / 数与代数 / 统计与概率', '体系顺序是几何在前（用户说的就是"几何代数"）');
+var FIELDS = MM.fields();          // 当前学段（此刻是初中）的课标领域
+eq(FIELDS.length, 3, '初中数据里有三个课标领域（实际 ' + FIELDS.length + ' 个）');
+eq(FIELDS.join(' / '), '图形与几何 / 数与代数 / 统计与概率', '体系顺序是几何在前（那一栏的名字就叫「几何代数」）');
 eq(MM.fieldOf('平行四边形'), '图形与几何', '章带着自己的领域（平行四边形 → 图形与几何）');
 eq(MM.fieldOf('有理数'), '数与代数', '数与代数那边也对得上');
 eq(MM.fieldOf('概率初步'), '统计与概率', '统计与概率那三章也在（不然它们会掉出所有体系）');
 
-/* 每一章都得有领域，且三个体系加起来正好是全部 —— 不重不漏 */
+/* 每一章都得有领域，且三个体系加起来正好是初中的全部 29 章 —— 不重不漏。
+   **只看初中**：跨学段整树扫会把小学 / 高中的章一起算进来。 */
 var allChapters = [], noField = [], byField = {};
 MM.each(function (n) {
   if (n.kind !== 'chapter') return;
+  if (!n.parent || n.parent.stage !== 'junior') return;
   allChapters.push(n.id);
   if (!n.field) noField.push(n.name);
   byField[n.field] = (byField[n.field] || 0) + 1;
 });
-eq(noField.length, 0, '每一章都登记了领域（漏的：' + (noField.join('、') || '没有') + '）');
-eq(allChapters.length, 29, '一共 29 章');
+eq(noField.length, 0, '初中的每一章都登记了领域（漏的：' + (noField.join('、') || '没有') + '）');
+eq(allChapters.length, 29, '初中一共 29 章');
 eq([byField['图形与几何'], byField['数与代数'], byField['统计与概率']].join('+'),
    '13+13+3', '三个体系的章数加起来正好是 29，不重不漏（实际 ' +
   [byField['图形与几何'], byField['数与代数'], byField['统计与概率']].join('+') + '）');
 
 /* 默认停在"年级教材"那一栏 */
 eq(MM.axis.get(), 'book', '默认分法是年级教材');
-eq(axisPanes[0].hidden, false, '默认露出来的是册那一栏');
-eq(axisPanes[1].hidden, true, '体系那一栏默认收着');
+eq(bookPaneEl.hidden, false, '默认露出来的是册那一栏');
+eq(fieldPaneEl.hidden, true, '体系那一栏默认收着');
 eq(axisItems[0].getAttribute('aria-pressed'), 'true', '年级教材那一格是选中态');
 eq(axisItems[0]._classes['is-on'], true, '选中态眼睛也看得见（is-on），不只是读屏知道');
 
@@ -272,14 +320,14 @@ eq(axisItems[0]._classes['is-on'], true, '选中态眼睛也看得见（is-on）
 var nodesBefore = MM.visible().length;
 fire(axisItems[1], 'click');
 eq(MM.axis.get(), 'field', '点「几何代数」切到体系那一栏');
-eq(axisPanes[1].hidden, false, '体系那一栏露出来了');
-eq(axisPanes[0].hidden, true, '册那一栏收起来了');
+eq(fieldPaneEl.hidden, false, '体系那一栏露出来了');
+eq(bookPaneEl.hidden, true, '册那一栏收起来了');
 eq(MM.scope.get(), '', '切分法本身不动图 —— 范围还是总览');
 eq(MM.visible().length, nodesBefore, '切分法前后图里的节点数一样（切的是名单，不是范围）');
 eq(window.localStorage.getItem('wkmath.graph.axis'), 'field', '分法记在本机');
 
 /* 点一个体系 → 它成为根 */
-fire(fieldItems[1], 'click');       // 图形与几何
+fire(MM.fieldItems()[1], 'click');       // 图形与几何
 eq(MM.scope.get(), '图形与几何', '点「图形与几何」→ 只看这个体系');
 eq(bookLabelEl.textContent, '几何', '工具条上写短名（图里仍用课标全称）');
 var fScope = MM.rootScope();
@@ -324,19 +372,22 @@ eq(MM.scope.initial(), '', '存了个认不出来的范围 → 当没存（否�
 /* 两个分法各有自己的"总览"，都指向同一个范围（互不干扰的选中态） */
 MM.scope.set('');
 MM.axis.set('field');
-eq(fieldItems[0].getAttribute('aria-pressed'), 'true', '体系那一栏的"总览·全部体系"亮着');
-eq(bookItems[0].getAttribute('aria-pressed'), 'false',
-  '册那一栏的"总览·六册"不再亮（两栏各有各的选中态，不互相点亮）');
+eq(MM.fieldItems()[0].getAttribute('aria-pressed'), 'true', '体系那一栏的"总览"亮着');
+eq(MM.bookItems()[0].getAttribute('aria-pressed'), 'false',
+  '册那一栏的"总览"不再亮（两栏各有各的选中态，不互相点亮）');
 MM.scope.set('八年级（上）');
 eq(MM.axis.get(), 'book', '选了册 → 分法自动切回年级教材那一栏');
-eq(bookItems[3].getAttribute('aria-pressed'), 'true', '八上亮着');
-eq(fieldItems[1].getAttribute('aria-pressed'), 'false', '体系那一栏没有被误点亮');
+eq(MM.bookItems()[3].getAttribute('aria-pressed'), 'true', '八上亮着');
+eq(MM.fieldItems()[1].getAttribute('aria-pressed'), 'false', '体系那一栏没有被误点亮');
 
-/* 定位：同体系的章不该把筛选清掉，别体系的章才清（这是合成根最容易漏的地方） */
+/* 定位：同体系的章不该把筛选清掉，别体系的章才清（这是合成根最容易漏的地方）
+   注意挑章要限定在初中学段里 —— 全树扫会挑到小学那一章，跟当前的初中范围对不上。 */
+MM.stage.set('junior');
 MM.scope.set('图形与几何');
 var inField = null, outField = null;
 MM.each(function (n) {
   if (n.kind !== 'chapter') return;
+  if (!n.parent || n.parent.stage !== 'junior') return;
   if (n.field === '图形与几何' && !inField) inField = n;
   if (n.field === '数与代数' && !outField) outField = n;
 });
@@ -365,6 +416,88 @@ assert(canvasEl.style.backgroundSize === undefined && canvasEl.style.backgroundP
   '平移缩放不再去同步背景（点阵已删，这两行是死代码）' +
   '（实际 backgroundSize=' + canvasEl.style.backgroundSize + '）');
 /* 样式那一半在 verify_graph.rb 里守着（静态读 graph.html），这里只管 JS 这一半 */
+
+/* ============================================================
+   17. 学段切换：小学 / 初中 / 高中 / 竞赛
+   ------------------------------------------------------------
+   学段是"册"上的一个字段，不是树上的一层；选中某个学段时用它当合成根。
+   最要紧的三件事：名单整排换、分法跟着学段变、跨学段重名不串台。
+   ============================================================ */
+MM.stage.set('junior');
+MM.scope.set('');
+MM.axis.set('book');
+
+eq(MM.stage.list().length, 4, '四个学段');
+eq(MM.stage.keys.join(','), 'primary,junior,senior,olympiad', '学段标识与数据里的 stage 一致');
+
+/* 切到高中：名单整排换、分法跟着换 */
+MM.stage.set('senior');
+eq(MM.stage.get(), 'senior', '切到高中');
+eq(MM.scope.get(), '', '换学段时范围归零（上一学段的册名在这里不存在）');
+eq(stageLabelEl.textContent, '高中', '学段按钮上的字跟着变');
+eq(MM.bookItems().length, 1 + 5, '高中的册那一栏是"总览 + 五册"');
+eq(MM.bookItems()[1].getAttribute('data-book'), '必修第一册', '第一册是必修第一册（人教A版按册，不按年级）');
+eq(MM.axisTitle().book, '教材册次', '高中第一栏叫「教材册次」');
+eq(MM.axisTitle().field, '课标主题', '高中第二栏叫「课标主题」');
+eq(MM.fields().length, 5, '高中有五个课标主题');
+eq(MM.fields()[0], '预备知识', '第一个是「预备知识」（选择性必修没有它，必修有）');
+eq(MM.fieldItems().length, 1 + 5, '第二栏列出五个主题');
+eq(MM.visible().length, 1 + 5 + 22, '高中默认可见：学段根 + 五册 + 22 章');
+
+/* 章号挂册的短名：跨册之后光看 04 / 05 / 07 没法看 */
+var seniorChapter = null;
+MM.each(function (n) {
+  if (!seniorChapter && n.kind === 'chapter' && n.parent && n.parent.stage === 'senior') seniorChapter = n;
+});
+assert(seniorChapter && MM.labelNo(seniorChapter).indexOf('必修一 ') === 0,
+  '章号前面挂上册的短名（实际 ' + (seniorChapter ? MM.labelNo(seniorChapter) : '没找到章') + '）');
+
+/* 切到竞赛：没有第二栏，切了会被拒 */
+MM.stage.set('olympiad');
+eq(MM.axisTitle().field, null, '竞赛没有第二栏');
+eq(bookPaneEl.hidden, false, '竞赛只露板块那一栏');
+eq(MM.axis.set('field'), false, '竞赛下切第二栏会被拒（setAxis 返回 false）');
+eq(MM.axis.get(), 'book', '被拒之后仍停在第一栏');
+eq(MM.bookItems().length, 1 + 4, '竞赛那一栏是"总览 + 四板块"');
+eq(MM.bookItems()[1].getAttribute('data-book'), '代数', '第一个板块是代数');
+eq(MM.stageBooksWord(), '板块', '竞赛里不说"册"，说"板块"');
+eq(MM.visible().length, 1 + 4 + 30, '竞赛默认可见：学段根 + 四板块 + 30 章');
+
+/* 小学：四个领域，且有"待核"的册 */
+MM.stage.set('primary');
+eq(MM.axisTitle().book, '教材册次', '小学第一栏叫「教材册次」');
+eq(MM.axisTitle().field, '四大领域', '小学第二栏叫「四大领域」');
+eq(MM.fields().length, 4, '小学有四个领域（多了「综合与实践」）');
+eq(MM.bookItems().length, 1 + 12, '小学那一栏是"总览 + 12 册"');
+var pendingItem = MM.bookItems().filter(function (el) {
+  return el.getAttribute('data-book') === '二年级下册';
+})[0];
+assert(pendingItem && String(pendingItem.innerHTML).indexOf('待核') >= 0,
+  '目录还没核到的那两册在名单里标着「待核」（空着不说会被当成忘了填）');
+
+/* 跨学段重名：小学和初中都有「数与代数」，不许串台 */
+MM.scope.set('数与代数');
+var pKids = MM.rootScope().kids;
+assert(pKids.length > 0, '小学的「数与代数」有章（实际 ' + pKids.length + ' 章）');
+eq(pKids.every(function (k) { return k.parent.stage === 'primary'; }), true,
+  '小学的「数与代数」底下全是小学的章（同名领域按学段分开缓存，不串台）');
+MM.stage.set('junior');
+MM.scope.set('数与代数');
+var jKids = MM.rootScope().kids;
+eq(jKids.every(function (k) { return k.parent.stage === 'junior'; }), true, '切回初中取的是初中的「数与代数」');
+eq(jKids.length, 13, '初中「数与代数」13 章（小学那边 35 章，数字不同就说明没串台）');
+
+/* 学段也记在本机 */
+MM.stage.set('senior');
+eq(window.localStorage.getItem('wkmath.graph.stage'), 'senior', '换学段就记下来');
+eq(MM.stage.initial(), 'senior', '刷新回来还是高中');
+window.localStorage.setItem('wkmath.graph.stage', '乱写的');
+eq(MM.stage.initial(), 'junior', '存了个认不出来的学段 → 回初中');
+
+/* 收尾：回初中 */
+MM.stage.set('junior');
+MM.scope.set('');
+MM.axis.set('book');
 
 out('----');
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

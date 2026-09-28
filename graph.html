@@ -121,6 +121,33 @@
       <div class="mm-dock" role="toolbar" aria-label="图谱工具">
 
         <div class="mm-dock__group">
+          <button type="button" class="mm-dock__btn mm-dock__btn--group" id="mm-stage-btn"
+                  aria-expanded="false" aria-controls="mm-stage-menu"
+                  data-mm-tip="选学段 · 当前 初中" aria-label="选学段">
+            <i data-lucide="layers"></i>
+            <span class="mm-dock__label" id="mm-stage-label">初中</span>
+            <span class="mm-dock__caret" aria-hidden="true"></span>
+          </button>
+          <!-- 学段放在工具条最前面：它是最大的分区维度，决定下面能选什么。
+               四项是固定的（学段不会天天变），所以写在 HTML 里；
+               册与领域那两项名单则由 mindmap.js 按当前学段现建。 -->
+          <div class="mm-flyout" id="mm-stage-menu" role="group" aria-label="选学段" hidden>
+            <button type="button" class="mm-flyout__item" data-stage="primary" aria-pressed="false">
+              <i data-lucide="list-tree"></i><span class="mm-flyout__label">小学数学</span>
+            </button>
+            <button type="button" class="mm-flyout__item" data-stage="junior" aria-pressed="true">
+              <i data-lucide="book"></i><span class="mm-flyout__label">初中数学</span>
+            </button>
+            <button type="button" class="mm-flyout__item" data-stage="senior" aria-pressed="false">
+              <i data-lucide="sigma"></i><span class="mm-flyout__label">高中数学</span>
+            </button>
+            <button type="button" class="mm-flyout__item" data-stage="olympiad" aria-pressed="false">
+              <i data-lucide="layers"></i><span class="mm-flyout__label">竞赛数学</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="mm-dock__group">
           <button type="button" class="mm-dock__btn mm-dock__btn--group" id="mm-book-btn"
                   aria-expanded="false" aria-controls="mm-book-menu"
                   data-mm-tip="只看某一册或某一体系" aria-label="筛选范围">
@@ -136,43 +163,8 @@
               <button type="button" class="mm-axis__btn" data-axis="book" aria-pressed="true">年级教材</button>
               <button type="button" class="mm-axis__btn" data-axis="field" aria-pressed="false">几何代数</button>
             </div>
-            <div class="mm-axis__pane" data-axis-pane="book">
-              <button type="button" class="mm-flyout__item" data-book="" aria-pressed="true">
-                <i data-lucide="layout-grid"></i><span class="mm-flyout__label">总览 · 六册</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-book="七年级（上）" aria-pressed="false">
-                <i data-lucide="book"></i><span class="mm-flyout__label">七年级（上）</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-book="七年级（下）" aria-pressed="false">
-                <i data-lucide="book"></i><span class="mm-flyout__label">七年级（下）</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-book="八年级（上）" aria-pressed="false">
-                <i data-lucide="book"></i><span class="mm-flyout__label">八年级（上）</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-book="八年级（下）" aria-pressed="false">
-                <i data-lucide="book"></i><span class="mm-flyout__label">八年级（下）</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-book="九年级（上）" aria-pressed="false">
-                <i data-lucide="book"></i><span class="mm-flyout__label">九年级（上）</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-book="九年级（下）" aria-pressed="false">
-                <i data-lucide="book"></i><span class="mm-flyout__label">九年级（下）</span>
-              </button>
-            </div>
-            <div class="mm-axis__pane" data-axis-pane="field" hidden>
-              <button type="button" class="mm-flyout__item" data-field="" aria-pressed="false">
-                <i data-lucide="layout-grid"></i><span class="mm-flyout__label">总览 · 全部体系</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-field="图形与几何" aria-pressed="false">
-                <i data-lucide="shapes"></i><span class="mm-flyout__label">图形与几何</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-field="数与代数" aria-pressed="false">
-                <i data-lucide="sigma"></i><span class="mm-flyout__label">数与代数</span>
-              </button>
-              <button type="button" class="mm-flyout__item" data-field="统计与概率" aria-pressed="false">
-                <i data-lucide="chart-column"></i><span class="mm-flyout__label">统计与概率</span>
-              </button>
-            </div>
+            <div class="mm-axis__pane" id="mm-book-pane" data-axis-pane="book"></div>
+            <div class="mm-axis__pane" id="mm-field-pane" data-axis-pane="field" hidden></div>
           </div>
         </div>
 
@@ -230,7 +222,7 @@
           </button>
           <div class="mm-flyout mm-flyout--wide" id="mm-help-menu" role="dialog" aria-label="说明与提示" hidden>
             <p class="mm-help__title">知识图谱</p>
-            <p class="mm-help__text">六册 · 二十九章 · <span class="num" data-mm-total>780</span> 个节点，一张可以随便拖放的平面网。<br>同一张网有两种看法：<b>年级教材</b>（按六册）与<b>几何代数</b>（按课标体系：图形与几何 / 数与代数 / 统计与概率），在工具条第一个按钮里切。</p>
+            <p class="mm-help__text">小学到高中四套教材 · 竞赛章节框架，共 <span class="num" data-mm-total>1291</span> 个节点，一张可以随便拖放的平面网。<br>看哪一套由工具条最前面那个「学段」按钮决定（小学 / 初中 / 高中 / 竞赛）；每一套内部还能在第二个按钮里按教材册次或课标主题换一种看法（竞赛只有四大板块，就没有第二栏）。</p>
             <p class="mm-help__label">操作</p>
             <ul class="mm-help__list">
               <li><kbd>拖动</kbd> 空白处平移整张图</li>
@@ -242,7 +234,9 @@
             <p class="mm-help__label">图例</p>
             <ul class="mm-help__legend">
               <li><span class="lg lg--root"></span>总览</li>
+              <li><span class="lg lg--stage"></span>学段</li>
               <li><span class="lg lg--book"></span>册</li>
+              <li><span class="lg lg--track"></span>板块</li>
               <li><span class="lg lg--field"></span>体系</li>
               <li><span class="lg lg--chapter"></span>章</li>
               <li><span class="lg lg--dot"></span>知识点</li>
@@ -450,6 +444,22 @@ body{padding-top:0}
 .mm-node--field .mm-node__box{fill:var(--math-primary);stroke:var(--math-primary)}
 .mm-node--field .mm-label{fill:var(--math-primary-foreground);font-weight:600}
 
+/* 学段节点：整张图的根 */
+.mm-node--stage .mm-node__box{fill:var(--math-primary);stroke:var(--math-primary)}
+.mm-node--stage .mm-label{fill:var(--math-primary-foreground);font-weight:600}
+/* 板块（竞赛）：不是教材，所以不写成"册"，视觉上与册同级 */
+.mm-node--track .mm-node__box{fill:var(--math-primary-soft);stroke:var(--math-primary-soft)}
+.mm-node--track .mm-label{fill:var(--math-primary);font-weight:600}
+
+/* 名单里的状态小标：待核 / 暂空。
+   空着的册如果不说一句，会被当成"忘了填"—— 有依据的空缺和没做是两件事。 */
+.mm-flyout__note{
+  flex:none;margin-left:auto;padding:0 5px;border-radius:4px;
+  background:var(--math-surface);font-size:10.5px;line-height:1.6;color:var(--math-ink-3);
+}
+/* 信息面板里的"目录待核 / 目录来源"两行 */
+.mm-source{margin:6px 0 0;font-size:11.5px;line-height:1.7;color:var(--math-ink-4);word-break:break-all}
+
 /* 节点信息面板：贴右侧；搜索面板：贴左上 */
 .mm-dock__label{min-width:26px;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums}
 .mm-dock__btn--group[aria-expanded="true"] .mm-dock__label{color:var(--math-foreground)}
@@ -485,7 +495,9 @@ body{padding-top:0}
 .mm-help__legend li{display:flex;align-items:center;gap:6px}
 .mm-help__legend .lg{flex:none;width:12px;height:12px;border-radius:3px;border:1px solid var(--math-border)}
 .lg--root{background:var(--math-primary);border-color:var(--math-primary)}
+.lg--stage{background:var(--math-primary);border-color:var(--math-primary)}
 .lg--book{background:var(--math-primary-soft);border-color:var(--math-primary-soft)}
+.lg--track{background:var(--math-primary-soft);border-color:var(--math-primary-soft)}
 .lg--field{background:var(--math-primary);border-color:var(--math-primary)}
 .lg--chapter{background:var(--math-background);border-color:var(--math-line-strong)}
 .lg--dot{width:7px;height:7px;border-radius:999px;background:var(--math-ink-4);border:0}

@@ -21,6 +21,7 @@ var __capture = {
   docHandlers: {},
   docListeners: {},
   store: {},
+  treeInner: '',
   created: [],
   winHandlers: {},
   winListeners: {},
@@ -83,6 +84,38 @@ var treeEl = {
   addEventListener: function (type, fn) { __capture.treeHandlers[type] = fn; },
   querySelectorAll: function () { return []; },
   querySelector: function () { return null; }
+};
+
+/* 左栏学段条 + 由 reader-live.js 现建的目录树 */
+function mkChip(code) {
+  return {
+    _attrs: { 'data-stage': code },
+    className: 'tree-stage__chip',
+    getAttribute: function (k) { return this._attrs[k] === undefined ? null : this._attrs[k]; },
+    setAttribute: function (k, v) { this._attrs[k] = v; }
+  };
+}
+var stageChips = [mkChip('primary'), mkChip('junior'), mkChip('senior'), mkChip('olympiad')];
+var stageBarEl = {
+  _attrs: {},
+  handlers: {},
+  getAttribute: function (k) { return this._attrs[k] === undefined ? null : this._attrs[k]; },
+  setAttribute: function (k, v) { this._attrs[k] = v; },
+  addEventListener: function (type, fn) { this.handlers[type] = fn; },
+  querySelectorAll: function (sel) { return sel === '[data-stage]' ? stageChips : []; },
+  contains: function () { return true; }
+};
+var treeBodyEl = {
+  _html: '',
+  get innerHTML() { return this._html; },
+  set innerHTML(v) { this._html = v; __capture.treeInner = v; },
+  querySelector: function () { return null; }
+};
+var treeMetaEl = {
+  textContent: '',
+  _attrs: {},
+  getAttribute: function (k) { return this._attrs[k] === undefined ? null : this._attrs[k]; },
+  setAttribute: function (k, v) { this._attrs[k] = v; }
 };
 
 /* 三栏骨架 + 左栏收起按钮 */
@@ -175,6 +208,9 @@ var document = {
   getElementById: function (id) {
     if (id === 'knowledge-point') return art;
     if (id === 'chapter-tree') return treeEl;
+    if (id === 'tree-body') return treeBodyEl;
+    if (id === 'tree-meta') return treeMetaEl;
+    if (id === 'tree-stage') return stageBarEl;
     if (id === 'page-outline') return outlineBlock;
     if (id === 'outline-list') return outlineList;
     if (id === 'tree-collapse') return collapseBtn;
