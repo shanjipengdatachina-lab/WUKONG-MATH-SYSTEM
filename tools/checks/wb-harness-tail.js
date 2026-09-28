@@ -549,4 +549,24 @@ assert(WB.state.problemHover === true, '鼠标移进题面 → 底浮现');
 canvasEl._h.pointermove(pe(outPt.x, outPt.y));
 assert(WB.state.problemHover === false, '鼠标移开题面 → 底收起');
 
+/* 7c. 坐标坏掉的事件不能混进点列 —— 用户报过"从板子最左边多射出一条长线" */
+WB.clearAll();
+WB.applyProblem(null);
+var badBefore = WB.badPoints();
+var v7c = WB.state.view;
+var ax7c = v7c.x + 300 * v7c.scale, ay7c = v7c.y + 200 * v7c.scale;
+
+canvasEl._h.pointerdown(pe(ax7c, ay7c));
+canvasEl._h.pointermove(pe(0, 0));                 /* 坐标坏掉的中间点 */
+canvasEl._h.pointermove(pe(ax7c + 40, ay7c + 30));
+canvasEl._h.pointerup(pe(ax7c + 40, ay7c + 30));
+
+var st7c = WB.state.strokes[WB.state.strokes.length - 1];
+var minX7c = Math.min.apply(null, st7c.points.map(function (p) { return p.x; }));
+assert(st7c.points.length === 2,
+  '坏点被丢掉，只剩落笔 + 一个好转折（实际 ' + st7c.points.length + ' 个点）');
+assert(minX7c > 0, '笔迹没有跑到板子左边去（最左 ' + Math.round(minX7c) + '）');
+assert(WB.badPoints() === badBefore + 1,
+  '坏点被记了一次（实际 ' + (WB.badPoints() - badBefore) + ' 次）');
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

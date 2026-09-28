@@ -578,7 +578,19 @@
     var rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
     return { sx: e.clientX - (rect.left || 0), sy: e.clientY - (rect.top || 0) };
   }
+  /* 采点：把"不是真实位置"的事件挡在门外。
+     用户报过一种怪相 —— 一笔画下去，先从板子最左边多射出一条长线再回到落笔处。
+     原因是有 pointermove 带着不可用的坐标混进了点列：白板左侧有侧栏，画布左边缘
+     在 clientX≈48 处，所以 clientX=0 不可能是真实的按压位置，直接判坏点丢掉。 */
+  var badPoints = 0;
   function pointFrom(e) {
+    var x = e ? e.clientX : null;
+    var y = e ? e.clientY : null;
+    if (typeof x !== 'number' || typeof y !== 'number' || !isFinite(x) || !isFinite(y)) {
+      badPoints++;
+      return null;
+    }
+    if (x === 0 && y === 0) { badPoints++; return null; }
     var p = canvasPoint(e);
     var w = toWorld(p.sx, p.sy);
     w.p = typeof e.pressure === 'number' ? e.pressure : 0;
@@ -628,6 +640,7 @@
     }
 
     var pt = pointFrom(e);
+    if (!pt) return;   /* 坐标不可用：宁可不落笔，也不画出鬼线 */
     if (state.tool === 'eraser') {
       state.active = { mode: 'erase', id: e.pointerId, bucket: [] };
       eraseAt(pt.x, pt.y, state.eraser / state.view.scale, state.active.bucket);
@@ -693,7 +706,7 @@
       /* 没落笔时，pointermove 只负责一件事：鼠标是不是压在题面上（决定那层底浮不浮现） */
       if (!act) {
         var hp = pointFrom(e);
-        setProblemHover(state.showProblem && hitProblem(hp.x, hp.y));
+        if (hp) setProblemHover(state.showProblem && hitProblem(hp.x, hp.y));
       }
       return;
     }
@@ -713,6 +726,7 @@
       var r = state.eraser / state.view.scale;
       for (var i = 0; i < events.length; i++) {
         var pe = pointFrom(events[i]);
+        if (!pe) continue;
         eraseAt(pe.x, pe.y, r, act.bucket);
       }
       scheduleRedraw();
@@ -723,6 +737,7 @@
     if (act.shape) {
       var last = events[events.length - 1];
       var q = pointFrom(last);
+      if (!q) return;
       var c = constrain(act.stroke.points[0], q, e.shiftKey);
       act.stroke.points[1] = c;
       scheduleRedraw();
@@ -732,6 +747,7 @@
     var changed = false;
     for (var j = 0; j < events.length; j++) {
       var p2 = pointFrom(events[j]);
+      if (!p2) continue;
       var pts = act.stroke.points;
       var tail = pts[pts.length - 1];
       if (Math.abs(p2.x - tail.x) < 0.3 / state.view.scale && Math.abs(p2.y - tail.y) < 0.3 / state.view.scale) continue;
@@ -1579,6 +1595,7 @@
     initPanelDrag: initPanelDrag,
     reflowPanel: reflowPanel,
     problemLayout: problemLayout,
+    badPoints: function () { return badPoints; },
     setProblemHover: setProblemHover,
     hitProblem: hitProblem,
     drawProblemLayer: drawProblemLayer,
