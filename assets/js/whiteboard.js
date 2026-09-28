@@ -91,6 +91,7 @@
     showProblem: true,
     problemId: null,
     problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
+    problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
     external: null,              // 其它页面送来的内容 { text, tag, extra }
     strokes: [],                 // { type?, color, width, highlight?, pressured?, points:[{x,y,p}] }
     actions: [],
@@ -322,25 +323,27 @@
     problemBox.x = x; problemBox.y = y; problemBox.w = w; problemBox.h = h;
 
     ctx.save();
-    ctx.beginPath();
-    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 14);
-    else ctx.rect(x, y, w, h);
-    ctx.fillStyle = 'rgba(37,99,235,.045)';   /* 极浅衬底：说明"这是一道题"，但不抢演算 */
-    ctx.fill();
-    /* 这里刻意不 stroke —— 被去掉的那个"框"，就是这一笔 */
-
-    /* 左侧 2.5px 主色竖条：不占横向空间，但当"这是一道题"的轻锚点 */
-    ctx.beginPath();
-    ctx.rect(x + 0.5, y + 12, 2.5, Math.max(8, h - 24));
-    ctx.fillStyle = '#2563eb';
-    ctx.fill();
+    /* 底纹默认**不画**：题面就是印在板上的一段字。
+       鼠标压上来时才浮现这层很浅的底 —— 平时把板面整个留给演算。 */
+    if (state.problemHover) {
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 14);
+      else ctx.rect(x, y, w, h);
+      ctx.fillStyle = 'rgba(37,99,235,.05)';
+      ctx.fill();
+      /* 左侧 2.5px 竖条：不占横向空间，当"这是一道题"的轻锚点 */
+      ctx.beginPath();
+      ctx.rect(x + 0.5, y + 12, 2.5, Math.max(8, h - 24));
+      ctx.fillStyle = 'rgba(37,99,235,.42)';
+      ctx.fill();
+    }
 
     var tx = x + 20;
     var ty = y + 14;
     ctx.textBaseline = 'top';
     if (data.tag) {
       ctx.font = tagFont;
-      ctx.fillStyle = 'rgba(37,99,235,.78)';
+      ctx.fillStyle = state.problemHover ? 'rgba(37,99,235,.78)' : 'rgba(16,18,21,.42)';
       ctx.fillText(data.tag, tx, ty + 3);
       ty += tagH;
     }
@@ -365,6 +368,21 @@
   /* 题面矩形的只读快照（世界坐标）：给覆盖层定位、给断言用 */
   function problemLayout() {
     return { x: problemBox.x, y: problemBox.y, w: problemBox.w, h: problemBox.h };
+  }
+
+  /* 这个世界点是否落在题面里 —— 悬停判定用它，拖动题面的命中判定也用它 */
+  function hitProblem(wx, wy) {
+    return problemBox.h > 0 &&
+      wx >= problemBox.x && wx <= problemBox.x + problemBox.w &&
+      wy >= problemBox.y && wy <= problemBox.y + problemBox.h;
+  }
+
+  /* 那层很浅的底只在鼠标压上来时浮现：平时题面就是印在板上的一段字 */
+  function setProblemHover(on) {
+    on = !!on;
+    if (state.problemHover === on) return;
+    state.problemHover = on;
+    scheduleRedraw();
   }
 
   function strokeWidthFor(s, p, q) {
@@ -671,7 +689,14 @@
 
   function onMove(e) {
     var act = state.active;
-    if (!act || act.id !== e.pointerId) return;
+    if (!act || act.id !== e.pointerId) {
+      /* 没落笔时，pointermove 只负责一件事：鼠标是不是压在题面上（决定那层底浮不浮现） */
+      if (!act) {
+        var hp = pointFrom(e);
+        setProblemHover(state.showProblem && hitProblem(hp.x, hp.y));
+      }
+      return;
+    }
     if (typeof e.preventDefault === 'function') e.preventDefault();
 
     if (act.mode === 'pan') {
@@ -817,6 +842,8 @@
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onUp);
+    /* 鼠标离开画布时把题面那层底收掉，别留在板上 */
+    canvas.addEventListener('pointerleave', function () { setProblemHover(false); });
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -1552,6 +1579,8 @@
     initPanelDrag: initPanelDrag,
     reflowPanel: reflowPanel,
     problemLayout: problemLayout,
+    setProblemHover: setProblemHover,
+    hitProblem: hitProblem,
     drawProblemLayer: drawProblemLayer,
     drawStroke: drawStroke,
     wrapText: wrapText,

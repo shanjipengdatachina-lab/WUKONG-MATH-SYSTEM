@@ -515,4 +515,38 @@ assert(shown === hiddenStroke,
 
 WB.setShowProblem(true);
 
+/* 7b. 那层很浅的底只在鼠标压上来时浮现 —— 平时题面就是印在板上的一段字 */
+WB.clearAll();
+WB.applyProblem('7a-01');
+
+function fillDelta(fn) {
+  var before = __ctxCalls.fill;
+  fn();
+  return __ctxCalls.fill - before;
+}
+
+WB.setProblemHover(false);
+var idleFills = fillDelta(function () { WB.redraw(); });
+WB.setProblemHover(true);
+var hoverFills = fillDelta(function () { WB.redraw(); });
+WB.setProblemHover(false);
+
+assert(idleFills === 0, '未悬停时题面不画底（填充增量应为 0，实际 ' + idleFills + '）');
+assert(hoverFills === 2, '悬停时浮现底 + 竖条（填充增量应为 2，实际 ' + hoverFills + '）');
+
+/* 命中判定：悬停和（后面的）拖动共用同一个谓词 */
+var hovBox = WB.problemLayout();
+assert(WB.hitProblem(hovBox.x + 10, hovBox.y + 10) === true, '题面里的点算命中');
+assert(WB.hitProblem(hovBox.x - 10, hovBox.y - 10) === false, '题面外的点不算命中');
+
+/* 走一遍真实的 pointermove：移进题面 → 底浮现；移开 → 收起 */
+var hv = WB.state.view;
+function screenOf(wx, wy) { return { x: hv.x + wx * hv.scale, y: hv.y + wy * hv.scale }; }
+var inPt = screenOf(hovBox.x + 20, hovBox.y + 20);
+var outPt = screenOf(hovBox.x + hovBox.w + 300, hovBox.y + hovBox.h + 300);
+canvasEl._h.pointermove(pe(inPt.x, inPt.y));
+assert(WB.state.problemHover === true, '鼠标移进题面 → 底浮现');
+canvasEl._h.pointermove(pe(outPt.x, outPt.y));
+assert(WB.state.problemHover === false, '鼠标移开题面 → 底收起');
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');
