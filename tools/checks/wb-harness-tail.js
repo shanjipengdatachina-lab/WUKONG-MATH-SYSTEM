@@ -742,4 +742,40 @@ WB.state.view.x = 16;
 WB.state.view.y = 16;
 WB.redraw();
 
+/* ============================================================
+   10. 分析与答案的预置数据
+   ============================================================ */
+var AN = window.WK_ANALYSIS;
+assert(!!AN, '数据模块已挂到 window.WK_ANALYSIS');
+assert(typeof AN.steps === 'function' && typeof AN.answer === 'function',
+  '数据模块给出 steps() 与 answer() 两个入口');
+
+var guides10 = AN.steps({ text: '−7 + 3' });
+assert(guides10.length >= 1 && guides10.length <= 5,
+  '台阶数量在 1~5 之间（实际 ' + guides10.length + '）');
+
+var allText10 = guides10.join(' ');
+var bad10 = [];
+for (var i10 = 0; i10 < guides10.length; i10++) {
+  if (!guides10[i10] || typeof guides10[i10] !== 'string' || !guides10[i10].trim()) bad10.push(i10);
+}
+assert(bad10.length === 0, '每条台阶都是非空文字（空的是 ' + JSON.stringify(bad10) + '）');
+
+/* 「分析」不许出现答案 —— 设计 §2 #6 的核心规矩 */
+var leaked10 = [];
+for (var id10 in AN.PRESET) {
+  if (!AN.PRESET.hasOwnProperty(id10)) continue;
+  var res10 = AN.PRESET[id10].result;
+  if (!res10) continue;
+  if (allText10.indexOf(res10) >= 0) leaked10.push(id10 + ' 的答案 ' + res10);
+}
+assert(leaked10.length === 0,
+  '通用台阶里不出现任何预置答案（漏的是 ' + JSON.stringify(leaked10) + '）');
+
+assert(AN.answer('7a-01') && AN.answer('7a-01').result === '−4',
+  '能取到 7a-01 的预置答案');
+assert(AN.answer('不存在的题') === null, '没预置的题返回 null（由界面层给说明）');
+assert(typeof AN.NO_ANSWER === 'string' && AN.NO_ANSWER.length > 10,
+  '没预置答案时有一句老实的说明');
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');
