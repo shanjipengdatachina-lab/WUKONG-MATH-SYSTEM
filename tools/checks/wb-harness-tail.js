@@ -1052,6 +1052,38 @@ eq2(blocks12[0].lines.length, n12, '分析那一块的条数对得上');
 eq2(blocks12[1].title, '标准答案', '第二块是标准答案');
 assert(blocks12[1].lines.join(' ').indexOf(ans12.result) >= 0, '答案写在导出内容里');
 
+/* 导出分辨率：不能拿屏幕上那一帧去抠 —— 那一帧是按**当前缩放**画的（用户缩到 69%，
+   内容就只有 0.69 倍的像素），抠出来必糊。用户反馈："导出成功；分辨率有点低"。
+   导出期间应当：内容重新铺满画布 + 像素密度顶上去；完事把用户那一帧一字不差地还原。 */
+window.devicePixelRatio = 1;          /* 设成 1 倍屏，好分辨"提升"是我们自己做的还是环境给的 */
+WB.state.view.scale = 0.69;           /* 用户就是 69% —— 正是糊掉的那个场景 */
+WB.redraw();
+var seen12 = null;
+var ret12 = WB.withExportBoard(function (box) {
+  seen12 = {
+    scale: WB.state.view.scale,
+    exportDpr: WB.state.exportDpr,
+    w: box.w,
+    h: box.h,
+    canvasW: canvasEl.width
+  };
+  return '导出这一趟的产物';
+});
+eq2(ret12, '导出这一趟的产物', '重画块把回调的返回值带出来（导出才拿得到图）');
+assert(!!seen12 && seen12.exportDpr >= 2,
+  '导出期间像素密度顶到 2 倍以上（实际 ' + (seen12 && seen12.exportDpr) + '）—— 不再是屏幕上那 1 倍');
+assert(!!seen12 && seen12.scale > 0.69,
+  '导出期间板面重新铺满（缩放 ' + (seen12 && Math.round(seen12.scale * 100) / 100) + ' > 用户的 0.69）');
+eq2(seen12 && seen12.canvasW, Math.round(1200 * seen12.exportDpr),
+  '画布的像素底子也跟着换成高密度（' + (seen12 && seen12.canvasW) + ' = 1200 × ' + (seen12 && seen12.exportDpr) + '）');
+assert(!!seen12 && seen12.w > 0 && seen12.h > 0,
+  '抠图那一段的矩形是算出来的（' + (seen12 && Math.round(seen12.w)) + '×' + (seen12 && Math.round(seen12.h)) + '）');
+eq2(WB.state.view.scale, 0.69, '完事把用户的缩放还回去（0.69）');
+eq2(WB.state.exportDpr, null, '临时的像素密度也清掉（不然屏幕会一直按高密度画）');
+eq2(canvasEl.width, 1200, '画布的像素底子也还原（1200）');
+WB.state.view.scale = 1;
+WB.redraw();
+
 /* 在板上落笔就把菜单收起来（跟系统的下拉一个脾气） */
 eq2(WB.saveMenuOpen(), true, '前提：菜单还开着');
 canvasEl._h.pointerdown(pe(700, 600));

@@ -352,15 +352,15 @@
 /* ---------- 「保存」的小菜单：存进「我的题」/ 导出成图片 ---------- */
 .wb-menu{
   position:absolute;left:0;top:0;z-index:6;min-width:186px;padding:4px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-popover);box-shadow:var(--math-shadow-2);
 }
 .wb-menu[hidden]{display:none}
 .wb-menu__item{
   display:grid;grid-template-columns:16px 1fr;gap:2px 8px;align-items:center;
-  width:100%;padding:7px 8px;border:0;border-radius:var(--math-radius-sm);
+  width:100%;padding:7px 8px;border:0;border-radius:var(--math-radius-md);
   background:none;text-align:left;cursor:pointer;color:var(--math-foreground);
-  font-family:var(--math-font-sans);font-size:calc(12.5px * var(--math-fs));line-height:1.3;
+  font-family:var(--math-font-sans);font-size:calc(13px * var(--math-fs));line-height:1.3;
 }
 .wb-menu__item:hover{background:var(--math-surface)}
 .wb-menu__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
@@ -370,11 +370,17 @@
 /* ---------- 分析 / 答案面板：一个框、两个 tab ----------
    只读。用户原话：「分析按钮就相当于带着答案……弹出来那个框里面有两部分，
    第一部分是分析，第二部分就相当于答案，只不过它是个 tab 标签」。
-   字号不跟着画布缩放：这是要读的字，缩到 15% 就没法看了。 */
+   字号不跟着画布缩放：这是要读的字，缩到 15% 就没法看了。
+
+   **浮层的尺寸规矩**（跟底部工具条 / 题库面板那一套对齐，别再各写各的）：
+     容器圆角 = --math-radius-lg（16px）· 里面的按钮与条目 = --math-radius-md（8px）
+     标题 13px / 600 · 正文 13.5px · 注释 12px · 计数与微标 11px
+   用户原话：「面板有点丑，圆角需要统一起来；标题字号也有问题」—— 之前容器是 8px、
+   里面的 tab 是 4px，比别的面板小一圈；标题又跟正文一样大（12.5），层次是平的。 */
 .wb-panel{
   position:absolute;left:0;top:0;z-index:4;
   width:280px;padding:8px 10px 9px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-popover);box-shadow:var(--math-shadow-1);
   /* 上限 8 步 × 大字号时，内容能高过整块画布 —— 不封顶的话底下那截就够不着了。
      封顶之后由正文自己滚：框始终在板内，读不完也够得着。 */
@@ -389,7 +395,7 @@
 .wb-panel.is-dragging .wb-panel__head{cursor:grabbing}
 .wb-panel__close{
   flex:none;width:22px;height:22px;display:grid;place-items:center;
-  border:0;border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-3);
+  border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
   font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
 .wb-panel__close:hover{background:var(--math-surface);color:var(--math-foreground)}
@@ -399,13 +405,14 @@
 .wb-panel__body[hidden]{display:none}
 .wb-think__list{margin:0;padding:0;list-style:none}
 
-/* tab 标签：当前那一页是一块实心浅色（跟工具条的激活态同一套语言） */
+/* tab 标签：当前那一页是一块实心浅色（跟工具条的激活态同一套语言）。
+   字号按"面板标题"那一档（13px），比正文大一档 —— 用户说"标题字号有问题"就是这里。 */
 .wb-tabs{flex:1 1 auto;display:flex;gap:2px;min-width:0}
 .wb-tab{
   display:inline-flex;align-items:center;gap:5px;
-  padding:5px 10px;border:0;border-radius:var(--math-radius-sm);
+  padding:5px 10px;border:0;border-radius:var(--math-radius-md);
   background:none;cursor:pointer;color:var(--math-ink-3);
-  font-family:var(--math-font-sans);font-size:calc(12.5px * var(--math-fs));line-height:1;
+  font-family:var(--math-font-sans);font-size:calc(13px * var(--math-fs));line-height:1;
   transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
 }
 .wb-tab:hover{background:var(--math-surface);color:var(--math-foreground)}
@@ -418,7 +425,7 @@
 .wb-panel__foot{display:flex;align-items:center;gap:8px;margin-top:8px}
 /* 答案那一页的这几个类名跟原来那块一样 —— 内容搬进了 tab，样式不用重写 */
 .wb-answer__result{
-  margin:0;padding:6px 8px;border-radius:var(--math-radius-sm);
+  margin:0;padding:6px 8px;border-radius:var(--math-radius-md);
   background:var(--math-surface);color:var(--math-foreground);
   font-family:var(--math-font-math);font-size:calc(15px * var(--math-fs));font-weight:600;
 }
@@ -427,29 +434,30 @@
 .wb-answer__flag{
   flex:none;padding:1px 6px;border-radius:var(--math-radius-pill);
   background:var(--math-primary-soft);color:var(--math-primary);
-  font-size:calc(10.5px * var(--math-fs));
+  font-size:calc(11px * var(--math-fs));
 }
 .wb-answer__notes{
   margin-left:auto;padding:0 6px;height:22px;border:1px solid var(--math-border);
-  border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-2);cursor:pointer;
-  font-family:var(--math-font-sans);font-size:calc(11px * var(--math-fs));
+  border-radius:var(--math-radius-md);background:none;color:var(--math-ink-2);cursor:pointer;
+  font-family:var(--math-font-sans);font-size:calc(11.5px * var(--math-fs));
 }
 .wb-answer__notes[hidden]{display:none}
 .wb-answer__notes[aria-pressed="true"]{color:var(--math-primary);border-color:var(--math-primary-tint);background:var(--math-primary-soft)}
 .wb-answer__notes:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
 
 
-/* ---------- 编号条目：思路 / 答案 / 转文字三处共用这一套 ---------- */
+/* ---------- 编号条目：思路 / 答案 / 转文字三处共用这一套 ----------
+   正文 13.5px 跟题库条目的正文同一档（这是要读的字）；注释 12px；编号圆点里的数字 11px。 */
 .wb-tile{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:6px 0;border-top:1px solid var(--math-border)}
 .wb-tile:first-child{border-top:0;padding-top:2px}
 .wb-tile__no{
   flex:none;width:17px;height:17px;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;
   background:var(--math-primary-tint);color:var(--math-primary);
-  font-size:calc(10.5px * var(--math-fs));font-weight:600;
+  font-size:calc(11px * var(--math-fs));font-weight:600;
 }
 .wb-tile__text{
-  flex:1;min-width:0;font-size:calc(12.5px * var(--math-fs));line-height:1.6;color:var(--math-foreground);
+  flex:1;min-width:0;font-size:calc(13.5px * var(--math-fs));line-height:1.6;color:var(--math-foreground);
   outline:none;
 }
 .wb-tile__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint);border-radius:var(--math-radius-xs)}
@@ -459,7 +467,7 @@
    再加 margin 就超出容器了，浏览器会把它吞掉 —— 真机上就是"注释和正文齐平、看着像正文"。 */
 .wb-tile__cmt{
   flex:1 0 100%;box-sizing:border-box;padding-left:46px;
-  font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-2);
+  font-size:calc(12px * var(--math-fs));line-height:1.7;color:var(--math-ink-2);
 }
 .wb-tile__cmt[hidden]{display:none}
 .wb-tile__tone{font-weight:600}
@@ -830,40 +838,41 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 .wb-grid[data-wb-grid="40"] .wb-grid__chip{background-size:6px 6px}
 .wb-grid[data-wb-grid="80"] .wb-grid__chip{background-size:9px 9px}
 
-/* ---------- 题面下方：手写转文字 ----------
-   位置由白板按世界坐标投影（见 layoutBelow），这里只管长相。
+/* ---------- 转译窗口：把手写转成电子文字 ----------
+   位置是它自己的一份（屏幕像素，见 placeWin），这里只管长相。
+   尺寸规矩跟分析答案面板同一套：容器 16px 圆角、标题 13px、里面的格子 8px 圆角。
    文字那格是 contenteditable —— 识别一定会出错，必须能改。 */
 .wb-ink{
   position:absolute;z-index:5;width:min(360px,calc(100% - 16px));
-  padding:10px 12px 11px;border:1px solid var(--math-border);border-radius:var(--math-radius-md,10px);
+  padding:10px 12px 11px;border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
   background:var(--math-background);box-shadow:0 10px 28px rgba(15,23,42,.14);
 }
 .wb-ink[hidden]{display:none}
 .wb-ink__head{display:flex;align-items:center;gap:7px}
-.wb-ink__title{font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
+.wb-ink__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .wb-ink__badge{
   padding:1px 6px;border-radius:999px;background:var(--math-surface);
-  font-size:calc(10.5px * var(--math-fs));letter-spacing:.06em;color:var(--math-ink-3);
+  font-size:calc(11px * var(--math-fs));letter-spacing:.06em;color:var(--math-ink-3);
 }
 .wb-ink__badge[hidden]{display:none}
 .wb-ink__close{
   margin-left:auto;width:22px;height:22px;display:grid;place-items:center;
-  border:0;border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-3);
+  border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
   font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
 .wb-ink__close:hover{background:var(--math-surface);color:var(--math-foreground)}
 /* 转文字面板里的条目是**另一种**排法：编号是「第 1 步」这种文字标签（进不了 17px 圆点），
    正文是一格可改的输入框。所以这里按 .wb-ink 限定作用域另写一套 ——
-   千万别写成不带前缀的 .wb-tile__no：那是三处共用的那套，会连思路框 / 答案块一起改掉
+   千万别写成不带前缀的 .wb-tile__no：那是三处共用的那套，会连分析 / 答案一起改掉
    （真机复核抓到过：不带前缀的旧样式把答案块的编号压成了灰色小字、正文还多了一层底）。
    共用那份只管形状（圆点编号 + 正文 + 注释），面板这份只管"能改的输入框"。 */
 .wb-ink .wb-tile{display:block}
 .wb-ink .wb-tile__no{
-  display:block;font-family:var(--math-font-mono);font-size:calc(10.5px * var(--math-fs));
+  display:block;font-family:var(--math-font-mono);font-size:calc(11px * var(--math-fs));
   letter-spacing:.06em;color:var(--math-ink-4);
 }
 .wb-ink .wb-tile__text{
-  margin-top:3px;padding:3px 5px;border-radius:var(--math-radius-sm);
+  margin-top:3px;padding:3px 5px;border-radius:var(--math-radius-md);
   font-size:calc(13.5px * var(--math-fs));line-height:1.7;color:var(--math-foreground);
   background:var(--math-surface);outline:none;white-space:pre-wrap;
 }
@@ -871,13 +880,13 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 .wb-ink .wb-tile__cmt{margin:5px 0 0}
 .wb-ink .wb-tile__tone{
   display:inline-block;margin-right:5px;padding:0 5px;border-radius:999px;
-  font-size:calc(10.5px * var(--math-fs));line-height:1.6;background:var(--math-surface);color:var(--math-ink-3);
+  font-size:calc(11px * var(--math-fs));line-height:1.6;background:var(--math-surface);color:var(--math-ink-3);
 }
 .wb-ink__acts{display:flex;gap:8px;margin-top:9px;padding-top:9px;border-top:1px solid var(--math-border)}
 .wb-ink__acts[hidden]{display:none}
 .wb-ink__btn{
-  height:26px;padding:0 10px;border:1px solid var(--math-border);border-radius:6px;
-  background:none;font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;color:var(--math-ink-3);cursor:pointer;
+  height:26px;padding:0 10px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:none;font:inherit;font-size:calc(12.5px * var(--math-fs));line-height:1;color:var(--math-ink-3);cursor:pointer;
 }
 .wb-ink__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
 .wb-ink__btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}

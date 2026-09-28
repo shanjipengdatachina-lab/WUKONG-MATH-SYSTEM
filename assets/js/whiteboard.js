@@ -166,6 +166,7 @@
        用户原话「这个分析是可以拖动的」。null = 还没拖过，用兜底位置（竖工具条左边）。 */
     winAt: { panel: null, ink: null },
     saveMenu: false,            // 「保存」那个小菜单（存题 / 导出）是否展开（一次性的，不落盘）
+    exportDpr: null,            // 导出期间临时顶上去的像素密度（平时 null = 用 devicePixelRatio）
     ink: {                        // 「手写转文字」这一层（同样是 DOM 浮层）
       open: false,
       problemId: null,            // 这份文字属于哪道题
@@ -312,7 +313,9 @@
 
   /* ---------- 画布尺寸 ---------- */
   function resize() {
-    var dpr = window.devicePixelRatio || 1;
+    /* 导出时会临时把像素密度顶到 2~4 倍（见 withExportBoard）：屏幕上那一帧本来就按
+       devicePixelRatio 画，缩到 69% 再抠出来就糊。这里认 state.exportDpr，平时它是 null。 */
+    var dpr = state.exportDpr || window.devicePixelRatio || 1;
     var w = Math.max(1, Math.round(wrap.clientWidth || canvas.clientWidth || state.view.w));
     var h = Math.max(1, Math.round(wrap.clientHeight || canvas.clientHeight || state.view.h));
     var first = state.view.w !== w || state.view.h !== h;
@@ -1114,79 +1117,113 @@
     return out;
   }
 
-  var EXPORT_PAD = 24;
-  var EXPORT_TEXT_W = 340;
+  var EXPORT_PAD = 40;
+  var EXPORT_TEXT_W = 360;
+  var EXPORT_MAX_PX = 4000;    /* 单边像素上限：再大有些浏览器不给画 */
+  var EXPORT_DPR_MAX = 5;      /* 像素密度上限（画布是"整块页面那么大"，临时顶到 5 倍是 12M 像素左右，
+                                  一次性、用完就还原；再高就为了这点清晰度换内存不值） */
+  var EXPORT_DPR_MIN = 2;      /* 至少这么细，字和线才不糊 */
+
+  /* 导出前把板面临时重画一次：内容正好铺满画布 + 高像素密度。
+     为什么不直接抠屏幕上那一帧：那一帧是按**当前缩放**画的 —— 用户缩到 69%，
+     内容就只有 0.69 倍的像素，抠出来必然糊（用户反馈："分辨率有点低"）。
+     重画与还原都在同一个同步块里完成，用户看不到闪。 */
+  function withExportBoard(fn) {
+    var v = state.view;
+    var keep = { scale: v.scale, x: v.x, y: v.y, exportDpr: state.exportDpr };
+    var b = contentBounds();
+    var bw = Math.max(1, b.maxX - b.minX);
+    var bh = Math.max(1, b.maxY - b.minY);
+    var s = clamp(Math.min((v.w - EXPORT_PAD * 2) / bw, (v.h - EXPORT_PAD * 2) / bh), MIN_SCALE, 1);
+    var dpr = Math.min(EXPORT_DPR_MAX, EXPORT_MAX_PX / Math.max(1, bw * s), EXPORT_MAX_PX / Math.max(1, bh * s));
+    if (!isFinite(dpr) || dpr <= 0) dpr = EXPORT_DPR_MIN;
+    dpr = Math.max(Math.min(EXPORT_DPR_MIN, EXPORT_DPR_MAX), Math.min(dpr, EXPORT_DPR_MAX));
+    state.exportDpr = dpr;
+    v.scale = s;
+    v.x = EXPORT_PAD - b.minX * s;
+    v.y = EXPORT_PAD - b.minY * s;
+    resize();                              /* 按新的密度与位置重画一遍 */
+    var out = fn({ x: EXPORT_PAD, y: EXPORT_PAD, w: bw * s, h: bh * s, dpr: dpr });
+    /* 还原：用户屏幕上那一帧要一字不差地回来 */
+    state.exportDpr = keep.exportDpr;
+    v.scale = keep.scale;
+    v.x = keep.x;
+    v.y = keep.y;
+    resize();
+    return out;
+  }
 
   function exportImage() {
     if (typeof document.createElement !== 'function' || !canvas.toDataURL) return null;
-    var v = state.view;
-    var dpr = v.dpr || 1;
-    var b = contentBounds();
-    var bw = Math.max(160, (b.maxX - b.minX) * v.scale) + EXPORT_PAD * 2;
-    var bh = Math.max(120, (b.maxY - b.minY) * v.scale) + EXPORT_PAD * 2;
-
-    /* 文字那一列：先按 20px 行高估高度，再一起定画布尺寸 */
     var blocks = exportTextBlock();
-    var out = document.createElement('canvas');
-    if (!out || typeof out.getContext !== 'function') return null;
-    var octx = out.getContext('2d');
-    if (!octx) return null;
-    var FONT = '14px sans-serif';
-    octx.font = FONT;
-    var textW = EXPORT_TEXT_W;
-    var wrapped = [];
-    blocks.forEach(function (blk) {
-      wrapped.push({ title: blk.title, lines: [] });
-      var cur = wrapped[wrapped.length - 1];
-      blk.lines.forEach(function (line) {
-        wrapFor(octx, line, textW - 16).forEach(function (seg) { cur.lines.push(seg); });
+    var shot = withExportBoard(function (box) {
+      var out = document.createElement('canvas');
+      if (!out || typeof out.getContext !== 'function') return null;
+      var octx = out.getContext('2d');
+      if (!octx) return null;
+
+      /* 文字那一列：先按 22px 行高估高度，再一起定画布尺寸 */
+      var BODY = '15px sans-serif';
+      var TITLE = '600 13px sans-serif';
+      var textW = EXPORT_TEXT_W;
+      octx.font = BODY;
+      var wrapped = [];
+      blocks.forEach(function (blk) {
+        var cur = { title: blk.title, lines: [] };
+        blk.lines.forEach(function (line) {
+          wrapFor(octx, line, textW - 8).forEach(function (seg) { cur.lines.push(seg); });
+        });
+        wrapped.push(cur);
       });
-    });
-    var textH = 0;
-    wrapped.forEach(function (cur) { textH += 26 + cur.lines.length * 20 + 14; });
+      var textH = 0;
+      wrapped.forEach(function (cur) { textH += 28 + cur.lines.length * 22 + 16; });
 
-    var totalH = Math.max(bh, textH + EXPORT_PAD * 2);
-    out.width = Math.round((bw + (blocks.length ? textW + 16 : 0)) * dpr);
-    out.height = Math.round(totalH * dpr);
+      var boardW = box.w + EXPORT_PAD * 2;
+      var boardH = box.h + EXPORT_PAD * 2;
+      var colW = blocks.length ? textW + 20 : 0;
+      var totalH = Math.max(boardH, textH + EXPORT_PAD * 2);
+      out.width = Math.round((boardW + colW) * box.dpr);
+      out.height = Math.round(totalH * box.dpr);
 
-    /* 底色：跟当前板面一致，不然深色板上导出会变成黑字黑底 */
-    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    octx.fillStyle = theme().board;
-    octx.fillRect(0, 0, out.width / dpr, out.height / dpr);
+      /* 底色：跟当前板面一致，不然深色板上导出会变成黑字黑底 */
+      octx.setTransform(box.dpr, 0, 0, box.dpr, 0, 0);
+      octx.fillStyle = theme().board;
+      octx.fillRect(0, 0, out.width / box.dpr, out.height / box.dpr);
 
-    /* 板面那一段：从画布底图上原样抠过来（题面 + 笔迹都在里面） */
-    if (octx.drawImage) {
-      octx.drawImage(canvas,
-        (v.x + b.minX * v.scale) * dpr, (v.y + b.minY * v.scale) * dpr,
-        (b.maxX - b.minX) * v.scale * dpr, (b.maxY - b.minY) * v.scale * dpr,
-        0, 0, (b.maxX - b.minX) * v.scale, (b.maxY - b.minY) * v.scale);
-    }
+      /* 板面那一段：从刚重画好的画布上原样抠过来（题面 + 笔迹都在里面）。
+         这一段现在有 box.dpr 倍的像素密度，不再是屏幕上那一帧。 */
+      if (octx.drawImage) {
+        octx.drawImage(canvas,
+          box.x * box.dpr, box.y * box.dpr, box.w * box.dpr, box.h * box.dpr,
+          EXPORT_PAD, EXPORT_PAD, box.w, box.h);
+      }
 
-    /* 文字那一列 */
-    var ty = EXPORT_PAD;
-    wrapped.forEach(function (cur) {
-      octx.fillStyle = theme().inkSoft;
-      octx.font = '12px sans-serif';
-      octx.fillText(cur.title, bw + 8, ty + 12);
-      ty += 26;
-      octx.font = FONT;
-      octx.fillStyle = theme().ink;
-      cur.lines.forEach(function (seg) {
-        octx.fillText(seg, bw + 8, ty + 12);
-        ty += 20;
+      /* 文字那一列 */
+      var tx = boardW;
+      var ty = EXPORT_PAD;
+      wrapped.forEach(function (cur) {
+        octx.fillStyle = theme().inkSoft;
+        octx.font = TITLE;
+        octx.fillText(cur.title, tx, ty + 13);
+        ty += 28;
+        octx.font = BODY;
+        octx.fillStyle = theme().ink;
+        cur.lines.forEach(function (seg) {
+          octx.fillText(seg, tx, ty + 14);
+          ty += 22;
+        });
+        ty += 16;
       });
-      ty += 14;
+      return out.toDataURL('image/png');
     });
-
-    var url = out.toDataURL('image/png');
-    if (!url) return null;
+    if (!shot) return null;
     /* 下载：造一个隐藏的 <a> 点一下 —— 零构建的站点里这是最省事的一条路 */
     var a = document.createElement('a');
     if (!a || typeof a.click !== 'function') return null;
-    a.href = url;
+    a.href = shot;
     a.download = '悟空数学-白板.png';
     a.click();
-    return url;
+    return shot;
   }
 
   /* 按宽度折行（导出用）。跟板面那个 wrapText 一样是按字符折 —— 中文没有词边界 */
@@ -3012,6 +3049,7 @@
     mineList: mineList,
     mineKey: function () { return MINE_KEY; },
     exportImage: exportImage,
+    withExportBoard: withExportBoard,
     exportTextBlock: exportTextBlock,
     askUpload: askUpload,
     bindWinDrag: bindWinDrag,

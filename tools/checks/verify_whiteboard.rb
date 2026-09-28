@@ -336,6 +336,27 @@ issues << '面板没设最大高度（长内容会顶出画布，底下的按钮
   html[/\.wb-panel\{[^}]*max-height/]
 issues << '面板的长内容不能自己滚（超出画布的部分就够不着了）' unless
   html[/\.wb-panel__body\{[^}]*overflow-y:auto/] && html[/\.wb-panel__body\{[^}]*min-height:0/]
+
+# 浮层的"尺寸规矩"（用户原话：「面板有点丑，圆角需要统一起来；标题字号也有问题」）：
+#   容器圆角 = --math-radius-lg（16px，跟底部工具条 / 题库面板 .wb-bank 的 16px 同档）
+#   里面的按钮与条目 = --math-radius-md（8px，跟 .wb-item / .wb-dock__btn 同档）
+#   标题 13px（跟 .wb-bank__title 同档，比正文大一档）· 正文 13.5px
+{ '.wb-panel' => '分析答案面板', '.wb-menu' => '保存菜单', '.wb-ink' => '转译窗口' }.each do |sel, name|
+  issues << "#{name} #{sel} 的圆角没统一（容器应为 16px = --math-radius-lg）" unless
+    html[/#{Regexp.escape(sel)}\{[^}]*border-radius:var\(--math-radius-lg\)/m]
+end
+{ '.wb-tab' => 'tab 标签', '.wb-panel__close' => '面板收起按钮', '.wb-menu__item' => '菜单项',
+  '.wb-ink__close' => '转译窗口收起按钮', '.wb-ink__btn' => '转译窗口按钮',
+  '.wb-answer__notes' => '注释开关', '.wb-answer__result' => '标准答案那一行' }.each do |sel, name|
+  issues << "#{name} #{sel} 的圆角没统一（里面的东西应为 8px = --math-radius-md）" unless
+    html[/#{Regexp.escape(sel)}\{[^}]*border-radius:var\(--math-radius-md\)/m]
+end
+issues << '面板标题（tab）字号跟正文一般大 —— 层次是平的（标题 13px / 正文 13.5px）' unless
+  html[/\.wb-tab\{[^}]*font-size:calc\(13px \* var\(--math-fs\)\)/m]
+issues << '转译窗口标题字号不是 13px（跟其它面板标题不齐）' unless
+  html[/\.wb-ink__title\{[^}]*font-size:calc\(13px \* var\(--math-fs\)\)/m]
+issues << '条目正文没跟题库条目同一档（应 13.5px）' unless
+  html[/\.wb-tile__text\{[^}]*font-size:calc\(13.5px \* var\(--math-fs\)\)/m]
 # 思路 / 答案 / 转文字三处共用同一套条目样式，最怕后一段"不带前缀地又写一遍"——
 # 后写的会静静盖掉前写的，而且三处里只有一处看着不对（真机复核抓到过：
 # 转文字面板的旧样式把答案块的编号压成了灰色小字、正文还多了一层底）。
