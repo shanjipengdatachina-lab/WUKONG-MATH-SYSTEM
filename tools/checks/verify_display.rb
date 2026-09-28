@@ -198,6 +198,65 @@ pages.each do |p|
   issues << "#{name} 里还有写死的 #fff：#{stray.uniq.join('、')}（深色下会突兀）" unless stray.empty?
 end
 
+# ---------- 8. 暗色必须是**纯粹的黑白** ----------
+# 用户原话："暗色系怎么感觉是蓝色；搞成黑色，黑白是纯粹的颜色"。
+# 原来暗色那包是深蓝黑（#0f172a 一族），中性面（底 / 面 / 卡 / 浮层 / 分隔 / 四级灰字 / 悬浮条）
+# 全带蓝调 —— 整页看过去就是"发蓝"。这里把"纯"钉成可核对的规矩：中性面一律 R=G=B。
+# 只留两处颜色，都是有语义的：--math-primary 那一族（品牌色，可点的东西的语言）
+# 与 --math-state-*（成功 / 警告 / 错误）。中性面抽干净之后，页面自然就不发蓝了。
+NEUTRAL_TOKENS = %w[
+  --math-background --math-foreground --math-surface --math-surface-2
+  --math-card --math-card-foreground --math-popover --math-popover-foreground
+  --math-muted --math-muted-foreground --math-ink-2 --math-ink-3 --math-ink-4
+  --math-border --math-line --math-line-strong --math-input --math-dock
+].freeze
+
+def grey?(value)
+  v = value.to_s.strip
+  if v =~ /\A#([0-9a-fA-F]{6})\z/
+    p = Regexp.last_match(1).downcase
+    p[0, 2] == p[2, 2] && p[2, 2] == p[4, 2]
+  elsif v =~ /\Argba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/
+    Regexp.last_match(1).to_i == Regexp.last_match(2).to_i &&
+      Regexp.last_match(2).to_i == Regexp.last_match(3).to_i
+  else
+    false
+  end
+end
+
+dark_tokens = tokens_in(block_of(tokens, 'html[data-wk-theme="dark"]'))
+issues << '暗色那一包里解析不出令牌（守线要跟着改）' if dark_tokens.empty?
+NEUTRAL_TOKENS.each do |t|
+  issues << "暗色的 #{t} 还带着色相（#{dark_tokens[t]}）—— 中性面必须是无彩的纯灰（R=G=B）" unless
+    grey?(dark_tokens[t])
+end
+issues << "暗色的底不是纯黑（实际 #{dark_tokens['--math-background']}）" unless
+  dark_tokens['--math-background'].to_s.downcase == '#000000'
+issues << "暗色的字不是纯白（实际 #{dark_tokens['--math-foreground']}）" unless
+  dark_tokens['--math-foreground'].to_s.downcase == '#ffffff'
+# 主色底上的字也跟着纯化（原来是 #0f172a 那个深蓝黑）
+issues << "暗色主色底上的字不是纯黑（实际 #{dark_tokens['--math-primary-foreground']}）" unless
+  dark_tokens['--math-primary-foreground'].to_s.downcase == '#000000'
+# 设置页那颗"暗色长什么样"的预览块必须跟着变，不然选之前看到的还是蓝的
+issues << '设置页的暗色预览块不是纯黑（选之前看到的还是旧的蓝黑）' unless
+  set.include?('.disp-dot--dark{background:#000000}')
+
+# 黑板那边同理：板面纯黑、粉笔纯白、网格与悬停底都不许带色相
+board = wb[/key: 'dark', label: '黑板',[\s\S]*?\n    \}/].to_s
+issues << 'whiteboard.js 里找不到黑板那一套配色（守线要跟着改）' if board.empty?
+issues << "黑板板面不是纯黑（实际 #{board[/board: '([^']+)'/, 1]}）" unless board.include?("board: '#000000'")
+issues << "黑板粉笔不是纯白（实际 #{board[/ink: '([^']+)'/, 1]}）" unless board.include?("ink: '#ffffff'")
+%w[grid tint].each do |k|
+  v = board[/#{k}: '([^']+)'/, 1].to_s
+  issues << "黑板的 #{k} 还带着色相（#{v}）—— 黑板上的底纹与悬停底必须是无彩的白" unless
+    v =~ /\Argba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/ &&
+    Regexp.last_match(1).to_i == 255 && Regexp.last_match(2).to_i == 255 && Regexp.last_match(3).to_i == 255
+end
+issues << '黑板那三档浓淡（inkSoft / tag / tagHot）还带着色相' unless
+  board.scan(/rgba\(255,255,255,/).size + board.scan(/rgba\(255, 255, 255,/).size >= 3
+issues << "黑板默认那支笔不是纯白（实际 #{wb[/\{ value: '(#f8fafc|#[0-9a-f]{6})', label: '雪白'/, 1]}）" unless
+  wb.include?("{ value: '#ffffff', label: '雪白' }")
+
 puts "页面：#{pages.size} 个，全部挂了启动器；字号可缩放 #{pages.size} 页"
 puts "配色令牌：:root 里 #{color_names.size} 个颜色令牌，中色 / 暗色逐一对齐"
 puts '对比度：亮 / 中 / 暗三套的正文、次级、说明、次要、主色均已计算'

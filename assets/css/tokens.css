@@ -179,38 +179,45 @@ html[data-wk-theme="mid"] {
   --math-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.22);
 }
 
-/* 暗色：深蓝黑而不是纯黑 —— 纯黑配白字对比过强、久看累（与白板「黑板」同一判断）。
-   主色在这里必须反过来：原来那个深蓝在深底上等于隐形，改用亮蓝，并把
-   primary-foreground 换成深色（"主色底上的字"变成深字压亮蓝）。 */
+/* 暗色：**纯粹的黑白**（用户原话："暗色系怎么感觉是蓝色；搞成黑色，黑白是纯粹的颜色"）。
+   原来这一包是深蓝黑（#0f172a 一族），当时的理由是"纯黑配白字对比过强、久看累" ——
+   用户看过真机之后要纯黑，这里照办：中性面（底 / 面 / 卡 / 浮层 / 分隔 / 四级灰字 + 悬浮条）
+   一律 R=G=B 的纯灰，底 #000、字 #fff，不带一丝色相。守线在 verify_display.rb 第 8 节。
+   留下的颜色只有两处，都是**有语义的**，不是"中性面":
+     · --math-primary 那一族：品牌蓝。它是"可点的东西"的语言（按钮 / 选中 / 焦点圈），
+       亮色与中色两包也是同一个蓝 —— 把中性面抽干净之后，页面整体就不发蓝了
+     · --math-state-*：成功 / 警告 / 错误，状态必须有颜色
+   四级灰的对比度（压在 #000 上）：字 21:1 · ink-2 16.7:1 · ink-3 10.2:1 · ink-4 6.3:1，
+   都高于 verify_display.rb 里的下限（4.5 / 4.5 / 4.5 / 3.0）。 */
 html[data-wk-theme="dark"] {
-  --math-background: #0f172a;
-  --math-foreground: #f1f5f9;
+  --math-background: #000000;
+  --math-foreground: #ffffff;
 
-  --math-surface: #16203a;
-  --math-surface-2: #1c2846;
+  --math-surface: #111111;
+  --math-surface-2: #1a1a1a;
 
-  --math-card: #16203a;
-  --math-card-foreground: #f1f5f9;
+  --math-card: #111111;
+  --math-card-foreground: #ffffff;
 
-  --math-popover: #172142;
-  --math-popover-foreground: #f1f5f9;
+  --math-popover: #161616;
+  --math-popover-foreground: #ffffff;
 
-  --math-muted: #1c2846;
-  --math-muted-foreground: #a9b6ca;
+  --math-muted: #1a1a1a;
+  --math-muted-foreground: #a3a3a3;
 
-  --math-ink-2: #cbd5e1;
-  --math-ink-3: #a4b1c6;
-  --math-ink-4: #8492a8;
+  --math-ink-2: #e5e5e5;
+  --math-ink-3: #b5b5b5;
+  --math-ink-4: #8c8c8c;
 
-  --math-border: #263352;
-  --math-line: #263352;
-  --math-line-strong: #33436a;
-  --math-input: #263352;
+  --math-border: #2b2b2b;
+  --math-line: #2b2b2b;
+  --math-line-strong: #3f3f3f;
+  --math-input: #2b2b2b;
 
-  --math-dock: rgba(22, 32, 58, 0.88);
+  --math-dock: rgba(17, 17, 17, 0.88);
 
   --math-primary: #93b4ff;
-  --math-primary-foreground: #0f172a;
+  --math-primary-foreground: #000000;
   --math-primary-strong: #b9cdff;
   --math-primary-soft: rgba(147, 180, 255, 0.14);
   --math-primary-tint: rgba(147, 180, 255, 0.20);

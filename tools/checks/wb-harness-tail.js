@@ -889,6 +889,31 @@ assert(lum11(T11.dark.ink) > lum11(T11.dark.board) + 0.4,
 assert(lum11(T11.white.ink) < lum11(T11.white.board) - 0.4,
   '白板：题面字比板面暗得多');
 
+/* 黑板就是**纯黑 + 纯白**（用户原话："暗色系怎么感觉是蓝色；搞成黑色，黑白是纯粹的颜色"）。
+   原来板面是 #0f172a 一族的深蓝黑，网格与悬停底也是蓝灰 —— 整块看过去是"蓝板"不是黑板。
+   这里把"纯"钉住：板面与粉笔是纯黑白，网格 / 悬停底 / 题面那三档浓淡都不许带色相。 */
+eq2(T11.dark.board, '#000000', '黑板的板面是纯黑');
+eq2(T11.dark.ink, '#ffffff', '黑板的粉笔是纯白');
+eq2(T11.dark.colors[0].value, '#ffffff', '黑板默认那支笔也是纯白（原来 #f8fafc 带两点蓝）');
+
+/* R=G=B 才算"无彩" */
+function grey11(v) {
+  var s = String(v);
+  var m = /^rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/.exec(s);
+  if (m) return m[1] === m[2] && m[2] === m[3];
+  var h = /^#([0-9a-fA-F]{6})$/.exec(s);
+  if (!h) return false;
+  var p = h[1].toLowerCase();
+  return p.substr(0, 2) === p.substr(2, 2) && p.substr(2, 2) === p.substr(4, 2);
+}
+['board', 'grid', 'inkSoft', 'tag', 'tagHot', 'tint'].forEach(function (k) {
+  assert(grey11(T11.dark[k]), '黑板的 ' + k + ' 不带色相（实际 ' + T11.dark[k] + '）');
+});
+
+/* 对照：白板 / 中板不动 —— 这一版只改暗色 */
+eq2(T11.white.board, '#ffffff', '白板还是纯白（没被顺手改掉）');
+eq2(T11.mid.board, '#eceff3', '中板还是原来那个中灰（这一版只动暗色）');
+
 /* 当前笔色按序号平移：从白板第 2 支（朱红）换到黑板第 2 支（珊瑚） */
 WB.setTheme('white');
 WB.setColor(WB.COLORS[1].value);
