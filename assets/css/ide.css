@@ -188,7 +188,7 @@ html[data-embed] .ide-rail { display: none; }
     transition: grid-template-columns 220ms cubic-bezier(.2,.8,.2,1);
   }
   .reader-shell[data-left="hidden"] { --panel-left: 56px; }
-  .reader-shell[data-right="hidden"] { --panel-right: 0px; }
+  .reader-shell[data-right="hidden"] { --panel-right: 56px; }
 
   .reader-tree { display: flex; flex-direction: column; overflow: hidden; }
   .tree-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -209,12 +209,34 @@ html[data-embed] .ide-rail { display: none; }
   .reader-shell[data-left="hidden"] .tree-stage { padding-left: 6px; padding-right: 6px; }
   .reader-shell[data-left="hidden"] .tree-stage__chip:not(.is-on) { display: none; }
 
-  .reader-shell[data-right="hidden"] .reader-side {
-    overflow: hidden; border-left: 0; opacity: 0; pointer-events: none;
-  }
+  /* 右栏收起：**留一条 56px 的窄条**，条里只留「展开右栏」那颗按钮 —— 跟左栏收起时同一个待遇。
+     原来这里写的是 --panel-right:0px + opacity:0 + pointer-events:none：整条宽度变 0，
+     而那颗按钮自己就长在条里 —— **收起来之后就再也点不回来了**。上一轮按用户要求把左栏底部
+     那颗「右栏」开关撤掉之后（他的理由正是"各自的顶部都有了"），界面上就真的没有回来的路，
+     于是有了这句话：「为什么右边栏没有了」。现在两栏对称：左栏收起留 56px 带展开按钮，
+     右栏也留 56px 带展开按钮 —— 用户那句"各自的顶部都有了"这样才真的成立。 */
+  .reader-shell[data-right="hidden"] .reader-side { overflow: hidden; }
+  .reader-shell[data-right="hidden"] .side-bar { justify-content: center; padding: 18px 0 12px; }
+  .reader-shell[data-right="hidden"] .side-bar__label { display: none; }
+  .reader-shell[data-right="hidden"] .reader-side > *:not(.side-bar) { display: none; }
+  .reader-shell[data-right="hidden"] .side-collapse { margin-left: 0; }
+  .reader-shell[data-right="hidden"] .side-collapse__icon { transform: rotate(180deg); }
 }
+/* 1024~1279：右栏的内容落到正文下面（页面里那段两列布局），所以这一列必须收成 0 ——
+   不收的话上面那条三列网格会留一条 320px 的**空带**，右边缘看着就是"右边栏没了/空了"。
+   这条只能写在本文件：页面内联样式里的三栏声明比 ide.css 早，早被这里压住了，
+   写在页面里会被这里的 320px 顶回去（这次就是这么漏过去的）。 */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .reader-shell { --panel-right: 0px; }
+}
+/* 窄屏（<1024）两栏是**摞起来**的，不是左右两列：这时候两颗收起按钮都没有意义 ——
+   左栏那颗原来就藏掉了，右栏那颗漏了（点它什么都不会发生）。一起藏。
+   **为什么选择器前面要带 .reader-shell**：页面自己那份基础规则（`.tree-collapse{display:inline-flex}`、
+   `.side-collapse{...display:inline-flex}`）比 ide.css **晚加载**，同权重下会把这个 display:none
+   顶回去。加一层父级选择器把权重提到 (0,2,0)，才压得住 —— 这条不能省。 */
 @media (max-width: 1023px) {
-  .tree-collapse { display: none; }
+  .reader-shell .tree-collapse,
+  .reader-shell .side-collapse { display: none; }
 }
 
 /* ---------- 兼容自带顶栏的页面（concept.html 的 .kp-bar） ---------- */

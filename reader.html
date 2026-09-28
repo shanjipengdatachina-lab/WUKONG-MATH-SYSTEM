@@ -569,13 +569,7 @@
   transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
 }.outline__link:hover{color:var(--math-foreground)}.outline__link[data-active="true"]{
   color:var(--math-primary);border-left-color:var(--math-primary);font-weight:500;
-}.outline__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.shell-panels{display:inline-flex;align-items:center;gap:4px}.shell-panel-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:34px;height:34px;padding:0;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
-  background:var(--math-background);color:var(--math-ink-3);cursor:pointer;
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
-}.shell-panel-btn:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.shell-panel-btn[aria-pressed="true"]{color:var(--math-primary);border-color:var(--math-primary-200);background:var(--math-primary-soft)}.shell-panel-btn[aria-pressed="false"]{color:var(--math-ink-4)}.shell-panel-btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.shell-panel-btn__icon{width:15px;height:15px}.tree-collapse{
+}.outline__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.tree-collapse{
   flex:none;display:inline-flex;align-items:center;justify-content:center;
   width:24px;height:24px;margin-left:2px;padding:0;
   border:1px solid transparent;border-radius:var(--math-radius-sm);
@@ -593,14 +587,12 @@
   border:1px solid transparent;border-radius:var(--math-radius-sm);
   background:none;color:var(--math-ink-3);cursor:pointer;
   transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
-}.side-collapse:hover{border-color:var(--math-border);background:var(--math-surface);color:var(--math-foreground)}.side-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.side-collapse__icon{width:15px;height:15px}@media (min-width:1024px){.reader-shell{
-    --panel-left:288px;
-    --panel-right:320px;
-    grid-template-columns:var(--panel-left) minmax(0,1fr) var(--panel-right);
-    transition:grid-template-columns 220ms cubic-bezier(.2,.8,.2,1);
-  }.reader-shell[data-left="hidden"]{--panel-left:56px}.reader-shell[data-right="hidden"]{--panel-right:0px}.reader-tree{display:flex;flex-direction:column;overflow:hidden}.tree-body{flex:1 1 auto;min-height:0;overflow-y:auto}.reader-shell[data-left="hidden"] .tree-head{justify-content:center;padding:18px 0 12px}.reader-shell[data-left="hidden"] .tree-head__title,.reader-shell[data-left="hidden"] .tree-head__meta,.reader-shell[data-left="hidden"] .tree-head__icon,.reader-shell[data-left="hidden"] .tree-body,.reader-shell[data-left="hidden"] .tree-account__text,.reader-shell[data-left="hidden"] .tree-account__icon{display:none}.reader-shell[data-left="hidden"] .tree-collapse{margin-left:0}.reader-shell[data-left="hidden"] .tree-collapse__icon{transform:rotate(180deg)}.reader-shell[data-left="hidden"] .tree-account{justify-content:center;padding:10px 0}.reader-shell[data-right="hidden"] .reader-side{
-    overflow:hidden;border-left:0;opacity:0;pointer-events:none;
-  }}@media (max-width:1023px){.tree-collapse,.shell-panels{display:none}}.side-block--fold .side-block__body{display:none}.side-block--fold .side-block__head,.side-block--fold > .side-block__title{cursor:pointer}.side-block--fold .side-block__title::after{
+}.side-collapse:hover{border-color:var(--math-border);background:var(--math-surface);color:var(--math-foreground)}.side-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.side-collapse__icon{width:15px;height:15px}/* 三栏（左右栏的收放、宽度、窄屏下藏按钮）**只在 assets/css/ide.css 里写一份**。
+   这一段原来就是那份的逐字副本，抄进来之后再没人同步：ide.css 后来加的
+   「目录收起时学段条只留当前那一个」这里没有，而这里的 --panel-right:320px
+   反过来把 ide.css 的两列布局压住了（1024~1279 那条 320px 空带就是这么来的）。
+   死副本删掉 —— 以后要改只改 ide.css。 */
+.side-block--fold .side-block__body{display:none}.side-block--fold .side-block__head,.side-block--fold > .side-block__title{cursor:pointer}.side-block--fold .side-block__title::after{
   content:"";display:inline-block;width:5px;height:5px;margin-left:7px;
   border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
   transform:rotate(45deg) translate(-1px,-2px);

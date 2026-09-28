@@ -137,6 +137,42 @@ issues << '正文里还留着 .kp-source 的样式（渲染撤了就是死样式
 issues << '数据里 source 字段被删了（生成器拿它当必填项，删数据要重新核）' unless
   tree.include?('source: "https://')
 
+# 13) 右栏收起**必须留一条点得回来的窄条**（用户问过："为什么右边栏没有了"）
+#     根因：上一轮按用户要求把左栏底部那颗「右栏」开关撤掉（他的理由正是"各自的顶部都有了"），
+#     可右栏原来收起时是 `--panel-right:0px` + `opacity:0` + `pointer-events:none` ——
+#     整条宽度收成 0，而「展开右栏」那颗按钮**自己就长在条里**：收起来之后界面上再也没有回路
+#     （只剩 ⌘/Ctrl+⌥/Alt+B）。左栏收起时留 56px 带着展开按钮，右栏也得是同一个待遇，
+#     用户那句"各自的顶部都有了"才真的成立。
+issues << '右栏收起后整条收成 0（展开按钮自己就在条里，收起来就再也点不回来）' unless
+  css[/\.reader-shell\[data-right="hidden"\]\s*\{\s*--panel-right:\s*56px/m]
+issues << '右栏收起还在用 pointer-events/opacity 把整条抹掉（窄条里的按钮也点不着了）' if
+  css[/\.reader-shell\[data-right="hidden"\]\s*\.reader-side\s*\{[^}]*pointer-events:\s*none/m]
+issues << '右栏收起时没有只留标题栏（56px 窄条里会露出正文）' unless
+  css[/\.reader-shell\[data-right="hidden"\]\s*\.reader-side\s*>\s*\*:not\(\.side-bar\)\s*\{\s*display:\s*none/m]
+issues << '右栏收起时那颗按钮没留在窄条里（应把 .side-bar 居中留着）' unless
+  css[/\.reader-shell\[data-right="hidden"\]\s*\.side-bar\s*\{[\s\S]{0,140}?justify-content:\s*center/m]
+#     另外两处同源的问题：
+#     ② 1024~1279 这一档，右栏的内容落到正文下面（页面里那段两列布局），
+#        所以这一列必须收成 0 —— 不收就留一条 320px 的空带，右边缘看着就是"右栏空了/没了"。
+#     ③ 窄屏两栏是**摞起来**的，两颗收起按钮都没有意义；左栏那颗原来就藏了，右栏那颗漏了。
+issues << '1024~1279 没把右栏那一列收成 0（右边会留一条 320px 空带，像"右栏没了"）' unless
+  css[/@media \(min-width:\s*1024px\) and \(max-width:\s*1279px\)\s*\{\s*\.reader-shell\s*\{\s*--panel-right:\s*0px/m]
+narrow760 = css[/@media \(max-width:\s*1023px\)\s*\{([^}]*)\}/m, 1].to_s
+issues << '窄屏下右栏那颗收起按钮还露着（点了什么都不会发生）' unless narrow760.include?('.side-collapse')
+# 窄屏这一条还必须在选择器里带上 .reader-shell：页面自己那份基础规则（.tree-collapse{display:inline-flex}）
+# 比 ide.css **晚加载**，同权重下会把 display:none 顶回去 —— 这次就是这么发现"改了等于没改"的。
+issues << '窄屏藏按钮那条没带 .reader-shell（权重不够，页面自己的基础规则会把它顶回去）' unless
+  narrow760[/\.reader-shell\s+\.tree-collapse[\s\S]{0,90}?\.reader-shell\s+\.side-collapse/]
+#     三栏只写一份：reader.html 里不许再有那份死副本 —— 它比 ide.css 早，
+#     会把 ide.css 的两列/三列判断压回去（1024~1279 那条空带就是这么来的）。
+#     **比对前先剥掉 CSS 注释**：上面那段解释里就写着 `--panel-right:320px` 这几个字，
+#     不剥的话守线会被自己的注释顶红（"守线别被自己的注释骗"这个坑踩过好几次了）。
+html_css = html.gsub(%r{/\*[\s\S]*?\*/}, '')
+issues << 'reader.html 里又抄了一份三栏布局（那份会压住 ide.css 的判断）' if
+  html_css.include?('--panel-right:320px')
+issues << 'reader.html 里还留着旧顶栏面板开关的死样式（.shell-panels / .shell-panel-btn）' if
+  html_css.include?('.shell-panels') || html_css.include?('.shell-panel-btn')
+
 puts '左栏目录: 手写 %d 行（应为 0）· 学段按钮 %d 个（默认 初中）' % [body.scan(/class="ch-row"/).size, chips.size]
 puts "册 / 板块: #{books} 册 + #{tracked} 个板块，全部带 stage 标记"
 puts issues.empty? ? '章节页体检全部通过 ✓' : issues.map { |i| "  ✗ #{i}" }.join("\n")
