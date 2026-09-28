@@ -842,6 +842,56 @@ __ctxCalls.clear = 0;
 WB.redraw();
 assert(__ctxCalls.clear >= 1, '每次重绘都铺一层板面色（不再靠 CSS 白底）');
 
+/* ============================================================
+   12. 题面旁的「分析 / 答案」两个按钮
+   ============================================================ */
+WB.clearAll();
+WB.applyProblem(null);
+var acts12 = document.getElementById('wb-acts');
+assert(acts12.hidden === true, '板上没题时，两个按钮不出现');
+
+/* 题面只在 .wb-canvas-wrap 里按世界坐标画，所以浮层位置必须由世界坐标投影出来 */
+WB.applyProblem('7a-01');
+WB.redraw();
+assert(acts12.hidden === false, '有题面时按钮出现');
+
+var box12 = WB.problemLayout();
+/* 用已有的 state.view：计划里写的 __WB__.view() 在这一步还不存在（Task 3 才加） */
+var v12 = WB.state.view;
+var exp12 = v12.x + (box12.x + box12.w + 10) * v12.scale;
+var wrapW12 = document.getElementById('wb-canvas-wrap').clientWidth;
+var capped12 = Math.min(Math.max(4, exp12), Math.max(4, wrapW12 - 108 - 4));
+var got12 = parseFloat(acts12.style.left);
+assert(Math.abs(got12 - capped12) < 1.5,
+  '按钮锚在题面右上角（期望 ' + capped12.toFixed(1) + '，实际 ' + got12 + '）');
+
+/* 题面被拖走 → 按钮跟着走（这条同时守住"跟着板走"） */
+WB.state.problemAt.x = 200;
+WB.redraw();
+var got12b = parseFloat(acts12.style.left);
+assert(got12b > got12, '题面右移后按钮跟着右移（' + got12 + ' → ' + got12b + '）');
+WB.state.problemAt.x = 16;
+WB.redraw();
+
+/* 缩放变化 → 按钮位置按 scale 重算 */
+WB.state.view.scale = 0.5;
+WB.redraw();
+var got12c = parseFloat(acts12.style.left);
+assert(got12c < got12, '缩小后按钮靠左（按 scale 重算：' + got12 + ' → ' + got12c + '）');
+WB.state.view.scale = 1;
+WB.redraw();
+
+/* 收起题面 → 按钮一起收起，不留在板上当幽灵 */
+WB.setShowProblem(false);
+WB.redraw();
+assert(acts12.hidden === true, '题面收起时按钮也收起');
+WB.setShowProblem(true);
+WB.redraw();
+
+/* 两个按钮是"很轻"的：静止不铺底色（结构由体检脚本守住，这里守住类名不跑偏） */
+assert(!acts12.classList.contains('is-on'),
+  '没点过分析 / 答案时，两个按钮都不是激活态');
+
 WB.clearAll();
 WB.setTheme('white');
 WB.redraw();

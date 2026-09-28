@@ -25,7 +25,9 @@ function mkEl(tag) {
     addEventListener: function (t, fn) { this._h[t] = fn; },
     querySelectorAll: function () { return []; },
     closest: function () { return null; },
-    appendChild: function (c) { this.children.push(c); return c; }
+    appendChild: function (c) { this.children.push(c); return c; },
+    /* 答案块的注释行要重建，桩必须模拟真实的 DOM 操作 */
+    removeChild: function (c) { var i = this.children.indexOf(c); if (i >= 0) this.children.splice(i, 1); return c; }
   };
   self.classList = {
     add: function (c) { self._classes[c] = true; },
@@ -134,6 +136,17 @@ document.exitFullscreen = function () { delete document.fullscreenElement; };
 document.addEventListener = function (t, fn) { __capture.docHandlers[t] = fn; };
 
 var __capture = { docHandlers: {}, store: {} };
+
+/* 「分析 / 答案」两个按钮、5 个台阶框、答案块：真实 HTML 里默认都是收起的 */
+elById('wb-acts').hidden = true;
+elById('wb-act-analysis').setAttribute('aria-label', '分析这道题');
+elById('wb-act-answer').setAttribute('aria-label', '看这道题的答案');
+for (var stepI = 0; stepI < 5; stepI++) {
+  elById('wb-step-' + stepI).hidden = true;
+  elById('wb-step-pad-' + stepI).setAttribute('contenteditable', 'true');
+}
+elById('wb-answer').hidden = true;
+elById('wb-answer-toggle').setAttribute('aria-pressed', 'true');
 
 var window = {
   devicePixelRatio: 2,

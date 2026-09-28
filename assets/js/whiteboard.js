@@ -144,6 +144,12 @@
     problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
     problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
     external: null,              // 其它页面送来的内容 { text, tag, extra }
+    analysis: {                   // 「分析 / 答案」这一层（DOM 浮层，不是画在板上的墨）
+      open: false,                // 台阶框是否展开
+      answerOpen: false,          // 答案块是否展开
+      showNotes: true,            // 默认展示注释（设计 §2 #7）
+      steps: []                   // [{ wx, wy, text }]，长度 0~5
+    },
     strokes: [],                 // { type?, color, width, highlight?, pressured?, points:[{x,y,p}] }
     actions: [],
     redo: [],
@@ -604,6 +610,83 @@
     drawProblemLayer();
     for (var i = 0; i < state.strokes.length; i++) drawStroke(state.strokes[i]);
     ctx.restore();
+    /* 浮层（题面旁两个按钮 / 台阶框 / 答案块）都是 DOM，画布管不到它们；
+       它们的位置全部由世界坐标投影出来，所以每次重绘后重排一次就跟着板走了。
+       注意：必须放在**画完题面之后** —— drawProblemLayer 里才会算出最新的题面矩形，
+       摆在它前面就会慢一帧（这一处踩过：断言报"题面右移后按钮没跟着动"）。 */
+    layoutOverlays();
+  }
+
+  /* ---------- 分析 / 答案：DOM 浮层 ---------- */
+
+  /* 世界坐标 → 画布内坐标（CSS 像素）。
+     这些浮层是 .wb-canvas-wrap 的绝对定位子元素，与 <canvas> 的 CSS 盒子共享同一个原点，
+     所以**不加** getBoundingClientRect().left —— 加了反而会多偏一个左边距（这一处踩过）。 */
+  function boardToScreen(wx, wy) {
+    var v = state.view;
+    return { x: v.x + wx * v.scale, y: v.y + wy * v.scale };
+  }
+
+  function toggleHidden(el, hide) {
+    if (!el) return;
+    el.hidden = !!hide;
+    if (hide) { if (el.setAttribute) el.setAttribute('hidden', 'hidden'); }
+    else if (el.removeAttribute) el.removeAttribute('hidden');
+  }
+
+  function setText(el, s) {
+    if (el && el.textContent !== s) el.textContent = s;
+  }
+
+  /* 板上有题面吗？题面收起时，按钮 / 台阶 / 答案都要一起收起 */
+  function overlayCtx() {
+    var data = cardData();
+    var box = problemLayout();
+    return { has: !!data && !!state.showProblem && box.h > 0, box: box };
+  }
+
+  /* 两个按钮的激活态：分析开 / 答案开，各自亮，互不干扰 */
+  function syncActs() {
+    press(byId('wb-act-analysis'), state.analysis.open);
+    press(byId('wb-act-answer'), state.analysis.answerOpen);
+  }
+
+  /* 浮层落位：全部由世界坐标投影出来，所以平移 / 缩放后重排一次就跟着板走了。
+     redraw() 结尾会调它，因此不需要额外的 resize 监听。 */
+  function layoutOverlays(ctx) {
+    var v = state.view;
+    ctx = ctx || overlayCtx();
+
+    var acts = byId('wb-acts');
+    if (!acts) return;
+    /* 板上没题、或题面被收起 → 这一层跟着收起，不留在板上当幽灵 */
+    toggleHidden(acts, !ctx.has);
+    syncActs();
+    if (acts.hidden || !acts.style) return;
+
+    var anchor = boardToScreen(ctx.box.x + ctx.box.w + 10, ctx.box.y);
+    var aw = acts.offsetWidth || 108;
+    var ah = acts.offsetHeight || 26;
+    /* 压回可视区：宁可"不再贴着题面"，也不能让按钮跑出画布按不到 */
+    var maxX = Math.max(4, (wrap.clientWidth || v.w) - aw - 4);
+    var maxY = Math.max(4, (wrap.clientHeight || v.h) - ah - 4);
+    acts.style.left = Math.min(Math.max(4, anchor.x), maxX) + 'px';
+    acts.style.top = Math.min(Math.max(4, anchor.y), maxY) + 'px';
+  }
+
+  /* 这两个开关在 Task 3 / Task 4 里长出内容；先让按钮有个真实反应，
+     免得 Task 2 交付的是两个点不动的装饰。 */
+  function toggleAnalysis() {
+    state.analysis.open = !state.analysis.open;
+    if (state.analysis.open) state.analysis.answerOpen = false;   /* 分析时先把答案收起来（设计 §2 #6） */
+    redraw();
+    return state.analysis.open;
+  }
+
+  function toggleAnswer() {
+    state.analysis.answerOpen = !state.analysis.answerOpen;
+    redraw();
+    return state.analysis.answerOpen;
   }
 
   var rafPending = false;
@@ -1019,6 +1102,16 @@
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);
+
+    /* 「分析 / 答案」两个按钮：先只有按钮，内容在 Task 3 / Task 4 接进来 */
+    var actsAnalysis = byId('wb-act-analysis');
+    if (actsAnalysis && actsAnalysis.addEventListener) {
+      actsAnalysis.addEventListener('click', function () { toggleAnalysis(); });
+    }
+    var actsAnswer = byId('wb-act-answer');
+    if (actsAnswer && actsAnswer.addEventListener) {
+      actsAnswer.addEventListener('click', function () { toggleAnswer(); });
+    }
     canvas.addEventListener('touchcancel', onTouchEnd);
     if (wrap && wrap.addEventListener) {
       wrap.addEventListener('pointerdown', function (e) {
@@ -1835,6 +1928,11 @@
     initPanelDrag: initPanelDrag,
     reflowPanel: reflowPanel,
     problemLayout: problemLayout,
+    boardToScreen: boardToScreen,
+    layoutOverlays: layoutOverlays,
+    overlayCtx: overlayCtx,
+    toggleAnalysis: toggleAnalysis,
+    toggleAnswer: toggleAnswer,
     view: function () {
       return { x: state.view.x, y: state.view.y, scale: state.view.scale, w: state.view.w, h: state.view.h };
     },

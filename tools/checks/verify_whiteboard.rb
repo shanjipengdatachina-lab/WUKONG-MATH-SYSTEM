@@ -63,6 +63,10 @@ need = {
   '板面选择器样式' => '.wb-theme{',
   '画布底色跟着主题' => 'background:var(--wb-board,#fff)',
   '题库脚本' => 'whiteboard-problems.js',
+  '分析按钮' => 'id="wb-act-analysis"',
+  '答案按钮' => 'id="wb-act-answer"',
+  '分析与答案按钮组' => 'class="wb-acts" id="wb-acts"',
+  '分析与答案数据脚本' => 'whiteboard-analysis.js',
   '白板脚本' => 'whiteboard.js'
 }
 need.each { |label, token| issues << "缺 #{label}" unless html.include?(token) }
@@ -170,6 +174,18 @@ end
 link_i  = html.index('assets/css/shell.css')
 style_i = html.index('<style id="wb-page-styles">')
 issues << 'toast 覆盖写在了样式表之前，会被 shell.css 盖掉' if link_i && style_i && style_i < link_i
+
+# 「分析 / 答案」这一层：两个按钮必须"很轻"（静止不铺底色），否则板面就不干净了；
+# 且新样式必须放在第二套 style 块里 —— wb-styles 是图谱共享样式的母版（会被改名抄到图谱）。
+issues << '分析 / 答案按钮丢了"很轻"的静止态（应 background:none）' unless
+  html[/\.wb-act\{[^}]*background:none/m]
+# 注意这个正则：不能用 `.*?`，它会跨过 `</style>` 跑到后面那个块里去找 .wb-act{，
+# 结果把"样式确实在独立块里"误报成"跑进了 wb-styles"（这条先写错过一次）。
+issues << '分析 / 答案的样式跑进了 wb-styles（会被抄到图谱当死规则）' if
+  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-act\{/m]
+issues << '分析 / 答案的样式没放进独立 style 块' unless html.include?('<style id="wb-analysis-styles">')
+issues << '分析 / 答案按钮挂回了系统 title / 自绘提示（它们自己有字，不需要）' if
+  html[/id="wb-act-(analysis|answer)"[^>]*data-wb-tip/]
 wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 issues << '笔粗 / 橡皮按钮仍用系统 title' if wbjs.include?('title="笔粗') || wbjs.include?('title="橡皮')
 
