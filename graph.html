@@ -269,10 +269,14 @@ body{padding-top:0}
 /* ==== 满屏骨架：除了左侧栏，整屏都给图谱 ==== */
 .reader-shell.mm-shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:100vh}
 .mm-stage{grid-column:1;grid-row:1;position:relative;height:100vh;min-width:0}
+/* 画布：纯色底。
+   原来这里铺了一层 24px 的灰点（radial-gradient），想营造"无限平面"的感觉 ——
+   但用户看过之后明确要求纯色，说那些点看着脏。
+   删掉之后还有两个好处：一是白底上的节点盒子不再和一堆点抢视线（盒子本来就只有一圈浅边），
+   二是省掉每次平移缩放都要重设一次 background-size / background-position 的活儿。
+   **别再加回来**：真想要参照物，该像白板那样给一个能开能关的网格，而不是一层谁也关不掉的底纹。 */
 .mm-canvas{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;
-  background-color:var(--math-background);
-  background-image:radial-gradient(var(--math-border) 1px,transparent 1px);
-  background-size:24px 24px;background-position:0 0}
+  background:var(--math-background)}
 .mm-canvas.is-panning{cursor:grabbing}
 .mm-canvas:focus-visible{outline:2px solid var(--math-ring);outline-offset:-2px}
 .mm-svg{display:block;width:100%;height:100%;user-select:none}

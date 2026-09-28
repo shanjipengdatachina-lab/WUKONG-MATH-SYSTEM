@@ -6,7 +6,7 @@
    做法：不引入任何图形库（项目零构建、可离线），自己实现：
      1. 整齐树布局（列对齐 + 父节点居中于子节点）
      2. SVG 字符串渲染（一次 innerHTML，比逐节点 createElement 快很多）
-     3. 平移 / 缩放（唯一变换矩阵，画布点阵背景同步移动，强化「无限平面」感）
+     3. 平移 / 缩放（唯一变换矩阵；画布是纯色底，不加任何底纹）
      4. 折叠展开（含「保持被点节点不动」的手感处理）
      5. 定位搜索 + 按册筛选 + 信息面板
      6. 跨层级关联（前置/后续）虚线：只有真实存在的数据才画，不编造
@@ -313,9 +313,10 @@
   function applyView() {
     world.setAttribute('transform', 'translate(' + view.tx + ',' + view.ty + ') scale(' + view.k + ')');
     if (zoomLabel) zoomLabel.textContent = Math.round(view.k * 100) + '%';
-    // 点阵背景跟着一起动，「无限平面」的感觉来自这里
-    canvas.style.backgroundSize = (24 * view.k) + 'px ' + (24 * view.k) + 'px';
-    canvas.style.backgroundPosition = view.tx + 'px ' + view.ty + 'px';
+    /* 这里原来还有两行：把画布的点阵底纹按 view.k / view.tx 重设一遍，
+       让底纹跟着板一起平移缩放（"无限平面"的感觉）。
+       用户看过之后要求画布是纯色，点阵已从样式里删掉 ——
+       这两行不删就成了谁也看不见的死代码，下一个人照着它还会把点阵加回来。 */
   }
 
   function zoomAt(px, py, nextK) {

@@ -351,5 +351,20 @@ eq(MM.scope.get(), '', '定位到别体系的章才放开筛选（回总览，�
 MM.scope.set('');
 MM.axis.set('book');
 
+/* ============================================================
+   16. 画布背景是纯色，不是点阵
+   ------------------------------------------------------------
+   用户报的："图谱的背景应该是纯色，现在是带灰色的点"。
+   点阵原来靠两处配合：CSS 里一条 radial-gradient，加 JS 每次平移缩放松一次
+   backgroundSize / backgroundPosition（点阵跟着板走）。
+   只删 CSS 不删 JS 的话，那两行会变成没人看见的死代码，下次有人照着它
+   把点阵再加回来 —— 所以两边都要守。
+   ============================================================ */
+fire(canvasEl, 'wheel', ev({ target: worldEl, deltaY: -120, ctrl: true }));
+assert(canvasEl.style.backgroundSize === undefined && canvasEl.style.backgroundPosition === undefined,
+  '平移缩放不再去同步背景（点阵已删，这两行是死代码）' +
+  '（实际 backgroundSize=' + canvasEl.style.backgroundSize + '）');
+/* 样式那一半在 verify_graph.rb 里守着（静态读 graph.html），这里只管 JS 这一半 */
+
 out('----');
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

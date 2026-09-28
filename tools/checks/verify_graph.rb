@@ -19,6 +19,16 @@ issues << '还留着框架全屏的样式钩子 data-mm-frame' if graph.include?
 issues << '缺少单列骨架 .reader-shell.mm-shell' unless graph.include?('.reader-shell.mm-shell')
 issues << '画布没有铺满（缺 .mm-canvas{position:absolute;inset:0}）' unless graph =~ /\.mm-canvas\{position:absolute;inset:0/
 issues << '画布没有回到第 1 列（CSS Grid 隐式列会把它压成 1px）' unless graph.include?('.mm-stage{grid-column:1')
+
+# 画布背景必须是纯色：用户明确要求过（原来是 24px 的灰点，看着脏）。
+# 点阵要两处配合才能回来：样式里一条 radial-gradient + JS 里同步 background-size/position。
+# 两边各守一条；JS 那一半在 mm-check 里守（断言画布 style 上不再出现 backgroundSize）。
+issues << '画布背景又铺上了底纹（要求纯色）' if
+  graph[/\.mm-canvas\{[^}]*(background-image|radial-gradient|repeating-)/m]
+issues << '画布背景不是纯色（应 background:var(--math-background)）' unless
+  graph[/\.mm-canvas\{[^}]*background:var\(--math-background\)/m]
+issues << 'mindmap.js 还在同步点阵底纹（样式已删，这两行是死代码）' if
+  mini.include?('backgroundSize') || mini.include?('backgroundPosition')
 issues << '侧栏的全屏按钮缺失（全站统一在左下角）' unless graph.include?('id="toggle-fullscreen"')
 
 # ---------- 2. 底部工具条 ----------
