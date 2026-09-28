@@ -687,8 +687,17 @@
    * 9. 平移与缩放
    * ------------------------------------------------------------------ */
 
+  /* 浮层（节点面板 / 定位面板 / 工具条 / 浮出菜单）是界面层，不属于画布。
+     它们是 .mm-canvas 的子元素，按下和滚动都会冒到画布上 —— 不拦住的话，
+     拖浮窗会连带把整张图一起平移，在面板里滚轮会变成缩放。 */
+  function insideOverlay(target) {
+    if (!target || typeof target.closest !== 'function') return false;
+    return !!target.closest('.mm-card, .mm-dock, .mm-flyout');
+  }
+
   canvas.addEventListener('pointerdown', function (event) {
     if (event.button !== 0) return;
+    if (insideOverlay(event.target)) return;   // 这一下是给浮层的，画布别动
     dragging = true;
     moved = false;
     dragStart = { x: event.clientX, y: event.clientY, tx: view.tx, ty: view.ty };
@@ -720,6 +729,7 @@
   }
 
   canvas.addEventListener('wheel', function (event) {
+    if (insideOverlay(event.target)) return;   // 在浮层里滚轮 = 滚浮层自己的内容
     if (event.ctrlKey || event.metaKey) {
       event.preventDefault();
       var rect = canvas.getBoundingClientRect();
@@ -1066,6 +1076,8 @@
     }
     handle.addEventListener('pointerdown', function (event) {
       if (event.button !== undefined && event.button !== 0) return;
+      // 别让这次按下冒到画布去：拖浮窗不能连带平移整张图
+      if (event.stopPropagation) event.stopPropagation();
       var box = canvas.getBoundingClientRect();
       var rect = card.getBoundingClientRect();
       active = true;
@@ -1138,6 +1150,8 @@
     closeInfo: closeInfo,
     deepLink: applyDeepLink,
     query: queryParam,
+    insideOverlay: insideOverlay,
+    view: function () { return { tx: view.tx, ty: view.ty, k: view.k }; },
     toggleFold: toggleFold,
     visible: function () { return collectVisible(rootScope(), []); }
   };

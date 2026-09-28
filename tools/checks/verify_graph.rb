@@ -150,6 +150,16 @@ issues << '层级浮层的快捷键徽标被误删了（⇧2 / ⇧3 / ⇧4 是�
 issues << '浮层项没有被标上 is-on（选中态只有读屏知道，眼睛看不到）' unless
   mini.include?("classList.add('is-on')")
 
+# ---------- 10. 浮层的事件不许泄漏到画布 ----------
+# 浮层（节点面板 / 定位面板 / 工具条）都是 .mm-canvas 的子元素，事件会冒泡到画布。
+# 不拦的话：拖浮窗会把整张图一起平移，在面板里滚轮会变成缩放图谱。
+guard = mini.scan('if (insideOverlay(event.target)) return;').size
+issues << "画布对浮层事件的拦截不完整（pointerdown 与 wheel 两处都要，实际 #{guard} 处）" unless guard == 2
+issues << 'insideOverlay 没把浮层类名列全（应含 .mm-card / .mm-dock / .mm-flyout）' unless
+  mini.include?("'.mm-card, .mm-dock, .mm-flyout'")
+issues << '拖浮窗时没有阻止事件冒泡（stopPropagation）' unless
+  mini.include?('if (event.stopPropagation) event.stopPropagation();')
+
 puts "图谱页体检：#{issues.empty? ? '通过' : '发现问题'}"
 puts "  与白板逐条比对的样式：#{compared} 条"
 unless issues.empty?

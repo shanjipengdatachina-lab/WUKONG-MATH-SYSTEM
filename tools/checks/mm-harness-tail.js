@@ -161,5 +161,46 @@ eq(searchResultsEl.hasAttribute('hidden'), false, '提示区保持可见');
 has(searchResultsEl.innerHTML, '没有匹配的条目', '给出"没有匹配"的说明');
 window.location.search = '';
 
+/* ---- 13. 浮层里的事件不该泄漏到画布 ---- */
+var v0 = MM.view();
+
+/* 对照组：在画布空白处按下并拖动 → 画布应该平移。
+   有这一条才能证明下面那几条不是"什么都没测"。 */
+fire(canvasEl, 'pointerdown', ev({ x: 600, y: 400, target: worldEl }));
+winFire('pointermove', ev({ x: 700, y: 460 }));
+winFire('pointerup');
+assert(MM.view().tx !== v0.tx, '对照：按住画布空白处拖动确实会平移');
+var vAfterPan = MM.view();
+
+/* 节点面板：按住标题栏拖动，画布一动都不该动 */
+MM.select(chapterNode.id);
+fire(canvasEl, 'pointerdown', ev({ x: 800, y: 300, target: panelHeadEl }));
+winFire('pointermove', ev({ x: 940, y: 520 }));
+winFire('pointerup');
+eq(MM.view().tx, vAfterPan.tx, '拖节点面板时画布横向没动');
+eq(MM.view().ty, vAfterPan.ty, '拖节点面板时画布纵向没动');
+eq(canvasEl.classList.contains('is-panning'), false, '画布没被带进平移态');
+
+/* 定位面板同理 */
+var vSearch = MM.view();
+fire(canvasEl, 'pointerdown', ev({ x: 100, y: 120, target: searchHeadEl }));
+winFire('pointermove', ev({ x: 300, y: 380 }));
+winFire('pointerup');
+eq(MM.view().tx, vSearch.tx, '拖定位面板时画布没动');
+
+/* 工具条同理 */
+var vDock = MM.view();
+fire(canvasEl, 'pointerdown', ev({ x: 700, y: 820, target: dockEl }));
+winFire('pointermove', ev({ x: 820, y: 700 }));
+winFire('pointerup');
+eq(MM.view().tx, vDock.tx, '拖工具条时画布没动');
+
+/* 面板里滚轮 = 滚面板自己的内容，不该变成缩放图谱 */
+var kBefore = MM.view().k;
+fire(canvasEl, 'wheel', ev({ target: infoPanelEl, deltaY: -120, ctrl: true }));
+eq(MM.view().k, kBefore, '在面板里滚轮不会缩放图谱');
+fire(canvasEl, 'wheel', ev({ target: worldEl, deltaY: -120, ctrl: true }));
+assert(MM.view().k !== kBefore, '对照：在画布上滚轮确实缩放');
+
 out('----');
 out(__fail ? '有失败项' : '图谱自检全部通过');

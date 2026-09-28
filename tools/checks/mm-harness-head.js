@@ -28,7 +28,21 @@ function mkEl(tag) {
     },
     querySelector: function () { return null; },
     querySelectorAll: function () { return []; },
-    closest: function () { return null; },
+    /* 支持 ".a, .b" 这种类名列表：沿 parentNode 往上找。
+       比真实浏览器弱，但足够让"按在浮层里"这类判断在桩里也成立 ——
+       原来的桩只会返回 null，所以"拖浮窗带动画布"这个 bug 一直测不出来。 */
+    closest: function (selector) {
+      var names = String(selector || '').split(',');
+      var node = this;
+      while (node) {
+        for (var i = 0; i < names.length; i++) {
+          var name = names[i].replace(/^\s+|\s+$/g, '').replace(/^\./, '');
+          if (name && node._classes && node._classes[name]) return node;
+        }
+        node = node.parentNode || null;
+      }
+      return null;
+    },
     appendChild: function (c) { this.children.push(c); return c; },
     focus: function () { this.focused = true; },
     blur: function () { this.focused = false; },
@@ -138,6 +152,26 @@ qsaMap['#mm-book-menu [data-book]'] = bookItems;
 qsaMap['#mm-level-menu [data-fold]'] = levelItems;
 qsaMap[', .segmented__item'] = [];
 
+/* ---- DOM 骨架：给浮层挂上类名和父链 ----
+   真实页面里节点面板、定位面板、工具条都是 .mm-canvas 的子元素，事件会冒泡到画布。
+   桩里也要还原这层关系，否则"浮层里按下却把画布带跑了"这类问题根本表达不出来。 */
+canvasEl.classList.add('mm-canvas');
+infoPanelEl.classList.add('mm-card');
+panelHeadEl.classList.add('mm-card__head');
+searchPanelEl.classList.add('mm-card');
+searchHeadEl.classList.add('mm-card__head');
+worldEl.classList.add('mm-world');
+svgEl.classList.add('mm-svg');
+var dockEl = elById('mm-dock');
+dockEl.classList.add('mm-dock');
+panelHeadEl.parentNode = infoPanelEl;
+infoPanelEl.parentNode = canvasEl;
+searchHeadEl.parentNode = searchPanelEl;
+searchPanelEl.parentNode = canvasEl;
+dockEl.parentNode = canvasEl;
+worldEl.parentNode = svgEl;
+svgEl.parentNode = canvasEl;
+
 var window = {
   MathSite: {
     qs: function (sel) {
@@ -207,7 +241,9 @@ function ev(opts) {
     button: opts.button === undefined ? 0 : opts.button,
     key: opts.key || '', code: opts.code || '',
     shiftKey: !!opts.shift, metaKey: !!opts.meta, ctrlKey: !!opts.ctrl, altKey: !!opts.alt,
-    target: opts.target || null
+    target: opts.target || null,
+    deltaY: opts.deltaY === undefined ? 0 : opts.deltaY,
+    deltaX: opts.deltaX === undefined ? 0 : opts.deltaX
   };
   e.preventDefault = function () { e._prevented = true; };
   e.stopPropagation = function () {};
