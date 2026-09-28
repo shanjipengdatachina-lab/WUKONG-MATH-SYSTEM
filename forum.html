@@ -94,6 +94,9 @@
       </nav>
 
       <div class="forum-wrap">
+        <!-- 活动与公告轮播：通栏横跨两列，内容由 assets/js/forum-banners.js 提供。
+             默认收起（hidden）—— 没内容或脚本没跑起来时不留一条空白。 -->
+        <div id="forum-banner" hidden></div>
         <div>
           <section class="compose" id="forum-compose-box" hidden aria-label="发表新帖">
             <div class="compose__head">
@@ -229,10 +232,65 @@
     <script>lucide.createIcons();</script>
     <link rel="stylesheet" href="assets/css/shell.css">
     <link rel="stylesheet" href="assets/css/ide.css">
+    <style id="bn-styles">
+/* 活动与公告轮播。写在样式表 <link> 之后：这是一层独立的组件样式，
+   放在前面万一被通用规则（比如 .bn 之类的缩写）撞上就说不清了。 */
+#forum-banner{grid-column:1 / -1}
+#forum-banner[hidden]{display:none}
+.bn{position:relative;border-radius:var(--math-radius-lg,16px);overflow:hidden;background:var(--math-surface)}
+.bn-track{display:flex;transition:transform 520ms cubic-bezier(.2,.8,.2,1)}
+.bn-track.is-still{transition:none}
+.bn-slide{position:relative;flex:0 0 100%;display:block;aspect-ratio:3.2 / 1;min-height:150px;max-height:320px;
+  text-decoration:none;background:linear-gradient(120deg,#0f1c33,#1e4fa8)}
+.bn-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+/* 图挂掉时整张退回渐变色底，不留裂图标 */
+.bn-slide.is-broken .bn-img{display:none}
+/* 遮罩：保证白字压在任何底图上都够对比度 */
+.bn-scrim{position:absolute;inset:0;
+  background:linear-gradient(90deg,rgba(6,12,24,.88) 0%,rgba(6,12,24,.66) 44%,rgba(6,12,24,.14) 80%,rgba(6,12,24,0) 100%)}
+.bn-copy{position:absolute;left:0;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;
+  gap:6px;padding:0 clamp(18px,4%,52px);max-width:min(620px,64%)}
+.bn-kind{align-self:flex-start;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.18);
+  color:#fff;font-size:11px;letter-spacing:.08em}
+.bn-title{color:#fff;font-size:clamp(18px,2.4vw,26px);font-weight:700;line-height:1.25}
+.bn-sub{color:rgba(255,255,255,.84);font-size:clamp(12px,1.2vw,14px);line-height:1.65}
+.bn-cta{align-self:flex-start;margin-top:8px;padding:7px 14px;border-radius:999px;background:#fff;
+  color:#1e3a8a;font-size:13px;font-weight:600;line-height:1}
+.bn-arrow{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;
+  border:0;border-radius:999px;background:rgba(255,255,255,.86);color:#1e293b;cursor:pointer;opacity:0;
+  transition:opacity 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1)}
+.bn-arrow--prev{left:12px}
+.bn-arrow--next{right:12px}
+/* 悬停显形，且**焦点进来也要显形** —— 只在悬停时才出现的按钮键盘用户摸不到 */
+.bn:hover .bn-arrow,.bn:focus-within .bn-arrow{opacity:1}
+.bn-arrow:hover{background:#fff}
+.bn-arrow:focus-visible{opacity:1;outline:2px solid var(--math-ring,#2563eb);outline-offset:2px}
+.bn-dots{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:7px}
+.bn-dot{width:7px;height:7px;padding:0;border:0;border-radius:999px;background:rgba(255,255,255,.5);cursor:pointer;
+  transition:width 200ms cubic-bezier(.2,.8,.2,1),background-color 200ms cubic-bezier(.2,.8,.2,1)}
+.bn-dot[aria-current="true"]{width:20px;background:#fff}
+.bn-play{position:absolute;right:12px;bottom:12px;padding:5px 11px;border:0;border-radius:999px;
+  background:rgba(255,255,255,.86);color:#1e293b;font-family:inherit;font-size:12px;line-height:1;cursor:pointer}
+.bn-play:hover{background:#fff}
+.bn-arrow:focus-visible,.bn-dot:focus-visible,.bn-play:focus-visible{outline:2px solid var(--math-ring,#2563eb);outline-offset:2px}
+/* 窄屏：3.2:1 的图会矮得看不清字，改成 2:1，文案占满宽度 */
+@media (max-width:640px){
+  .bn-slide{aspect-ratio:2 / 1}
+  .bn-copy{max-width:100%;padding:0 18px}
+  .bn-sub{display:none}
+}
+/* 系统设了"减少动态效果"就连滑动也关掉（脚本那边已经不自动播了） */
+@media (prefers-reduced-motion:reduce){
+  .bn-track{transition:none}
+}
+    </style>
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/ide-shell.js"></script>
     <script src="assets/js/board-link.js"></script>
     <script src="assets/js/pages.js"></script>
     <script src="assets/js/forum.js"></script>
+    <!-- 内容在前、组件在后：组件在加载末尾读 WK_BANNERS 自己挂载，顺序反了会挂到空列表上 -->
+    <script src="assets/js/forum-banners.js"></script>
+    <script src="assets/js/banner-carousel.js"></script>
 </body>
 </html>

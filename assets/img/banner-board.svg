@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img">
+  <!-- 白板演算台：一支手写的曲线和一个圈。整张偏深，白字压上去够对比度。 -->
+  <defs>
+    <linearGradient id="g3" x1="0" y1="0" x2="1" y2="0.7">
+      <stop offset="0" stop-color="#1a1035"/>
+      <stop offset="0.55" stop-color="#3b1f78"/>
+      <stop offset="1" stop-color="#5b21b6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="400" fill="url(#g3)"/>
+  <g fill="none" stroke="#ffffff" opacity="0.16">
+    <path d="M640 0v400M760 0v400M880 0v400M1000 0v400M1120 0v400M1240 0v400" stroke-width="1"/>
+    <path d="M0 100h1280M0 200h1280M0 300h1280" stroke-width="1"/>
+  </g>
+  <path d="M700 268c46-104 78-148 116-146 40 2 44 62 22 96-20 32-58 34-70 6-12-28 16-58 52-56 44 2 76 46 104 92"
+        fill="none" stroke="#ddd6fe" stroke-width="7" stroke-linecap="round" opacity="0.72"/>
+  <path d="M700 268c46-104 78-148 116-146 40 2 44 62 22 96-20 32-58 34-70 6-12-28 16-58 52-56 44 2 76 46 104 92"
+        fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.35"/>
+  <ellipse cx="1064" cy="150" rx="86" ry="58" fill="none" stroke="#fca5a5" stroke-width="6"
+           stroke-linecap="round" opacity="0.62" transform="rotate(-9 1064 150)"/>
+  <path d="M700 336h300" stroke="#ffffff" stroke-width="3" stroke-dasharray="3 12"
+        stroke-linecap="round" opacity="0.28"/>
+</svg>

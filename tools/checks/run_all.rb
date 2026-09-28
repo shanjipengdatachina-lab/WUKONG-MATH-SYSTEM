@@ -21,7 +21,7 @@ end
 
 # ---------- 1. 拼装断言脚本 ----------
 puts '== 拼装 =='
-%w[build_harness.rb build_wb_harness.rb build_mm_harness.rb].each do |b|
+%w[build_harness.rb build_wb_harness.rb build_mm_harness.rb build_bn_harness.rb].each do |b|
   path = File.join(DIR, b)
   next unless File.exist?(path)
   puts "  #{b}"

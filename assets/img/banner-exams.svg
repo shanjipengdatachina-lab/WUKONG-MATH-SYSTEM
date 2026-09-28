@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img">
+  <!-- 真题卷：答题卡的格与行。整张偏深，白字压上去够对比度。 -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0.6">
+      <stop offset="0" stop-color="#0f1c33"/>
+      <stop offset="0.55" stop-color="#17356f"/>
+      <stop offset="1" stop-color="#1e4fa8"/>
+    </linearGradient>
+    <pattern id="ticks" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 0h1v1H0z" fill="#ffffff" opacity="0.10"/>
+    </pattern>
+  </defs>
+  <rect width="1280" height="400" fill="url(#g)"/>
+  <rect width="1280" height="400" fill="url(#ticks)"/>
+  <g fill="none" stroke="#ffffff" stroke-linecap="round" opacity="0.22">
+    <path d="M700 96h470" stroke-width="3"/>
+    <path d="M700 152h360" stroke-width="3"/>
+    <path d="M700 208h430" stroke-width="3"/>
+    <path d="M700 264h280" stroke-width="3"/>
+  </g>
+  <g opacity="0.30">
+    <rect x="806" y="300" width="26" height="26" rx="4" fill="none" stroke="#ffffff" stroke-width="3"/>
+    <path d="M812 313l5 6 10-13" fill="none" stroke="#93c5fd" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="852" y="300" width="26" height="26" rx="4" fill="none" stroke="#ffffff" stroke-width="3"/>
+    <path d="M858 306l14 14M872 306l-14 14" fill="none" stroke="#93c5fd" stroke-width="3.5" stroke-linecap="round"/>
+    <rect x="898" y="300" width="26" height="26" rx="4" fill="none" stroke="#ffffff" stroke-width="3"/>
+  </g>
+  <g opacity="0.55">
+    <circle cx="1120" cy="118" r="62" fill="none" stroke="#93c5fd" stroke-width="3"/>
+    <path d="M1120 56v124M1058 118h124" stroke="#93c5fd" stroke-width="2" opacity="0.7"/>
+  </g>
+</svg>

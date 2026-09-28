@@ -27,6 +27,40 @@ need(problems, home.include?('.compose{'), '首页缺发帖表单样式')
 need(problems, home.include?('.board[data-active="true"]'), '首页缺选中专题的高亮样式')
 need(problems, home.include?('forum-compose.html'), '首页没留「完整编辑器」入口（旧页面会变成死路）')
 
+# ---------- 首页轮播：活动与公告 ----------
+# 内容在 assets/js/forum-banners.js 里，界面在 banner-carousel.js 里。
+# 断链体检只扫 HTML，扫不到 JS 里写的 href —— 所以这里的"链接能不能落地"
+# 与"图片文件在不在"必须自己守，不然换一批活动就会悄悄挂出死链。
+banners = read('assets/js/forum-banners.js')
+carousel = read('assets/js/banner-carousel.js')
+need(problems, home.include?('id="forum-banner"'), '首页缺轮播挂载点 #forum-banner')
+need(problems, home.include?('<script src="assets/js/forum-banners.js"></script>'), '首页没挂轮播内容文件')
+need(problems, home.include?('<script src="assets/js/banner-carousel.js"></script>'), '首页没挂轮播组件')
+need(problems, home.index('forum-banners.js') < home.index('banner-carousel.js'),
+     '轮播的两个脚本顺序反了（组件在加载末尾读内容，内容必须在前）')
+need(problems, home.include?('#forum-banner{grid-column:1 / -1}'), '轮播没横跨两列（应通栏）')
+need(problems, /\.bn\{[^}]*border-radius:/.match?(home), '轮播缺圆角')
+need(problems, home.include?('.bn-scrim{'), '轮播缺遮罩（白字压在图上的对比度全靠它）')
+need(problems, /@media \(prefers-reduced-motion:reduce\)\{\s*\.bn-track\{transition:none\}/m.match?(home),
+     '轮播缺"减少动态效果"样式')
+need(problems, carousel.include?('var INTERVAL = 8000;'), '轮播的默认间隔不是 8 秒')
+need(problems, carousel.include?('prefers-reduced-motion: reduce'), '轮播没认"减少动态效果"（应完全不自动播）')
+
+# 每条：字段齐、图片文件真实存在、链接落到真实页面
+items = banners.scan(/\{\s*id:\s*'([^']+)'(.*?)\n  \}/m).map { |id, body| [id, body] }
+need(problems, items.size == 3, "轮播内容应为 3 条（实际 #{items.size}）")
+items.each do |id, body|
+  %w[kind title image alt href cta].each do |k|
+    need(problems, body.include?("#{k}: '"), "轮播第 #{id} 条缺 #{k}")
+  end
+  img = body[/image:\s*'([^']+)'/, 1].to_s
+  need(problems, File.file?(File.join(ROOT, img)), "轮播第 #{id} 条的图片不存在：#{img}")
+  href = body[/href:\s*'([^']+)'/, 1].to_s
+  target = href.split('?').first.to_s
+  need(problems, !target.empty? && File.file?(File.join(ROOT, target)),
+       "轮播第 #{id} 条的链接落不到真实页面：#{href}")
+end
+
 # ---------- 详情 ----------
 %w[thread-body thread-title thread-tag thread-meta thread-views thread-floors thread-board].each do |id|
   need(problems, thread.include?(%(id="#{id}")), "详情页缺挂点 #{id}")
