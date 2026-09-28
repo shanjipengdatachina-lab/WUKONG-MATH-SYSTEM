@@ -47,6 +47,10 @@ function tfEq(x, y) { return x && y && x.a === y.a && x.d === y.d && x.e === y.e
 var ctx = {
   setTransform: function (a, b, c, d, e, f) { __tf = { a: a, d: d, e: e, f: f }; },
   clearRect: function () { __ctxCalls.clear++; },
+  /* 板面色现在由画布自己 fillRect 铺满（不再靠 CSS 白底），桩要认这个调用。
+     计入 clear —— 它语义上就是"把画布铺一层底"，别计入 fill，
+     否则 §7b 那些数填充次数的断言会被每次 redraw 多出来的这一下打乱。 */
+  fillRect: function () { __ctxCalls.clear++; },
   save: function () { __tfStack.push(tfNow()); },
   restore: function () { if (__tfStack.length) __tf = __tfStack.pop(); },
   beginPath: function () {}, moveTo: function () {}, lineTo: function () {},

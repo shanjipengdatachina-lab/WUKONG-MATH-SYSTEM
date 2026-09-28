@@ -104,7 +104,7 @@
 .wb-stage{position:relative;height:100vh;min-width:0}
 .wb-canvas-wrap{
   position:absolute;inset:0;overflow:hidden;
-  background:#fff;touch-action:none;
+  background:var(--wb-board,#fff);touch-action:none;
 }
 #wb-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;overscroll-behavior:contain}
 
@@ -467,6 +467,10 @@
 
           <div class="wb-pop" id="wb-pop" hidden>
             <div class="wb-pop__row">
+              <span class="wb-pop__label">板面</span>
+              <div class="wb-themes" id="wb-themes" role="group" aria-label="板面"></div>
+            </div>
+            <div class="wb-pop__row">
               <span class="wb-pop__label">颜色</span>
               <div class="wb-colors" id="wb-colors" role="group" aria-label="画笔颜色"></div>
             </div>
@@ -543,6 +547,21 @@ body{padding-top:0}
     <style id="wb-page-styles">
 /* 18(工具条离底) + 46(工具条高) + 12(间隙) = 76 */
 body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
+/* 板面选择器：三个小色块按钮，色块就是那块板的底色。 */
+.wb-themes{display:flex;gap:6px}
+.wb-theme{
+  display:inline-flex;align-items:center;gap:5px;
+  border:1px solid var(--math-border);border-radius:6px;
+  background:none;cursor:pointer;font:inherit;font-size:12px;line-height:1;
+  padding:4px 7px;color:var(--math-ink-3);
+}
+.wb-theme:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-theme:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-theme.is-on{border-color:transparent;background:var(--math-primary-tint);color:var(--math-primary)}
+.wb-theme__chip{
+  flex:none;width:14px;height:14px;border-radius:4px;
+  border:1px solid var(--math-border);
+}
     </style>
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/ide-shell.js"></script>

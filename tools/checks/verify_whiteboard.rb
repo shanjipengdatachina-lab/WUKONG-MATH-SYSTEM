@@ -59,6 +59,9 @@ need = {
   '笔粗区' => 'id="wb-widths"',
   '橡皮大小区' => 'id="wb-erasers"',
   '题面文字镜像（无障碍）' => 'id="wb-problem-text"',
+  '板面选择器' => 'id="wb-themes"',
+  '板面选择器样式' => '.wb-theme{',
+  '画布底色跟着主题' => 'background:var(--wb-board,#fff)',
   '题库脚本' => 'whiteboard-problems.js',
   '白板脚本' => 'whiteboard.js'
 }

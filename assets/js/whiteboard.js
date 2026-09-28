@@ -12,7 +12,8 @@
   'use strict';
 
   /* ---------- 常量 ---------- */
-  var COLORS = [
+  /* 浅色板共用的六支笔（中板底色仍浅，深色笔照样看得清，所以和白板同一套） */
+  var LIGHT_COLORS = [
     { value: '#1f2937', label: '墨黑' },
     { value: '#dc2626', label: '朱红' },
     { value: '#2563eb', label: '靛蓝' },
@@ -20,6 +21,55 @@
     { value: '#ea580c', label: '橘橙' },
     { value: '#7c3aed', label: '紫罗兰' }
   ];
+  /* 深色板要浅色笔，否则一条墨黑的线画在黑板上等于没画 */
+  var DARK_COLORS = [
+    { value: '#f8fafc', label: '雪白' },
+    { value: '#f87171', label: '珊瑚' },
+    { value: '#60a5fa', label: '天蓝' },
+    { value: '#34d399', label: '翡翠' },
+    { value: '#fbbf24', label: '琥珀' },
+    { value: '#c084fc', label: '淡紫' }
+  ];
+
+  /* 板面主题：**一个主题是一整包配色**。
+     为什么不能只换板面色 —— 深色板上深色字会直接消失，
+     所以题面四色（ink / inkSoft / tag / tint）、网格、六支笔、荧光透明度都得跟着换。 */
+  var THEMES = {
+    white: {
+      key: 'white', label: '白板',
+      board: '#ffffff',
+      grid: 'rgba(15,23,42,.06)',
+      ink: '#101215', inkSoft: 'rgba(16,18,21,.56)', tag: 'rgba(16,18,21,.42)',
+      tagHot: 'rgba(37,99,235,.78)',
+      tint: 'rgba(37,99,235,.05)',
+      highlightAlpha: 0.30,
+      colors: LIGHT_COLORS
+    },
+    mid: {
+      key: 'mid', label: '中板',
+      board: '#eceff3',
+      grid: 'rgba(15,23,42,.07)',
+      ink: '#12161c', inkSoft: 'rgba(18,22,28,.58)', tag: 'rgba(18,22,28,.44)',
+      tagHot: 'rgba(37,99,235,.78)',
+      tint: 'rgba(37,99,235,.045)',
+      highlightAlpha: 0.30,
+      colors: LIGHT_COLORS
+    },
+    dark: {
+      key: 'dark', label: '黑板',
+      /* 深蓝黑而不是纯黑：纯黑配白字对比过强、久看累 */
+      board: '#0f172a',
+      grid: 'rgba(148,163,184,.14)',
+      ink: '#f1f5f9', inkSoft: 'rgba(241,245,249,.62)', tag: 'rgba(241,245,249,.46)',
+      tagHot: 'rgba(147,197,253,.86)',
+      tint: 'rgba(96,165,250,.10)',
+      highlightAlpha: 0.38,
+      colors: DARK_COLORS
+    }
+  };
+  var THEME_KEYS = ['white', 'mid', 'dark'];
+  /* COLORS 是"当前这套笔"，换板时会被整体替换（见 setTheme） */
+  var COLORS = LIGHT_COLORS;
   var WIDTHS = [
     { value: 2.2, label: '细' },
     { value: 3.6, label: '中' },
@@ -31,7 +81,6 @@
     { value: 44, label: '大' }
   ];
   var HIGHLIGHT_WIDTH = 18;      // 荧光标记的笔宽（世界单位）
-  var HIGHLIGHT_ALPHA = 0.3;
   var SHAPE_TOOLS = ['line', 'arrow', 'rect', 'ellipse'];
   /* 工具分组（仿 PS：同类工具收进一个格子，点开再选，省工具条空间） */
   var GROUPS = ['draw', 'shape'];
@@ -84,6 +133,7 @@
   var state = {
     tool: 'pen',                 // pen | highlighter | eraser | line | arrow | rect | ellipse
     groupLast: { draw: 'pen', shape: 'line' },   // 每个工具组格子上显示的那一个（PS 式的"上次用的"）
+    theme: 'white',              // 板面主题：white | mid | dark
     color: COLORS[0].value,
     width: WIDTHS[1].value,
     eraser: ERASERS[1].value,
@@ -100,6 +150,10 @@
     active: null,
     view: { scale: 1, x: 16, y: 16, w: 800, h: 520, dpr: 1 }
   };
+
+  /* 当前板面主题（拿不到就退回白板，永远不给 undefined） */
+  function theme() { return THEMES[state.theme] || THEMES.white; }
+  function themes() { return THEMES; }
 
   /* ---------- 视图：世界 ↔ 屏幕 ---------- */
   function toWorld(sx, sy) {
@@ -257,7 +311,7 @@
     var startX = Math.floor(left / step) * step;
     var startY = Math.floor(top / step) * step;
     ctx.save();
-    ctx.strokeStyle = 'rgba(15,23,42,.06)';
+    ctx.strokeStyle = theme().grid;
     ctx.lineWidth = 1 / v.scale;
     for (var x = startX; x <= right; x += step) {
       ctx.beginPath();
@@ -330,14 +384,15 @@
       ctx.beginPath();
       if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 14);
       else ctx.rect(x, y, w, h);
-      ctx.fillStyle = 'rgba(37,99,235,.05)';
+      ctx.fillStyle = theme().tint;
       ctx.fill();
       /* 这里原来还有一条左侧通高竖条，去掉了 ——
          把手有两道短横已经说清"能抓"，多一条竖线反而像把题面框住了一半。 */
       /* 把手纹：两道短横，压在左侧那条无字处。
-         只在这里出现 —— 平时题面就是一段字，不挂任何"控件"。 */
+         只在这里出现 —— 平时题面就是一段字，不挂任何"控件"。
+         颜色跟着板面走：黑板上用浅色，否则蓝把手压在深蓝底上根本看不见。 */
       var gy = y + h / 2;
-      ctx.fillStyle = state.problemGripHot ? 'rgba(37,99,235,.78)' : 'rgba(37,99,235,.30)';
+      ctx.fillStyle = state.problemGripHot ? theme().tagHot : theme().tag;
       ctx.beginPath();
       ctx.rect(x + 5, gy - 6.4, 13, 2.2);
       ctx.fill();
@@ -351,19 +406,19 @@
     ctx.textBaseline = 'top';
     if (data.tag) {
       ctx.font = tagFont;
-      ctx.fillStyle = state.problemHover ? 'rgba(37,99,235,.78)' : 'rgba(16,18,21,.42)';
+      ctx.fillStyle = state.problemHover ? theme().tagHot : theme().tag;
       ctx.fillText(data.tag, tx, ty + 3);
       ty += tagH;
     }
     ctx.font = textFont;
-    ctx.fillStyle = '#101215';
+    ctx.fillStyle = theme().ink;
     for (var i = 0; i < lines.length; i++) {
       ctx.fillText(lines[i], tx, ty + 3);
       ty += 29;
     }
     if (extraLines.length) {
       ctx.font = extraFont;
-      ctx.fillStyle = 'rgba(16,18,21,.56)';
+      ctx.fillStyle = theme().inkSoft;
       ty += 8;
       for (var j = 0; j < extraLines.length; j++) {
         ctx.fillText(extraLines[j], tx, ty);
@@ -436,7 +491,7 @@
     ctx.lineJoin = 'round';
     ctx.strokeStyle = s.color;
     ctx.fillStyle = s.color;
-    if (s.highlight) ctx.globalAlpha = HIGHLIGHT_ALPHA;
+    if (s.highlight) ctx.globalAlpha = theme().highlightAlpha;
 
     if (pts.length === 1) {
       ctx.beginPath();
@@ -539,7 +594,10 @@
   function redraw() {
     var v = state.view;
     if (ctx.setTransform) ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
-    ctx.clearRect(0, 0, v.w, v.h);
+    /* 板面色由**画布自己铺**，不再靠 .wb-canvas-wrap 的 CSS 白底：
+       导出要带背景，透明区会变成透明 PNG。 */
+    ctx.fillStyle = theme().board;
+    ctx.fillRect(0, 0, v.w, v.h);
     ctx.save();
     worldTransform();
     if (state.grid) drawGrid();
@@ -762,7 +820,7 @@
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = stroke.color;
-    if (stroke.highlight) ctx.globalAlpha = HIGHLIGHT_ALPHA;
+    if (stroke.highlight) ctx.globalAlpha = theme().highlightAlpha;
     ctx.lineWidth = strokeWidthFor(stroke, p1, p2);
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
@@ -1361,6 +1419,13 @@
     var dot = byId('wb-current-color');
     if (dot && dot.style) dot.style.background = state.color;
 
+    var themeBox = byId('wb-themes');
+    if (themeBox && themeBox.querySelectorAll) {
+      Array.prototype.forEach.call(themeBox.querySelectorAll('[data-wb-theme]'), function (b) {
+        press(b, b.getAttribute('data-wb-theme') === state.theme);
+      });
+    }
+
     var colorBox = byId('wb-colors');
     if (colorBox && colorBox.querySelectorAll) {
       Array.prototype.forEach.call(colorBox.querySelectorAll('[data-wb-color]'), function (b) {
@@ -1384,7 +1449,67 @@
     zoomLabel();
   }
 
+  /* 某个颜色在给定配色里是第几支；不在里面返回 -1 */
+  function indexOfColor(list, value) {
+    for (var i = 0; i < list.length; i++) { if (list[i].value === value) return i; }
+    return -1;
+  }
+
+  /* 让"当前这套笔"与当前主题一致。
+     两个时机必须走一遍：启动把主题从存储恢复之后、以及换板之后。
+     顺手刷新测试钩子上的快照 —— __WB__.COLORS 是对象引用，不会自己跟着变。 */
+  function syncPalette() {
+    COLORS = theme().colors;
+    if (typeof window !== 'undefined' && window.__WB__) {
+      window.__WB__.COLORS = COLORS;
+      if (window.__WB__.config) window.__WB__.config.COLORS = COLORS;
+    }
+    return COLORS;
+  }
+
+  /* 换板。
+     笔色按**序号**平移 —— 唯一不会让人意外的映射（否则"我选的红色怎么变绿了"）。
+     板上**已有的每一笔也一起平移**：不平移的话，切到黑板时原来的深色墨迹直接看不见，
+     那不叫"换了块板"，那叫"把我的推导弄没了"。只动颜色，点坐标 / 笔粗 / 图形类型一律不动。 */
+  function setTheme(key) {
+    if (THEME_KEYS.indexOf(key) < 0) return false;
+    if (key === state.theme) return true;
+    var from = theme().colors;
+    var to = THEMES[key].colors;
+    state.theme = key;
+
+    var ci = indexOfColor(from, state.color);
+    if (ci >= 0 && to[ci]) state.color = to[ci].value;
+    for (var i = 0; i < state.strokes.length; i++) {
+      var s = state.strokes[i];
+      var si = indexOfColor(from, s.color);
+      if (si >= 0 && to[si]) s.color = to[si].value;
+    }
+
+    syncPalette();
+    /* 屏幕上的浮层（按钮 / 台阶框 / 答案块）**保持浅色** —— 它们是界面，不是板面。
+       深色板上"深板 + 浅浮层"是常见做法（像暗色画布配浅色面板）。
+       这里只把板面色同步给外壳的 CSS 变量，让画布以外的那一圈也跟着变。 */
+    if (wrap && wrap.style && wrap.style.setProperty) wrap.style.setProperty('--wb-board', theme().board);
+
+    buildPickers();
+    syncUI();
+    redraw();
+    persist();
+    return true;
+  }
+
   function buildPickers() {
+    var themeBox = byId('wb-themes');
+    if (themeBox) {
+      themeBox.innerHTML = THEME_KEYS.map(function (k) {
+        var t = THEMES[k];
+        return '<button type="button" class="wb-theme" data-wb-theme="' + k + '"' +
+          ' title="' + esc(t.label) + '" aria-label="板面：' + esc(t.label) + '" aria-pressed="false">' +
+          '<span class="wb-theme__chip" style="background:' + esc(t.board) + '"></span>' +
+          esc(t.label) + '</button>';
+      }).join('');
+    }
     var colorBox = byId('wb-colors');
     if (colorBox) {
       colorBox.innerHTML = COLORS.map(function (c) {
@@ -1430,6 +1555,14 @@
         var t = e.target;
         var btn = t && t.closest ? t.closest('[data-wb-pick]') : null;
         if (btn) pickProblem(btn.getAttribute('data-wb-pick'));
+      });
+    }
+    var themeBox = byId('wb-themes');
+    if (themeBox && themeBox.addEventListener) {
+      themeBox.addEventListener('click', function (e) {
+        var t = e.target;
+        var btn = t && t.closest ? t.closest('[data-wb-theme]') : null;
+        if (btn) setTheme(btn.getAttribute('data-wb-theme'));
       });
     }
     var colorBox = byId('wb-colors');
@@ -1529,6 +1662,7 @@
         width: state.width,
         eraser: state.eraser,
         grid: state.grid,
+        theme: state.theme,
         showProblem: state.showProblem,
         problemId: state.problemId,
         external: state.external,
@@ -1559,6 +1693,8 @@
     if (typeof d.width === 'number') state.width = d.width;
     if (typeof d.eraser === 'number') state.eraser = d.eraser;
     state.grid = !!d.grid;
+    /* 板面主题：不在三套里就回落白板，别让旧数据把白板弄崩 */
+    if (THEME_KEYS.indexOf(d.theme) >= 0) state.theme = d.theme;
     if (typeof d.showProblem === 'boolean') state.showProblem = d.showProblem;
     if (Array.isArray(d.strokes)) {
       state.strokes = d.strokes.filter(function (s) {
@@ -1583,6 +1719,10 @@
 
   /* ---------- 启动 ---------- */
   restore();
+  /* 主题是从存储恢复出来的，所以调色板要跟着对齐一次 ——
+     否则刷新回来是黑板、调色板却还是浅色那六支。 */
+  syncPalette();
+  if (wrap && wrap.style && wrap.style.setProperty) wrap.style.setProperty('--wb-board', theme().board);
   state.freshView = !state.viewRestored;
   buildPickers();
   bindDelegates();
@@ -1656,6 +1796,9 @@
     bank: bank,
     config: { COLORS: COLORS, WIDTHS: WIDTHS, ERASERS: ERASERS, SHAPE_TOOLS: SHAPE_TOOLS, GROUPS: GROUPS, TOOL_GROUPS: TOOL_GROUPS },
     COLORS: COLORS,
+    themes: themes,
+    theme: theme,
+    setTheme: setTheme,
     WIDTHS: WIDTHS,
     ERASERS: ERASERS,
     applyAction: applyAction,

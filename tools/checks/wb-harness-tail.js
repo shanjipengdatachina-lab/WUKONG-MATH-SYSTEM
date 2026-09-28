@@ -778,4 +778,72 @@ assert(AN.answer('不存在的题') === null, '没预置的题返回 null（由�
 assert(typeof AN.NO_ANSWER === 'string' && AN.NO_ANSWER.length > 10,
   '没预置答案时有一句老实的说明');
 
+/* ============================================================
+   11. 板面主题：一整套配色 + 换板按序号平移
+   ============================================================ */
+var T11 = WB.themes();
+assert(Object.keys(T11).length === 3, '三套板面（实际 ' + Object.keys(T11).length + ' 套）');
+var need11 = ['board', 'grid', 'ink', 'inkSoft', 'tag', 'tagHot', 'tint', 'highlightAlpha', 'colors', 'label'];
+var miss11 = [];
+for (var tk11 in T11) {
+  if (!T11.hasOwnProperty(tk11)) continue;
+  for (var ni11 = 0; ni11 < need11.length; ni11++) {
+    if (T11[tk11][need11[ni11]] === undefined) miss11.push(tk11 + '.' + need11[ni11]);
+  }
+  if (!T11[tk11].colors || T11[tk11].colors.length !== 6) miss11.push(tk11 + '.colors 不是 6 支');
+}
+assert(miss11.length === 0, '每套主题字段齐全（缺的是 ' + JSON.stringify(miss11) + '）');
+
+/* 深色板的字必须比板面亮，否则字会消失 —— 这条是"换板不是刷背景"的底线 */
+function lum11(hex) {
+  var h = String(hex).replace('#', '');
+  var r = parseInt(h.substr(0, 2), 16), g = parseInt(h.substr(2, 2), 16), b = parseInt(h.substr(4, 2), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+assert(lum11(T11.dark.ink) > lum11(T11.dark.board) + 0.4,
+  '黑板：题面字比板面亮得多（字 ' + lum11(T11.dark.ink).toFixed(2) + ' vs 板 ' + lum11(T11.dark.board).toFixed(2) + '）');
+assert(lum11(T11.white.ink) < lum11(T11.white.board) - 0.4,
+  '白板：题面字比板面暗得多');
+
+/* 当前笔色按序号平移：从白板第 2 支（朱红）换到黑板第 2 支（珊瑚） */
+WB.setTheme('white');
+WB.setColor(WB.COLORS[1].value);
+var red11 = WB.COLORS[1].value;
+WB.setTheme('dark');
+assert(WB.theme().key === 'dark', '换到黑板生效');
+assert(WB.state.color === WB.themes().dark.colors[1].value,
+  '换板后当前笔色按序号平移（' + red11 + ' → ' + WB.state.color + '）');
+
+/* 板上已有的笔迹也按序号平移，但**点坐标一个都不许动** */
+WB.clearAll();
+WB.setTheme('white');
+var st11 = { color: red11, width: 3, points: [{ x: 10, y: 20, p: 0.5 }, { x: 60, y: 80, p: 0.5 }] };
+WB.state.strokes.push(st11);
+var pts11 = JSON.stringify(st11.points);
+WB.setTheme('dark');
+assert(st11.color === WB.themes().dark.colors[1].value,
+  '板上已有的笔迹也按序号平移（' + red11 + ' → ' + st11.color + '）');
+assert(JSON.stringify(st11.points) === pts11, '换板只动颜色，点坐标一个都没动');
+assert(st11.width === 3, '换板不动笔粗');
+
+/* 不在任何一套配色里的颜色（比如从别的页面带进来的），换板时不动 */
+WB.setTheme('white');
+st11.color = '#123456';
+WB.setTheme('dark');
+assert(st11.color === '#123456', '调色板之外的颜色换板时保持不变');
+
+/* 非法主题名回落，不抛错 */
+assert(WB.setTheme('不存在的板') === false, '非法主题名被拒绝');
+assert(WB.theme().key === 'dark', '被拒绝后主题不变');
+
+/* 换板后板面色真的被铺进了画布 —— 这是导出能带背景色的前提 */
+WB.setTheme('white');
+__ctxCalls.clear = 0;
+WB.redraw();
+assert(__ctxCalls.clear >= 1, '每次重绘都铺一层板面色（不再靠 CSS 白底）');
+
+WB.clearAll();
+WB.setTheme('white');
+WB.redraw();
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');
