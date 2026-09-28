@@ -487,4 +487,32 @@ WB.applyProblem(null);
 eq2(WB.kpTargetUrl(WB.cardData()), 'graph.html', '板上没有题面时退回图谱首页');
 eq2(document.getElementById('wb-jump-kp').getAttribute('data-wb-tip'), '回到知识点', '没有来源时提示回到默认文案');
 
+/* ============================================================
+   7. 题面底纹：去掉边框、宽度随内容自适应
+   ============================================================ */
+function strokeDelta(fn) {
+  var before = __ctxCalls.stroke;
+  fn();
+  return __ctxCalls.stroke - before;
+}
+
+WB.applyProblem('7a-01');            /* −7 + 3：很短的题 */
+var shortBox = WB.problemLayout();
+WB.applyProblem('7b-01');            /* 两条直线相交……：很长的题 */
+var longBox = WB.problemLayout();
+
+assert(shortBox.w > 0 && shortBox.h > 0,
+  '题面算出了矩形（' + shortBox.w + ' × ' + shortBox.h + '）');
+assert(longBox.w > shortBox.w,
+  '宽度随内容自适应：长题比短题宽（' + shortBox.w + ' → ' + longBox.w + '）');
+assert(shortBox.w < 720, '短题不顶满上限（实际 ' + shortBox.w + '）');
+assert(longBox.w <= 720, '宽度不超过上限 720（实际 ' + longBox.w + '）');
+
+var shown = strokeDelta(function () { WB.setShowProblem(true); WB.redraw(); });
+var hiddenStroke = strokeDelta(function () { WB.setShowProblem(false); WB.redraw(); });
+assert(shown === hiddenStroke,
+  '题面不再画边框（显示 / 隐藏的描边增量应相同，实际 ' + shown + ' / ' + hiddenStroke + '）');
+
+WB.setShowProblem(true);
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

@@ -49,7 +49,11 @@
   var MAX_STROKES = 800;
   var MATH_FONT = '"Times New Roman","Songti SC","Source Han Serif SC","Noto Serif CJK SC",serif';
   var UI_FONT = '"Inter","PingFang SC","Noto Sans CJK SC","Hiragino Sans GB","Microsoft YaHei",sans-serif';
-  var PROBLEM_W = 720;           // 题面底板的固定世界宽度（与缩放无关，保证不重排）
+  /* 题面底纹：宽度按内容算，只在一个上限处折行。
+     原来的 PROBLEM_W 写死 720 —— 题目短也占满一条，四周空白全浪费。 */
+  var PROBLEM_MAX_W = 720;       // 世界宽度上限，超长题在这里折行
+  var PROBLEM_MIN_W = 160;       // 再短的题也留一点衬底，不然像散落的字
+  var problemBox = { x: 16, y: 16, w: PROBLEM_MIN_W, h: 0 };   // 最近一次算出的题面矩形（世界坐标）
 
   function byId(id) {
     return document.getElementById(id);
@@ -86,6 +90,7 @@
     grid: false,
     showProblem: true,
     problemId: null,
+    problemAt: { x: 16, y: 16 },  // 题面底纹在板上的位置（世界坐标）
     external: null,              // 其它页面送来的内容 { text, tag, extra }
     strokes: [],                 // { type?, color, width, highlight?, pressured?, points:[{x,y,p}] }
     actions: [],
@@ -119,7 +124,13 @@
     zoomAt(v.w / 2, v.h / 2, 1 / v.scale);
   }
   function contentBounds() {
-    var minX = 0, minY = 0, maxX = PROBLEM_W, maxY = 120;
+    var minX = 0, minY = 0, maxX = PROBLEM_MAX_W, maxY = 120;
+    if (state.showProblem && problemBox.h > 0) {
+      minX = Math.min(minX, problemBox.x);
+      minY = Math.min(minY, problemBox.y);
+      maxX = Math.max(maxX, problemBox.x + problemBox.w);
+      maxY = Math.max(maxY, problemBox.y + problemBox.h);
+    }
     state.strokes.forEach(function (s) {
       (s.points || []).forEach(function (p) {
         if (p.x < minX) minX = p.x;
@@ -222,7 +233,7 @@
     }
     if (first && state.freshView) {
       /* 首次进场：把题面对齐到左上角，窄屏时自动缩小以完整显示 */
-      state.view.scale = clamp(Math.min(1, (w - 32) / PROBLEM_W), MIN_SCALE, 1);
+      state.view.scale = clamp(Math.min(1, (w - 32) / PROBLEM_MAX_W), MIN_SCALE, 1);
       state.view.x = 16;
       state.view.y = 16;
       state.freshView = false;
@@ -277,42 +288,55 @@
     return lines;
   }
 
-  /* 题面：世界坐标里的底板层 */
+  /* 题面：世界坐标里的底板层。
+     画成"底纹"而不是"卡片"：极浅的衬底、不描边，宽度按内容算 ——
+     卡片有边界，边界要吃掉四周空白，宽度还固定，题目短也占满一条。 */
   function drawProblemLayer() {
     var data = cardData();
-    if (!data || !state.showProblem) return;
-    var pad = 16;
-    var maxW = PROBLEM_W;
-    var innerW = maxW - 36;
+    if (!data || !state.showProblem) { problemBox.h = 0; return; }
+
     var tagFont = '12px ' + UI_FONT;
     var textFont = '600 19px ' + MATH_FONT;
     var extraFont = '13px ' + UI_FONT;
+    var innerMax = PROBLEM_MAX_W - 36;
 
+    /* 第一遍：量"不折行要多宽"，用它定下这条底纹占多宽 */
+    var natural = 0;
+    if (data.tag) { ctx.font = tagFont; natural = Math.max(natural, ctx.measureText(data.tag).width); }
+    if (data.text) { ctx.font = textFont; natural = Math.max(natural, ctx.measureText(data.text).width); }
+    if (data.extra) { ctx.font = extraFont; natural = Math.max(natural, ctx.measureText(data.extra).width); }
+    var innerW = clamp(Math.ceil(natural), PROBLEM_MIN_W - 36, innerMax);
+
+    /* 第二遍：按定下的宽度折行 */
     var lines = [];
     if (data.text) { ctx.font = textFont; lines = wrapText(data.text, innerW); }
     var extraLines = [];
     if (data.extra) { ctx.font = extraFont; extraLines = wrapText(data.extra, innerW); }
 
+    var x = state.problemAt.x;
+    var y = state.problemAt.y;
+    var w = innerW + 36;
     var tagH = data.tag ? 22 : 0;
-    var boxH = tagH + lines.length * 29 + (extraLines.length ? extraLines.length * 21 + 8 : 0) + 26;
+    var h = tagH + lines.length * 29 + (extraLines.length ? extraLines.length * 21 + 8 : 0) + 26;
+
+    problemBox.x = x; problemBox.y = y; problemBox.w = w; problemBox.h = h;
 
     ctx.save();
     ctx.beginPath();
-    if (typeof ctx.roundRect === 'function') ctx.roundRect(pad, pad, maxW, boxH, 14);
-    else ctx.rect(pad, pad, maxW, boxH);
-    ctx.fillStyle = 'rgba(37,99,235,.045)';
+    if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 14);
+    else ctx.rect(x, y, w, h);
+    ctx.fillStyle = 'rgba(37,99,235,.045)';   /* 极浅衬底：说明"这是一道题"，但不抢演算 */
     ctx.fill();
-    ctx.strokeStyle = 'rgba(37,99,235,.16)';
-    ctx.lineWidth = 1 / state.view.scale;
-    ctx.stroke();
+    /* 这里刻意不 stroke —— 被去掉的那个"框"，就是这一笔 */
 
+    /* 左侧 2.5px 主色竖条：不占横向空间，但当"这是一道题"的轻锚点 */
     ctx.beginPath();
-    ctx.rect(pad + 0.5, pad + 12, 2.5, Math.max(8, boxH - 24));
+    ctx.rect(x + 0.5, y + 12, 2.5, Math.max(8, h - 24));
     ctx.fillStyle = '#2563eb';
     ctx.fill();
 
-    var tx = pad + 20;
-    var ty = pad + 14;
+    var tx = x + 20;
+    var ty = y + 14;
     ctx.textBaseline = 'top';
     if (data.tag) {
       ctx.font = tagFont;
@@ -336,6 +360,11 @@
       }
     }
     ctx.restore();
+  }
+
+  /* 题面矩形的只读快照（世界坐标）：给覆盖层定位、给断言用 */
+  function problemLayout() {
+    return { x: problemBox.x, y: problemBox.y, w: problemBox.w, h: problemBox.h };
   }
 
   function strokeWidthFor(s, p, q) {
@@ -1522,6 +1551,7 @@
     onPanelUp: onPanelUp,
     initPanelDrag: initPanelDrag,
     reflowPanel: reflowPanel,
+    problemLayout: problemLayout,
     drawProblemLayer: drawProblemLayer,
     drawStroke: drawStroke,
     wrapText: wrapText,

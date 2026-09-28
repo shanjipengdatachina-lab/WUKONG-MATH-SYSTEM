@@ -64,8 +64,14 @@ puts "\n== 体检 =="
 end
 
 # ---------- 5. 汇总 ----------
-total = rows.sum { |r| r[1] }
-bad   = rows.sum { |r| r[2] }
+total   = rows.sum { |r| r[1] }
+bad     = rows.sum { |r| r[2] }
+crashed = rows.reject { |r| r[3] }.map { |r| r[0] }
 puts "\n== 汇总 =="
 puts "  断言：#{total} 条，失败 #{bad} 条；JS 语法：#{syntax_ok ? '通过' : '有问题'}"
-exit(bad.zero? && syntax_ok ? 0 : 1)
+# 断言包没跑到收尾（中间抛错 / 被中断）时，它既没有 PASS 到底、也没有 FAIL 行，
+# 只统计 bad 就会把它当成"失败 0 条"放过去 —— 所以"没跑完"必须单独算红灯。
+unless crashed.empty?
+  puts "  未跑完的断言包：#{crashed.join('、')}（多半是中间抛错，看上面那行的 ✘）"
+end
+exit(bad.zero? && syntax_ok && crashed.empty? ? 0 : 1)
