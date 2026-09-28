@@ -866,270 +866,204 @@ WB.redraw();
 assert(__ctxCalls.clear >= 1, '每次重绘都铺一层板面色（不再靠 CSS 白底）');
 
 /* ============================================================
-   12. 题目前面三个按钮 / 右侧思路框 / 下方答案块 / 整块拖动
+   12. 右侧竖工具条 / 分析答案面板（两个 tab）/ 保存菜单 / 面板自己拖
    ------------------------------------------------------------
-   用户看过第一版（4~5 个可写的"台阶框"）后明确否掉了：
-   「分析不用搞那么多台阶框……就直接出一个框，主体思路是一二三四五六七八，
-    它目的就是看，就看看思路就行了」。
-   按钮的位置也是用户定的：先放在题目上方，后来说「移到题面前面」——
-   现在是**同一行、在题目左边**（右边留给思路框、下面留给答案，只有前面不挡东西）。
-   这一节守六件事：
-     1) 按钮排：有题才出现、整排在题面**前面**、跟题面第一行对齐、跟题面走、不误激活；
-     2) 题面自己让地方（用户没亲手挪过时）：左边站不下就把题面往右让；
-     3) 思路框：一个、只读、有几步写几步；
-     4) 答案块：在题目下方、带注释、注释能收起；
-     5) 「分析」里不许出现答案（设计 §2 #6）；
-     6) 拖哪儿都整块动 —— 题、三按钮、思路、答案、转写共用一份位置。
+   用户这一版的要求（原话）：
+     · 「上传我的题……这个按钮要放在底部。它是一个独立的功能」
+     · 「相当于放了一个新的工具栏，放在右边……图标都竖着放」
+     · 「第一个功能叫分析……第三个叫转译，第四个叫保存」
+     · 「那这样的话，我们的右边就是三个标签。就三个按钮了」—— 答案并进分析里当 tab
+     · 「这个分析是可以拖动的」—— 面板不再挂在题目上
+     · 「这样我们的题目。周围干干净净的」
+   所以这一节守六件事：
+     1) 竖工具条三个按钮：有题才亮、按下态跟着面板走、板上没题时灰掉；
+     2) 分析面板：一个框、两个 tab（分析 / 答案），只读；
+     3) 答案那一页：结果 + 分步 + AI 注释，注释开关两态；
+     4) 面板自己拖：位置是自己的（屏幕像素），题目挪了它不动；
+     5) 保存菜单：存题 / 导出两条，都真的做事；
+     6) 「上传我的题」在底部工具条上，点了给一句实话（不是一个没反应的假按钮）。
    ============================================================ */
 
-/* ---- 按钮排：有题才出现；位置在题面**前面**（同一行、题目左边） ---- */
-var acts12 = elById('wb-acts');
+/* 先把 toast 收集起来：点了要给反馈，反馈得能验 */
+__capture.toasts = [];
+window.MathSite = { icons: function () {}, toast: function (m) { __capture.toasts.push(String(m)); } };
+
+var sideIds12 = ['wb-act-analysis', 'wb-act-transcribe', 'wb-act-save'];
+var panel12 = elById('wb-panel');
+var saveMenu12 = elById('wb-save');
+var paneThink12 = elById('wb-pane-think');
+var paneAnswer12 = elById('wb-pane-answer');
+
+/* ---- 板上没题：三个按钮灰掉（没东西可分析，也没东西可存） ---- */
 WB.clearAll();
 WB.applyProblem(null);
 WB.redraw();
-eq2(acts12.hidden, true, '板上没题时，三个按钮不出现');
+eq2(sideIds12.every(function (id) { return elById(id).disabled === true; }), true,
+  '板上没题时，竖工具条那三个按钮都灰掉');
+eq2(panel12.hidden, true, '没点过分析，面板不出现');
 
-/* 把题面按回初始位置、当作"用户还没挪过" → 它应该自己往右让出按钮的地方。
-   不让的话按钮只能压到题面上（左边根本没有 190 多像素可站）。 */
+/* ---- 有题：按钮亮起来 ---- */
 WB.applyProblem('7a-01');
 WB.state.problemAt.x = 16;
 WB.state.problemAt.y = 16;
-WB.state.problemMoved = false;
 WB.redraw();
-eq2(acts12.hidden, false, '有题面时按钮出现');
-eq2(acts12.classList.contains('is-on'), false, '没点过时，三个按钮都不是激活态');
+eq2(sideIds12.every(function (id) { return elById(id).disabled === false; }), true,
+  '题面上板后，三个按钮都能按');
+eq2(elById('wb-act-analysis').getAttribute('aria-pressed'), 'false', '没点过时，分析按钮不是激活态');
 
-var aw12 = acts12.offsetWidth || 150;
-var ah12 = acts12.offsetHeight || 25;
-var actsLeft12 = parseFloat(acts12.style.left);
-var actsTop12 = parseFloat(acts12.style.top);
-var boxBtn12 = WB.problemLayout();
-var problemLeft12 = WB.boardToScreen(boxBtn12.x, boxBtn12.y).x;
-var problemMid12 = WB.boardToScreen(boxBtn12.x, boxBtn12.y + 28).y;
-
-assert(WB.state.problemAt.x > 16,
-  '题面第一次上板会自己让出按钮的地方（题面 x 16 → ' + Math.round(WB.state.problemAt.x) + '）');
-assert(actsLeft12 + aw12 <= problemLeft12 + 0.5,
-  '三个按钮整排在题面**前面**、没压住题目（按钮右 ' + (actsLeft12 + aw12) + ' ≤ 题面左 ' + problemLeft12 + '）');
-assert(Math.abs((actsTop12 + ah12 / 2) - problemMid12) < 1.5,
-  '按钮跟题面第一行同一行（按钮中线 ' + (actsTop12 + ah12 / 2) + ' vs 第一行中线 ' + problemMid12 + '）');
-assert(actsLeft12 >= 4, '按钮没被挤到画布外面去（左 ' + actsLeft12 + '）');
-
-/* 用户亲手拖过之后就不再自动动题面（否则拖着走会被推回来，手感成"拖不动"） */
-WB.state.problemMoved = true;
-WB.state.problemAt.x = 40;
-WB.state.problemAt.y = 40;
-WB.redraw();
-eq2(Math.round(WB.state.problemAt.x), 40, '用户亲手挪过之后，题面位置不再被自动改（40 → ' + WB.state.problemAt.x + '）');
-var problemTop12 = WB.boardToScreen(WB.problemLayout().x, WB.problemLayout().y).y;
-eq2(parseFloat(acts12.style.top) + ah12 <= problemTop12 + 0.5, true,
-  '前面站不下时按钮退回题目上方（按钮底 ' + (parseFloat(acts12.style.top) + ah12) + ' ≤ 题面顶 ' + problemTop12 + '）');
-
-/* 缩放到 50% → 题面重新让开，按钮**屏幕位置不变**（它固定屏幕尺寸，不跟缩放走） */
-WB.state.problemMoved = false;
-WB.state.problemAt.x = 16;
-WB.state.problemAt.y = 16;
-WB.redraw();
-var leftBtn12 = parseFloat(acts12.style.left);
-WB.state.view.scale = 0.5;
-WB.redraw();
-assert(Math.abs(parseFloat(acts12.style.left) - leftBtn12) < 1.5,
-  '缩到 50% 后按钮还在原来的屏幕位置（' + leftBtn12 + ' → ' + acts12.style.left + '）—— 按钮不跟缩放');
-assert(parseFloat(acts12.style.left) + aw12 <= WB.boardToScreen(WB.problemLayout().x, WB.problemLayout().y).x + 0.5,
-  '缩到 50% 后按钮依然在题面前面（题面被自动让开了）');
-WB.state.view.scale = 1;
-WB.state.problemMoved = false;
-WB.state.problemAt.x = 16;
-WB.state.problemAt.y = 16;
-WB.redraw();
-
-/* 题面被拖走 → 按钮跟着走（"整块动"的另一半） */
-WB.state.problemMoved = true;
-WB.state.problemAt.x = 260;
-WB.redraw();
-assert(parseFloat(acts12.style.left) > leftBtn12,
-  '题面右移后按钮跟着右移（' + leftBtn12 + ' → ' + acts12.style.left + '）');
-
-WB.clearAll();
-WB.applyProblem('7a-01');
-WB.setShowProblem(true);
-WB.state.view.scale = 1;
-WB.state.problemMoved = false;
-WB.state.problemAt.x = 16;
-WB.state.problemAt.y = 16;
-WB.state.analysis.open = false;
-WB.state.analysis.answerOpen = false;
-WB.state.analysis.showNotes = true;
-WB.redraw();
-
-var thinkEl12 = elById('wb-think');
-var answerEl12 = elById('wb-answer');
-eq2(thinkEl12.hidden, true, '没点「分析」时，思路框不出现');
-eq2(answerEl12.hidden, true, '没点「答案」时，答案块不出现');
-
-/* ---- 点「分析」：一个只读的框，有几步写几步 ---- */
+/* ---- 点「分析」：一个框、两个 tab ---- */
 WB.toggleAnalysis();
+eq2(WB.analysisOpen(), true, '点「分析」→ 面板展开');
+eq2(panel12.hidden, false, '面板真的露出来了');
+eq2(elById('wb-act-analysis').getAttribute('aria-pressed'), 'true', '竖条上的分析按钮跟着亮');
+
 var n12 = WB.thinkSteps().length;
-eq2(WB.analysisOpen(), true, '点「分析」→ 思路框展开');
-eq2(thinkEl12.hidden, false, '思路框在界面上真的露出来了');
+eq2(WB.tab(), 'think', '默认停在「分析」那一页');
+eq2(paneThink12.hidden, false, '「分析」页是显示的');
+eq2(paneAnswer12.hidden, true, '「答案」页先藏着（它是 tab 的另一半）');
+eq2(elById('wb-tab-think').getAttribute('aria-selected'), 'true', '分析那个 tab 标着"选中"');
+eq2(elById('wb-tab-answer').getAttribute('aria-selected'), 'false', '答案那个 tab 标着"没选中"');
 assert(n12 >= 1 && n12 <= 8, '思路的步数在 1~8（实际 ' + n12 + '）');
-eq2(elById('wb-think-count').textContent, n12 + ' 步', '框上写着"几步"—— 有四步就写四步');
+eq2(elById('wb-think-count').textContent, n12 + ' 步', 'tab 上写着"几步"—— 有四步就写四步');
 
 var thinkHtml12 = elById('wb-think-list').innerHTML;
-var tileCount12 = thinkHtml12.split('class="wb-tile"').length - 1;
-eq2(tileCount12, n12, '框里的条目数 = 步数（不是固定摆 5 个空框）');
+eq2(thinkHtml12.split('class="wb-tile"').length - 1, n12, '框里的条目数 = 步数');
 assert(thinkHtml12.indexOf('>1<') >= 0 && thinkHtml12.indexOf('>' + n12 + '<') >= 0,
   '编号从 1 连到 ' + n12 + '（一二三四……就是这么排的）');
 
 /* 只读：用户原话"它的目的就是看嘛，就看看思路就行了" */
-assert(thinkHtml12.indexOf('contenteditable') < 0, '思路框里没有任何可写格子');
-eq2(thinkEl12.getAttribute('contenteditable'), null, '思路框整体也是只读的');
-assert(thinkHtml12.indexOf('wb-tile__cmt') < 0, '思路框里不带注释（注释是答案块那边的）');
+assert(thinkHtml12.indexOf('contenteditable') < 0, '分析页里没有任何可写格子');
+eq2(panel12.getAttribute('contenteditable'), null, '面板整体也是只读的');
 
-/* 设计 §2 #6：分析里不许出现答案。这条在界面上守一遍，别只信数据层 */
+/* 设计 §2 #6：分析里不许出现答案 */
 var ans12 = WB.answerData();
-var thinkAll12 = WB.thinkSteps().join(' ');
-assert(!!ans12 && !!ans12.result && thinkAll12.indexOf(ans12.result) < 0,
+assert(!!ans12 && !!ans12.result && WB.thinkSteps().join(' ').indexOf(ans12.result) < 0,
   '思路里不出现答案 ' + (ans12 && ans12.result) + '（这条是「分析」的底线）');
 
-/* ---- 落位：思路框在题目右边（用户原话"就在画板的右边，就直接出一个框"） ---- */
-var box12 = WB.problemLayout();
-var right12 = WB.boardToScreen(box12.x + box12.w, box12.y).x;
-assert(parseFloat(thinkEl12.style.left) >= right12,
-  '思路框贴在题目右侧（框左 ' + parseFloat(thinkEl12.style.left) + ' ≥ 题面右 ' + right12 + '）');
-
-/* ---- 点「答案」：题目下方直接写出标准答案 ---- */
-var thinkWas12 = WB.analysisOpen();
-WB.toggleAnswer();
-eq2(WB.state.analysis.answerOpen, true, '点「答案」→ 答案块展开');
-eq2(answerEl12.hidden, false, '答案块在界面上真的露出来了');
-eq2(WB.analysisOpen(), thinkWas12, '点「答案」不动思路框（此刻他已经在对答案，收掉思路反而多余）');
-eq2(elById('wb-answer-result').textContent, ans12.result, '答案块第一行就是标准答案 ' + ans12.result);
+/* ---- 切到「答案」那一页 ---- */
+WB.setTab('answer');
+eq2(WB.tab(), 'answer', '点「答案」那个 tab → 切过去了');
+eq2(paneAnswer12.hidden, false, '答案页露出来');
+eq2(paneThink12.hidden, true, '分析页收起来');
+eq2(elById('wb-tab-answer').getAttribute('aria-selected'), 'true', 'tab 的选中态跟着切');
+eq2(elById('wb-answer-result').textContent, ans12.result, '答案页第一行就是标准答案 ' + ans12.result);
 
 var ansHtml12 = elById('wb-answer-steps').innerHTML;
-var ansTiles12 = ansHtml12.split('class="wb-tile"').length - 1;
-eq2(ansTiles12, ans12.steps.length, '答案的分步条目数与数据一致（' + ans12.steps.length + ' 步）');
-assert(ansHtml12.indexOf('wb-tile__cmt') >= 0, '答案的每一步后面挂着 AI 注释');
+eq2(ansHtml12.split('class="wb-tile"').length - 1, ans12.steps.length,
+  '答案的分步条目数与数据一致（' + ans12.steps.length + ' 步）');
+assert(ansHtml12.indexOf('wb-tile__cmt') >= 0, '每一步后面挂着 AI 注释');
 assert(ansHtml12.indexOf(ans12.steps[0].note.slice(0, 4)) >= 0,
   '注释内容真的写进了界面（不是空壳）：' + ans12.steps[0].note.slice(0, 4) + '……');
-assert(ansHtml12.indexOf('wb-tile__cmt" hidden') < 0,
-  '注释默认显示着（用户原话："点答案之后，有注释就给它注释上"）');
+assert(ansHtml12.indexOf('wb-tile__cmt" hidden') < 0, '注释默认显示着');
 eq2(elById('wb-act-notes').hidden, false, '有注释才有注释开关');
 eq2(elById('wb-act-notes').getAttribute('aria-pressed'), 'true', '开关自身也标着"注释正显示"');
 
-/* 注释开关两态：界面上的注释、开关的字、aria 三处一起变 */
 WB.toggleNotes();
 eq2(WB.notesOn(), false, '点一下 → 注释收起');
 assert(elById('wb-answer-steps').innerHTML.indexOf('wb-tile__cmt" hidden') >= 0,
   '界面上的注释真的藏起来了（不是只改了个内存变量）');
 eq2(elById('wb-act-notes').textContent, '显示注释', '开关的字跟着变成"显示注释"');
-eq2(elById('wb-act-notes').getAttribute('aria-pressed'), 'false', 'aria 也跟着变（读屏和眼睛看到的是同一个状态）');
 WB.toggleNotes();
 eq2(WB.notesOn(), true, '再点一下 → 注释回来');
-assert(elById('wb-answer-steps').innerHTML.indexOf('wb-tile__cmt" hidden') < 0, '界面上的注释真的回来了');
 
-/* ---- 落位：答案块在题目下方（用户原话"就直接在这个题下面"） ---- */
-var bottom12 = WB.boardToScreen(box12.x, box12.y + box12.h).y;
-assert(parseFloat(answerEl12.style.top) >= bottom12,
-  '答案块落在题目下方（答案顶 ' + parseFloat(answerEl12.style.top) + ' ≥ 题面底 ' + bottom12 + '）');
+/* 切回分析页：还是那一份内容（切 tab 只是显隐，不重建 DOM） */
+WB.setTab('think');
+eq2(paneThink12.hidden, false, '切回分析页');
+eq2(elById('wb-think-list').innerHTML, thinkHtml12, '切回来还是那一份思路（切 tab 不重建）');
 
-/* 真机复核抓到过一次：窄题面时答案块（300 宽）比题面还宽，思路框按"题面右缘"摆就压在答案上
-   （两块 rect 相交 180×287px）。所以这里量的是"两块真的不叠"，不是"思路框在题目右边"。 */
-var ansW12 = answerEl12.offsetWidth || 280;
-var answerRight12 = parseFloat(answerEl12.style.left) + ansW12;
-assert(parseFloat(thinkEl12.style.left) >= answerRight12,
-  '思路框让开了答案块，两块不叠（思路左 ' + parseFloat(thinkEl12.style.left) +
-  ' ≥ 答案右 ' + answerRight12 + '）');
-
-/* ---- 拖哪儿都整块动：四块共用一份位置 state.problemAt ---- */
-var head12 = elById('wb-think-head');
-var sx12 = WB.state.problemAt.x, sy12 = WB.state.problemAt.y;
-var thinkL12 = parseFloat(thinkEl12.style.left);
-var thinkT12 = parseFloat(thinkEl12.style.top);
-var ansL12 = parseFloat(answerEl12.style.left);
-var ansT12 = parseFloat(answerEl12.style.top);
-var actsL12 = parseFloat(acts12.style.left);
-var scale12 = WB.state.view.scale;
-var v12x = WB.state.view.x, v12y = WB.state.view.y;
-var strokes12 = WB.state.strokes.length;
-
+/* ---- 面板自己拖：位置是自己的，题目挪了它不动 ---- */
+var head12 = elById('wb-panel-head');
+var winL12 = parseFloat(panel12.style.left);
+var winT12 = parseFloat(panel12.style.top);
 head12._h.pointerdown(pe(300, 200));
 head12._h.pointermove(pe(360, 260));
 head12._h.pointerup(pe(360, 260));
+eq2(Math.round(parseFloat(panel12.style.left) - winL12), 60, '拖面板标题栏 → 面板横移 60px');
+eq2(Math.round(parseFloat(panel12.style.top) - winT12), 60, '面板纵向也跟着走 60px');
+assert(!!WB.state.winAt.panel && Math.round(WB.state.winAt.panel.x - winL12) === 60,
+  '面板的位置真的记下来了（state.winAt.panel）');
 
-assert(Math.round(WB.state.problemAt.x - sx12) === Math.round(60 / scale12),
-  '拖思路框标题栏 → 题面跟着横移 60 屏幕像素（' + Math.round(sx12) + ' → ' + Math.round(WB.state.problemAt.x) + '）');
-assert(Math.round(WB.state.problemAt.y - sy12) === Math.round(60 / scale12),
-  '纵向同理（' + Math.round(sy12) + ' → ' + Math.round(WB.state.problemAt.y) + '）');
+/* 关键：面板**不跟题目走**（"这个分析是可以拖动的""题目周围干干净净"） */
+var px12 = WB.state.problemAt.x;
+var panelL12 = panel12.style.left;
+var panelT12 = panel12.style.top;
+WB.state.problemAt.x = px12 + 200;
+WB.redraw();
+eq2(panel12.style.left, panelL12, '题面右移 200px，面板原地不动（它有自己的位置）');
+eq2(panel12.style.top, panelT12, '竖直方向也不动');
+WB.state.problemAt.x = px12;
+WB.redraw();
 
-/* 光"数据动了"不够 —— 界面也得跟着重排，否则就是"拖了看不见"。
-   上面两条量的是 state，下面量的是 DOM 上的位置（由 layoutOverlays 写进去）。 */
-assert(Math.round(parseFloat(thinkEl12.style.left) - thinkL12) === 60,
-  '思路框在界面上跟着走了 60px（' + thinkL12 + ' → ' + thinkEl12.style.left + '）');
-assert(Math.round(parseFloat(thinkEl12.style.top) - thinkT12) === 60, '思路框纵向也跟着走');
-assert(Math.round(parseFloat(answerEl12.style.left) - ansL12) === 60,
-  '答案块也一起走（"它们是一体的，都是整体的"）');
-assert(Math.round(parseFloat(answerEl12.style.top) - ansT12) === 60, '答案块纵向也跟着走');
-assert(Math.round(parseFloat(acts12.style.left) - actsL12) === 60, '三个按钮也一起走');
-eq2(WB.state.view.x, v12x, '拖浮层不带动板面（板面的平移/缩放是另一回事）');
-eq2(WB.state.strokes.length, strokes12, '拖浮层不留下笔迹（事件没漏到画布）');
+/* 位置是**屏幕像素**：板面缩放不改变它 */
+var zoomL12 = panel12.style.left;
+WB.state.view.scale = 0.5;
+WB.redraw();
+eq2(panel12.style.left, zoomL12, '缩放板面 → 面板位置不变（它不是画在板上的东西）');
+WB.state.view.scale = 1;
+WB.redraw();
 
-/* ---- 落盘：三个开关进存储，位置不单独存（跟题面共用一份） ---- */
-var stored12 = {};
-try { stored12 = JSON.parse(window.localStorage.getItem('wkmath.whiteboard.v1') || '{}'); } catch (e) { stored12 = {}; }
-assert(!!stored12.analysis && stored12.analysis.open === true && stored12.analysis.answerOpen === true,
-  '拖完一次，思路 / 答案两个开关都落盘了（刷新回来还是你离开时的样子）');
-eq2(stored12.analysis.showNotes, true, '注释显示状态也落盘了');
-eq2(stored12.analysis.steps, undefined, '分析那一层不再存步骤（步骤是算出来的，位置跟题面共用一份）');
+/* ---- 收起：面板关掉，按钮跟着灭 ---- */
+WB.closeAnalysis();
+eq2(WB.analysisOpen(), false, '点收起 → 面板关掉');
+eq2(panel12.hidden, true, '面板藏起来');
+eq2(elById('wb-act-analysis').getAttribute('aria-pressed'), 'false', '竖条上的按钮灭掉');
+WB.openAnalysis();
+eq2(panel12.hidden, false, '再点开 → 面板回来');
 
-/* ---- 题面收起时，这一层整体跟着收 ---- */
+/* 题面收起时，面板不该留在板上当幽灵 */
 WB.setShowProblem(false);
 WB.redraw();
-eq2(thinkEl12.hidden, true, '题面收起 → 思路框一起收起，不留在板上当幽灵');
-eq2(answerEl12.hidden, true, '答案块也一样');
-eq2(acts12.hidden, true, '三个按钮也一样');
+eq2(panel12.hidden, true, '题面收起 → 面板一起收起');
 WB.setShowProblem(true);
 WB.redraw();
-eq2(thinkEl12.hidden, false, '题面回来 → 思路框回来');
-eq2(answerEl12.hidden, false, '答案块也回来');
+eq2(panel12.hidden, false, '题面回来 → 面板回来');
 
-/* ---- 唯一的联动：点「分析」先把「答案」收起来（设计 §2 #6） ---- */
-WB.state.analysis.open = false;
-WB.state.analysis.answerOpen = false;
+/* ---- 保存菜单：存题 / 导出两条 ---- */
+eq2(saveMenu12.hidden, true, '没点保存时，菜单不出现');
+WB.toggleSaveMenu();
+eq2(WB.saveMenuOpen(), true, '点「保存」→ 菜单弹出来');
+eq2(saveMenu12.hidden, false, '菜单真的露出来了');
+eq2(elById('wb-act-save').getAttribute('aria-pressed'), 'true', '竖条上的保存按钮跟着亮');
+assert(!!elById('wb-save-mine') && !!elById('wb-save-file'), '菜单里两条都在（存题 / 导出）');
+
+/* 存题：真的落盘，而且能数出来 */
+var mineBefore12 = WB.mineList().length;
+var rec12 = WB.saveToMine();
+assert(!!rec12 && !!rec12.text, '存题返回了一条记录（题面文字在里面）');
+eq2(WB.mineList().length, mineBefore12 + 1,
+  '「我的题」里多了一条（' + mineBefore12 + ' → ' + WB.mineList().length + '）');
+assert(!!(rec12.strokes && rec12.think && rec12.answer),
+  '这条记录里有笔迹、有分析、有答案（不是只存了个标题）');
+var storedMine12 = JSON.parse(window.localStorage.getItem(WB.mineKey()) || '{}');
+assert(!!storedMine12[rec12.id], '真的进了 localStorage（不是只停在内存里）');
+
+/* 板上没题时存不了 —— 返回 null，界面给一句实话，不假装存成功 */
+WB.applyProblem(null);
 WB.redraw();
-WB.toggleAnswer();
-eq2(WB.state.analysis.answerOpen, true, '先开着答案');
-WB.toggleAnalysis();
-eq2(WB.analysisOpen(), true, '点「分析」→ 思路框开了');
-eq2(WB.state.analysis.answerOpen, false, '同时把答案收起来（思路和答案摆一起，孩子会直接抄答案）');
-eq2(answerEl12.hidden, true, '答案块在界面上也确实收起了');
-
-/* ---- 没有预置答案的题：说一句实话，而不是点了没反应 ---- */
-WB.applyExternal({ text: '一道外部点名来的题', tag: '', extra: '' });
-WB.state.analysis.answerOpen = false;
-WB.redraw();
-WB.toggleAnswer();
-eq2(answerEl12.hidden, false, '换个没预置答案的题，点「答案」仍然有东西出来');
-assert(elById('wb-answer-result').textContent.indexOf('预置') >= 0,
-  '出来的是实话"还没预置答案"（实际 "' + elById('wb-answer-result').textContent + '"）');
-eq2(elById('wb-answer-steps').innerHTML, '', '没有分步就不摆空条目');
-eq2(elById('wb-act-notes').hidden, true, '没有注释就不显示注释开关');
-
-/* ---- 「上传我的题」：这一版还没做（在 Plan 3），但按钮点了要给一句实话 ---- */
-var tip12 = elById('wb-upload-tip');
-eq2(tip12.hidden, true, '默认不占板面（它只是一条一次性的说明）');
-WB.toggleUploadNote();
-eq2(tip12.hidden, false, '点「上传我的题」→ 出来一句实话，而不是一个没反应的按钮');
-eq2(elById('wb-act-upload').getAttribute('aria-pressed'), 'true', '按钮自身标着"便签正开着"');
-assert(parseFloat(tip12.style.top) >= parseFloat(acts12.style.top) + 26,
-  '便签贴在按钮组下面（不压住按钮）');
-WB.toggleUploadNote();
-eq2(tip12.hidden, true, '再点一次收起');
-
-WB.clearAll();
-WB.setShowProblem(true);
+eq2(WB.saveToMine(), null, '板上没题 → 存题返回 null（不假装存成功）');
+WB.applyProblem('7a-01');
 WB.redraw();
 
+/* 导出：文字那一列该有分析 + 答案（导的是"题目 + 你写的 + 生成的文字"） */
+var blocks12 = WB.exportTextBlock();
+assert(blocks12.length >= 2, '导出的文字列里有分析 + 答案（实际 ' + blocks12.length + ' 块）');
+eq2(blocks12[0].title, '分析', '第一块是分析');
+eq2(blocks12[0].lines.length, n12, '分析那一块的条数对得上');
+eq2(blocks12[1].title, '标准答案', '第二块是标准答案');
+assert(blocks12[1].lines.join(' ').indexOf(ans12.result) >= 0, '答案写在导出内容里');
+
+/* 在板上落笔就把菜单收起来（跟系统的下拉一个脾气） */
+eq2(WB.saveMenuOpen(), true, '前提：菜单还开着');
+canvasEl._h.pointerdown(pe(700, 600));
+eq2(WB.saveMenuOpen(), false, '在板上落一笔 → 保存菜单自己收起来');
+
+/* ---- 「上传我的题」：在底部那条工具条上，点了给一句实话 ---- */
+__capture.toasts.length = 0;
+WB.askUpload();
+eq2(__capture.toasts.length, 1, '点「上传我的题」→ 给出一句话（不是一个没反应的假按钮）');
+assert(__capture.toasts[0].indexOf('拍照上传还在做') >= 0,
+  '这句话是实话：拍照上传还在做（实际 "' + __capture.toasts[0] + '"）');
+assert(__capture.toasts[0].indexOf('题库') >= 0, '还给了现在就能走的一条路（去题库挑题）');
 
 /* ============================================================
    13. 橡皮：圆圈擦到哪里，哪里才没（不是碰到就整笔删掉）
@@ -1433,18 +1367,25 @@ assert(listHtml.indexOf('contenteditable="true"') >= 0, '文字那一格可编�
 assert(listHtml.indexOf('data-step="0"') >= 0, '每一格带自己的序号（改哪一步要能对上）');
 assert(listHtml.indexOf('wb-tile__tone') >= 0 && listHtml.indexOf('成立') >= 0, '点评前面挂着语气标');
 
-/* ---- 落在题目下方，跟着题面走 ---- */
-var box15 = WB.problemLayout();
+/* ---- 位置是它自己的一份：题目挪了它不动（用户原话"题目周围干干净净"） ---- */
 WB.setShowProblem(true);
 WB.redraw();
-var panelTop = parseFloat(inkPanel.style.top);
-var boxBottomOnScreen = WB.boardToScreen(box15.x, box15.y + box15.h).y;
-assert(panelTop >= boxBottomOnScreen, '面板在题目下方（面板顶 ' + panelTop + ' ≥ 题面底 ' + boxBottomOnScreen + '）');
-var leftBefore = inkPanel.style.left;
+var inkL15 = inkPanel.style.left;
+var inkT15 = inkPanel.style.top;
 WB.state.problemAt.x = WB.state.problemAt.x + 120;
 WB.redraw();
-assert(inkPanel.style.left !== leftBefore, '题面右移 → 面板跟着右移（都是世界坐标投影出来的）');
+eq(inkPanel.style.left, inkL15, '题面右移 → 转译窗口原地不动（它有自己的位置，不挂在题目上）');
+eq(inkPanel.style.top, inkT15, '竖直方向也不动');
 WB.state.problemAt.x = WB.state.problemAt.x - 120;
+
+/* 拖它自己的标题栏 → 只它自己动 */
+var inkHead15 = elById('wb-ink-head');
+var inkShot = parseFloat(inkPanel.style.left);
+inkHead15._h.pointerdown(pe(300, 200));
+inkHead15._h.pointermove(pe(340, 200));
+inkHead15._h.pointerup(pe(340, 200));
+eq(Math.round(parseFloat(inkPanel.style.left) - inkShot), 40, '拖转译窗口的标题栏 → 它自己横移 40px');
+
 WB.setShowProblem(false);
 WB.redraw();
 eq(inkPanel.hidden, true, '题面收起 → 面板一起收起，不留在板上当幽灵');

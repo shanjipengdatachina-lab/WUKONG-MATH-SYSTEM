@@ -65,16 +65,17 @@ need = {
   '网格疏密选择器样式' => '.wb-grid{',
   '画布底色跟着主题' => 'background:var(--wb-board,var(--math-background))',
   '题库脚本' => 'whiteboard-problems.js',
-  '题面上方三个按钮（上传我的题）' => 'id="wb-act-upload"',
-  '分析按钮' => 'id="wb-act-analysis"',
-  '答案按钮' => 'id="wb-act-answer"',
-  '三个按钮的按钮组' => 'class="wb-acts" id="wb-acts"',
-  '思路框（题目右侧）' => 'id="wb-think"',
-  '思路框的条目列表' => 'id="wb-think-list"',
-  '答案块（题目下方）' => 'id="wb-answer"',
-  '答案块的标准答案行' => 'id="wb-answer-result"',
-  '答案块的注释开关' => 'id="wb-act-notes"',
-  '上传功能的实话条' => 'id="wb-upload-tip"',
+  '上传我的题（在底部工具条上）' => 'id="wb-act-upload"',
+  '右侧竖工具条' => 'class="wb-side" id="wb-side"',
+  '竖条上的分析按钮' => 'id="wb-act-analysis"',
+  '竖条上的转译按钮' => 'id="wb-act-transcribe"',
+  '竖条上的保存按钮' => 'id="wb-act-save"',
+  '保存菜单（存题 / 导出）' => 'class="wb-menu" id="wb-save"',
+  '分析答案面板' => 'id="wb-panel"',
+  '面板的两个 tab' => 'class="wb-tabs"',
+  '分析 tab 的条目列表' => 'id="wb-think-list"',
+  '答案 tab 的标准答案行' => 'id="wb-answer-result"',
+  '答案 tab 的注释开关' => 'id="wb-act-notes"',
   '分析与答案数据脚本' => 'whiteboard-analysis.js',
   '白板脚本' => 'whiteboard.js'
 }
@@ -101,7 +102,6 @@ end
 end
 
 issues << '仍保留顶部工具条' if html.include?('class="wb-tools"')
-issues << '仍保留右侧固定栏' if html.include?('class="wb-side"')
 issues << '仍保留右侧悬浮栏目' if html.include?('class="wb-zoom"')
 issues << '仍保留画布上方的题面卡片' if html.include?('class="wb-problem" id="wb-problem"')
 issues << '标签页标题异常' unless html =~ /<title>数字白板/ && html.rstrip.end_with?('</html>')
@@ -160,7 +160,8 @@ dock_html = html[/<div class="wb-dock".*?<div class="wb-pop"/m].to_s
 issues << '工具条又挂回了系统 title 气泡' if dock_html.include?('title="')
 issues << '自绘提示样式缺失' unless html.include?('content:attr(data-wb-tip)')
 issues << '浮层展开时没有抑制提示' unless html.include?('[data-wb-tip][aria-expanded="true"]::after{display:none}')
-issues << '自绘提示数量异常（' + html.scan('data-wb-tip="').length.to_s + '）' unless html.scan('data-wb-tip="').length == 14
+# 自绘提示：底部工具条 11 个 + 竖工具条 3 个 + 浮层里的几处（数一数异常了就是有人加/删忘了说）
+issues << '自绘提示数量异常（' + html.scan('data-wb-tip="').length.to_s + '）' unless html.scan('data-wb-tip="').length == 18
 
 # 提示气泡要真的浮在工具条**之上**：气泡锚在按钮上，而工具条自己还有 padding + border，
 # 差值太小就会压住工具栏的边框，看着像"挡在工具栏上"。
@@ -188,17 +189,20 @@ link_i  = html.index('assets/css/shell.css')
 style_i = html.index('<style id="wb-page-styles">')
 issues << 'toast 覆盖写在了样式表之前，会被 shell.css 盖掉' if link_i && style_i && style_i < link_i
 
-# 「分析 / 答案」这一层：两个按钮必须"很轻"（静止不铺底色），否则板面就不干净了；
-# 且新样式必须放在第二套 style 块里 —— wb-styles 是图谱共享样式的母版（会被改名抄到图谱）。
-issues << '分析 / 答案按钮丢了"很轻"的静止态（应 background:none）' unless
-  html[/\.wb-act\{[^}]*background:none/m]
-# 注意这个正则：不能用 `.*?`，它会跨过 `</style>` 跑到后面那个块里去找 .wb-act{，
+# 「分析 / 答案」这一层：右侧竖条上的按钮必须"很轻"（静止不铺底色），否则板面就不干净了；
+# 且新样式必须放在第二套 style 块里 —— wb-styles 是图谱共享共享样式的母版（会被改名抄到图谱）。
+issues << '右侧竖条按钮丢了"很轻"的静止态（应 background:none）' unless
+  html[/\.wb-side__btn\{[^}]*background:none/m]
+# 注意这个正则：不能用 `.*?`，它会跨过 `</style>` 跑到后面那个块里去找 .wb-side{，
 # 结果把"样式确实在独立块里"误报成"跑进了 wb-styles"（这条先写错过一次）。
 issues << '分析 / 答案的样式跑进了 wb-styles（会被抄到图谱当死规则）' if
-  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-act\{/m]
+  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-side__btn\{/m]
 issues << '分析 / 答案的样式没放进独立 style 块' unless html.include?('<style id="wb-analysis-styles">')
-issues << '分析 / 答案按钮挂回了系统 title / 自绘提示（它们自己有字，不需要）' if
-  html[/id="wb-act-(analysis|answer|transcribe)"[^>]*data-wb-tip/]
+# 竖条上只有图标（没有字），所以每个按钮必须有自绘提示 —— 光一个灯泡图标谁也猜不到是"分析"
+%w[wb-act-analysis wb-act-transcribe wb-act-save].each do |id|
+  issues << "右侧竖条的 #{id} 没挂自绘提示（光一个图标看不出是干什么的）" unless
+    html[/id="#{id}"[^>]*data-wb-tip/]
+end
 wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 issues << '笔粗 / 橡皮按钮仍用系统 title' if wbjs.include?('title="笔粗') || wbjs.include?('title="橡皮')
 
@@ -258,60 +262,80 @@ issues << '预置数据里出现了 warn（没有真模型就不该判学生对�
   inkjs[/var PRESET = \{[\s\S]*?\n  \};/].to_s.include?("'warn'")
 issues << '文字那一格不是可编辑的（识别一定会出错，必须能改）' unless
   wbjs.include?('contenteditable')
-# ---------- 题面上方那三个按钮 + 右侧思路框 + 下方答案块 ----------
-# 用户看过第一版的"4~5 个可写台阶框"后明确否掉了，这一版是：三个小按钮（上传我的题 / 分析 / 答案）
-# 摆在题目上方左对齐；「分析」出**一个**只读的思路框（在题目右侧）；
-# 「答案」把标准答案直接写在题目下方，每步挂 AI 注释、注释可整块收起。
-acts_html = html[/<div class="wb-acts".*?<\/div>/m].to_s
-if acts_html.empty?
-  issues << '找不到三个按钮那一排（.wb-acts）'
+# ---------- 右侧竖工具条 + 分析答案面板（两个 tab）+ 保存菜单 ----------
+# 用户定的这一版：底部那条上加「上传我的题」（独立功能）；对"这道题"做的事收进右侧一条竖着的工具条
+# （分析 / 转译 / 保存，答案并进分析里当一个 tab）；面板**不挂在题目上**、自己可以拖 ——
+# 「这样我们的题目周围干干净净的」。
+side_html = html[/<div class="wb-side" id="wb-side".*?<\/div>/m].to_s
+if side_html.empty?
+  issues << '找不到右侧竖工具条（.wb-side）'
 else
-  issues << "按钮排里不是三个按钮（实际 #{acts_html.scan(/<button/).size} 个）" unless
-    acts_html.scan(/<button/).size == 3
-  order = %w[wb-act-upload wb-act-analysis wb-act-answer].map { |id| acts_html.index(id) }
-  issues << '三个按钮的顺序不是「上传我的题 → 分析 → 答案」' unless
+  issues << "竖条里不是三个按钮（实际 #{side_html.scan(/<button/).size} 个）" unless
+    side_html.scan(/<button/).size == 3
+  order = %w[wb-act-analysis wb-act-transcribe wb-act-save].map { |id| side_html.index(id) }
+  issues << '竖条上三个按钮的顺序不是「分析 → 转译 → 保存」' unless
     order.all? && order == order.sort && order.uniq.size == 3
+  issues << '竖条是横着排的（用户要的是竖着放、图标竖排）' unless
+    html[/\.wb-side\{[^}]*flex-direction:column/m]
+  issues << '竖条挂在最右边会压住别的东西 —— 它得留在画布容器里、靠右浮着' unless
+    html[/\.wb-side\{[^}]*right:\d+px/m] && html[/\.wb-side\{[^}]*position:absolute/m]
 end
 
-# 旧的台阶框必须**清干净**：留着挂点就会被下一版又接回去
-issues << '页面上还留着旧的台阶框挂点（wb-step）' if html.include?('wb-step')
+# 「上传我的题」必须在**底部那条**工具条上（用户原话："这个上传。这个按钮要放在底部"）
+dock_html = html[/<div class="wb-dock".*?<div class="wb-pop"/m].to_s
+issues << '「上传我的题」没在底部工具条上（用户要求它放底部，它是独立功能）' unless
+  dock_html.include?('id="wb-act-upload"')
+issues << '「上传我的题」还挂在题目旁边（那一层已经收进右侧竖条了）' if
+  side_html.include?('wb-act-upload')
+
+# 旧的三个按钮排 / 思路框 / 答案块必须**清干净**：留着挂点就会被下一版又接回去
+%w[wb-acts wb-think wb-answer wb-step wb-upload-tip].each do |gone|
+  issues << "页面上还留着旧的 #{gone} 挂点" if html.include?("id=\"#{gone}\"")
+end
 issues << 'whiteboard.js 里还留着台阶框那套代码' if wbjs.include?('wb-step') || wbjs.include?('stepGuides')
 issues << 'whiteboard.js 里还留着可写台阶的内容字段（analysis.steps）' if wbjs.include?('analysis.steps')
+issues << 'whiteboard.js 里还留着"整块拖动"那套（面板现在自己拖）' if wbjs.include?('function bindGroupDrag(')
+issues << 'whiteboard.js 里还留着"往下排"的登记表（面板不再挂在题目下）' if wbjs.include?('function belowBlocks(')
 
-%w[wb-think wb-answer].each do |id|
+%w[wb-panel wb-save].each do |id|
   issues << "#{id} 没有默认收起（会一进页面就浮在板上）" unless html[/id="#{id}"[^>]*hidden/]
 end
-think_i = html.index('id="wb-think"')
-answer_i = html.index('id="wb-answer"')
-think_html = (think_i && answer_i && answer_i > think_i) ? html[think_i...answer_i] : ''
-issues << '思路框不是只读的（用户要的是"就看看思路"，里面不该有可写格子）' if
-  think_html.include?('contenteditable')
-issues << '思路框没挂在题面同一层（应该是 .wb-canvas-wrap 的绝对定位子元素）' unless
-  html.include?('.wb-think{') && html.include?('.wb-answer{')
-issues << '思路框 / 答案块样式跑进了 wb-styles（会被抄到图谱当死规则）' if
-  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-think\{/m]
-issues << '答案块没标「AI 生成」（注释是 AI 给的，必须说清来源）' unless
+panel_i = html.index('id="wb-panel"')
+ink_i = html.index('id="wb-ink-text"')
+panel_html = (panel_i && ink_i && ink_i > panel_i) ? html[panel_i...ink_i] : ''
+issues << '面板里出现了可写格子（用户要的是"就看看思路"，只读）' if
+  panel_html.include?('contenteditable')
+issues << '面板里还带着「把手写转成文字」（转译已经独立成竖条上的按钮了）' if
+  panel_html.include?('把手写转成文字')
+issues << '面板没做成"一个框两个 tab"' unless
+  html.include?('.wb-panel{') && html.include?('class="wb-tabs"') &&
+  html.include?('role="tablist"') && html.include?('role="tabpanel"')
+issues << 'tab 缺 aria-selected（读屏不知道当前在哪一页）' unless
+  html.scan(/aria-selected="/).size == 2
+issues << '分析 / 答案面板样式跑进了 wb-styles（会被抄到图谱当死规则）' if
+  html[/<style id="wb-styles">(?:(?!<\/style>).)*?\.wb-panel\{/m]
+issues << '答案那一页没标「AI 生成」（注释是 AI 给的，必须说清来源）' unless
   html.include?('wb-answer__flag') && html.include?('AI 生成')
+issues << '保存菜单里没有「存进我的题」' unless
+  html.include?('id="wb-save-mine"') && html.include?('存进「我的题」')
+issues << '保存菜单里没有「导出文件」' unless
+  html.include?('id="wb-save-file"') && html.include?('导出成图片')
 issues << '「上传我的题」没写清这一版还没做（会变成点了没反应的假按钮）' unless
-  html.include?('拍照上传还在做')
+  wbjs.include?('拍照上传还在做')
 issues << '「上传我的题」没给出现在就能走的路（只说不做，等于把用户晾在那儿）' unless
-  html.include?('用笔写出你的推导')
-issues << '答案块没挂进"往下排"的登记表（各算各的位置，迟早和转写面板互相压）' unless
-  wbjs.include?("el: byId('wb-answer')")
-# 真机复核抓到过：窄题面时答案块（300 宽）比题面还宽，思路框只按"题面右缘"摆就会压在答案上。
-issues << '思路框没让开题目下方那几块（会压在答案上，真机复核抓到过）' unless
-  wbjs.include?('function groupRight(')
-overlay_fn = wbjs[/function layoutOverlays\(ctx\)[\s\S]*?\n  \}/].to_s
-issues << '浮层重排顺序不对：思路框要排在"下面那几块"之后摆（否则量不到它们的宽度）' unless
-  overlay_fn.include?('layoutBelow(ctx)') && overlay_fn.include?('layoutThink(ctx)') &&
-  overlay_fn.index('layoutBelow(ctx)') < overlay_fn.index('layoutThink(ctx)')
+  wbjs.include?('在题库里挑一道题上板')
 issues << '注释开关只有一态文案（收起 / 显示必须都有，否则点一次就再也回不来）' unless
   wbjs.include?('收起注释') && wbjs.include?('显示注释')
-# 上限 8 步 × 大字号，内容能高过整块画布；不封顶的话框底那个「把手写转成文字」就再也点不到了
-issues << '思路框 / 答案块没设最大高度（长内容会顶出画布，底下的按钮点不到）' unless
-  html[/\.wb-think\{[^}]*max-height/] && html[/\.wb-answer\{[^}]*max-height/]
-issues << '思路框 / 答案块的长内容不能自己滚（超出画布的部分就够不着了）' unless
-  html[/\.wb-think__list\{[^}]*overflow-y:auto/] && html[/\.wb-answer__steps\{[^}]*overflow-y:auto/]
+# 面板位置是自己的（屏幕像素）：拖动改的是 state.winAt，不是题面那一份
+issues << '面板的位置还挂在题面上（应该各存各的：state.winAt）' unless
+  wbjs.include?('state.winAt') && wbjs.include?('function placeWin(') && wbjs.include?('function winMove(')
+issues << '面板拖动写回了题面位置（"题目周围干干净净"就破了）' if
+  wbjs[/function winMove\([\s\S]*?\n  \}/].to_s.include?('state.problemAt')
+# 上限 8 步 × 大字号，内容能高过整块画布；不封顶的话底下那截就再也够不着了
+issues << '面板没设最大高度（长内容会顶出画布，底下的按钮点不到）' unless
+  html[/\.wb-panel\{[^}]*max-height/]
+issues << '面板的长内容不能自己滚（超出画布的部分就够不着了）' unless
+  html[/\.wb-panel__body\{[^}]*overflow-y:auto/] && html[/\.wb-panel__body\{[^}]*min-height:0/]
 # 思路 / 答案 / 转文字三处共用同一套条目样式，最怕后一段"不带前缀地又写一遍"——
 # 后写的会静静盖掉前写的，而且三处里只有一处看着不对（真机复核抓到过：
 # 转文字面板的旧样式把答案块的编号压成了灰色小字、正文还多了一层底）。
@@ -324,16 +348,19 @@ issues << '条目样式没做成三处共用的一套（思路 / 答案 / 转文
 # 注释那一行是 flex:1 0 100%，再挂 margin 会被浏览器吞掉（真机上就是"注释与正文齐平"）
 issues << 'AI 注释那一行没缩进（和正文齐平，会被当成正文的一部分）' unless
   html[/\.wb-tile__cmt\{[^}]*padding-left:/]
-issues << '四块浮层的位置不是同一份（应共用 state.problemAt，"拖哪儿都整块动"）' if
-  wbjs.include?('thinkAt') || wbjs.include?('answerAt') || wbjs.include?('actAt')
-# 分析那一层的状态：只该有三个开关，落盘也是这三个
+# 面板的位置**必须**是自己的那一份（state.winAt）：用户要"题目周围干干净净"，
+# 面板要是跟着题面走，拖题目就会连面板一起搬走 —— 那是上一版的规矩，早废了。
+issues << '面板位置又挂回题面那一份了（应各存各的 state.winAt）' if
+  wbjs[/function placeWin\([\s\S]*?\n  \}/].to_s.include?('problemAt')
+# 分析答案面板的状态：开没开 / 停在哪一页 / 注释显示没 —— 落盘也就是这三样
 analysis_blocks = wbjs.scan(/analysis:\s*\{[\s\S]*?\n\s*\},/)
-issues << '找不到分析那一层的状态 / 落盘块' if analysis_blocks.empty?
+issues << '找不到分析答案面板的状态 / 落盘块' if analysis_blocks.empty?
 analysis_blocks.each do |b|
-  %w[open answerOpen showNotes].each do |k|
-    issues << "分析那一层的开关 #{k} 没进状态或没落盘" unless b.include?(k)
+  %w[open tab showNotes].each do |k|
+    issues << "分析答案面板的 #{k} 没进状态或没落盘" unless b.include?(k)
   end
   issues << '分析那一层存了步骤（步骤是算出来的，不该存）' if b.include?('steps')
+  issues << '分析那一层还留着 answerOpen（答案已经并成一个 tab 了）' if b.include?('answerOpen')
 end
 
 

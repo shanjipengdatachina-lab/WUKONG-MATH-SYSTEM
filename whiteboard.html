@@ -316,72 +316,116 @@
   <!-- 本块只属于白板：wb-styles 那个块是图谱共享样式的母版，
        放进去会被 build_graph_css.rb 改名抄到图谱，变成用不到的死规则。 -->
   <style id="wb-analysis-styles">
-/* 「分析 / 答案」两个按钮：锚在题面右上角，跟着板走、字号不跟缩。
-   刻意做得很轻 —— 不点它们的时候，板面就是一块干净的白板。 */
-.wb-acts{
-  position:absolute;left:0;top:0;z-index:4;
-  display:inline-flex;gap:2px;
+/* ---------- 右侧竖工具条：分析 / 转译 / 保存 ----------
+   用户定的：题目周围要干干净净，所以"对这道题做的事"全收在这一条上（竖着排、图标竖着放）。
+   它跟底部那条一个模样（同底色、同按钮尺寸、同激活块），只是方向不同。
+   注意：这条的样式**不能**跟 .wb-dock__btn 共用一套 —— 底部那套在 wb-styles 里，
+   是与图谱逐字节比对的母版（build_graph_css.rb 会整段抄过去改名），动它就会让两边对不上。 */
+.wb-side{
+  position:absolute;right:18px;top:50%;z-index:5;
+  transform:translateY(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:5px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
+  background:var(--math-dock);
+  box-shadow:0 6px 24px rgba(15,23,42,.10);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:.34;
+  transition:opacity 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms cubic-bezier(.2,.8,.2,1);
 }
-.wb-acts[hidden]{display:none}
-.wb-act{
-  border:0;border-radius:6px;background:none;cursor:pointer;
-  font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;padding:5px 8px;
-  color:var(--math-ink-3);
-}
-.wb-act:hover{background:var(--math-surface);color:var(--math-foreground)}
-.wb-act:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
-.wb-act.is-on{background:var(--math-primary-tint);color:var(--math-primary)}
-.wb-act.is-on:hover{background:var(--math-primary-200)}
-.wb-act:disabled{color:var(--math-ink-4);cursor:default;background:none}
-/* ---------- 思路框（分析）：题目右侧一个框，里面是编号的思路 ----------
-   只读。原来做成 4~5 个可写的"台阶框"，用户看过真实效果后否掉了：
-   「分析不用搞那么多台阶框……就直接出一个框，主体思路是一二三四五六七八……它的目的就是看」。
-   字号不跟着画布缩放：这是要读的字，缩到 15% 就没法看了。 */
-.wb-think{
-  position:absolute;left:0;top:0;z-index:4;
-  width:238px;padding:8px 10px 9px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
-  background:var(--math-popover);box-shadow:var(--math-shadow-1);
-  /* 上限 8 步 × 大字号时，内容能高过整块画布 —— 不封顶的话框底那个按钮就再也点不到了。
-     封顶之后由列表自己滚：框始终在板内，读不完也够得着。 */
-  display:flex;flex-direction:column;max-height:calc(100% - 32px);
-}
-.wb-think[hidden]{display:none}
-.wb-think__head{flex:none;display:flex;align-items:center;gap:7px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.wb-think.is-dragging{box-shadow:var(--math-shadow-2)}
-.wb-think.is-dragging .wb-think__head{cursor:grabbing}
-.wb-think__title{font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
-.wb-think__count{font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-3)}
-.wb-think__grip{flex:none;margin-left:auto;width:14px;height:14px;color:var(--math-ink-4)}
-.wb-think__list{margin:7px 0 0;padding:0;list-style:none;overflow-y:auto;min-height:0}
-.wb-think__foot{flex:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--math-border)}
-.wb-think__act{
-  width:100%;height:28px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
+.wb-side:hover,
+.wb-side:focus-within{opacity:1;box-shadow:0 10px 32px rgba(15,23,42,.16)}
+.wb-side__btn{
+  position:relative;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-md);
   background:none;color:var(--math-ink-2);cursor:pointer;
-  font-family:var(--math-font-sans);font-size:calc(11.5px * var(--math-fs));
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
 }
-.wb-think__act:hover{color:var(--math-primary);border-color:var(--math-primary)}
-.wb-think__act:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
-.wb-think__act[aria-pressed="true"]{color:var(--math-primary);background:var(--math-primary-soft);border-color:var(--math-primary-tint)}
+.wb-side__btn svg{width:16px;height:16px}
+.wb-side__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-side__btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.wb-side__btn.is-on{border-color:transparent;background:var(--math-primary-tint);color:var(--math-primary)}
+.wb-side__btn.is-on:hover{background:var(--math-primary-200)}
 
-/* ---------- 答案块：直接写在题目下方 ---------- */
-.wb-answer{
+/* ---------- 「保存」的小菜单：存进「我的题」/ 导出成图片 ---------- */
+.wb-menu{
+  position:absolute;left:0;top:0;z-index:6;min-width:186px;padding:4px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:var(--math-popover);box-shadow:var(--math-shadow-2);
+}
+.wb-menu[hidden]{display:none}
+.wb-menu__item{
+  display:grid;grid-template-columns:16px 1fr;gap:2px 8px;align-items:center;
+  width:100%;padding:7px 8px;border:0;border-radius:var(--math-radius-sm);
+  background:none;text-align:left;cursor:pointer;color:var(--math-foreground);
+  font-family:var(--math-font-sans);font-size:calc(12.5px * var(--math-fs));line-height:1.3;
+}
+.wb-menu__item:hover{background:var(--math-surface)}
+.wb-menu__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-menu__item svg{width:16px;height:16px;color:var(--math-ink-3)}
+.wb-menu__hint{grid-column:2;font-size:calc(11px * var(--math-fs));color:var(--math-ink-3)}
+
+/* ---------- 分析 / 答案面板：一个框、两个 tab ----------
+   只读。用户原话：「分析按钮就相当于带着答案……弹出来那个框里面有两部分，
+   第一部分是分析，第二部分就相当于答案，只不过它是个 tab 标签」。
+   字号不跟着画布缩放：这是要读的字，缩到 15% 就没法看了。 */
+.wb-panel{
   position:absolute;left:0;top:0;z-index:4;
-  width:300px;padding:9px 11px 10px;
+  width:280px;padding:8px 10px 9px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-md);
   background:var(--math-popover);box-shadow:var(--math-shadow-1);
-  /* 同思路框：注释全展开时分步能很长，封顶 + 自己滚，别顶出画布 */
+  /* 上限 8 步 × 大字号时，内容能高过整块画布 —— 不封顶的话底下那截就够不着了。
+     封顶之后由正文自己滚：框始终在板内，读不完也够得着。 */
   display:flex;flex-direction:column;max-height:calc(100% - 32px);
 }
-.wb-answer[hidden]{display:none}
-.wb-answer__head{flex:none;display:flex;align-items:center;gap:7px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.wb-answer.is-dragging{box-shadow:var(--math-shadow-2)}
-.wb-answer.is-dragging .wb-answer__head{cursor:grabbing}
-.wb-answer__title{font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
+.wb-panel[hidden]{display:none}
+.wb-panel__head{
+  flex:none;display:flex;align-items:center;gap:7px;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
+}
+.wb-panel.is-dragging{box-shadow:var(--math-shadow-2)}
+.wb-panel.is-dragging .wb-panel__head{cursor:grabbing}
+.wb-panel__close{
+  flex:none;width:22px;height:22px;display:grid;place-items:center;
+  border:0;border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-3);
+  font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
+}
+.wb-panel__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-panel__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-panel__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
+.wb-panel__body{padding-top:7px;overflow-y:auto;min-height:0}
+.wb-panel__body[hidden]{display:none}
+.wb-think__list{margin:0;padding:0;list-style:none}
+
+/* tab 标签：当前那一页是一块实心浅色（跟工具条的激活态同一套语言） */
+.wb-tabs{flex:1 1 auto;display:flex;gap:2px;min-width:0}
+.wb-tab{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border:0;border-radius:var(--math-radius-sm);
+  background:none;cursor:pointer;color:var(--math-ink-3);
+  font-family:var(--math-font-sans);font-size:calc(12.5px * var(--math-fs));line-height:1;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-tab:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-tab:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-tab.is-on{background:var(--math-primary-tint);color:var(--math-primary);font-weight:600}
+.wb-tab__n{font-size:calc(11px * var(--math-fs));color:var(--math-ink-3);font-weight:400}
+.wb-tab.is-on .wb-tab__n{color:var(--math-primary)}
+
+/* 结果那一行 + 分步 + 页脚（AI 标注与注释开关） */
+.wb-panel__foot{display:flex;align-items:center;gap:8px;margin-top:8px}
+/* 答案那一页的这几个类名跟原来那块一样 —— 内容搬进了 tab，样式不用重写 */
+.wb-answer__result{
+  margin:0;padding:6px 8px;border-radius:var(--math-radius-sm);
+  background:var(--math-surface);color:var(--math-foreground);
+  font-family:var(--math-font-math);font-size:calc(15px * var(--math-fs));font-weight:600;
+}
+.wb-answer__steps{margin:6px 0 0;padding:0;list-style:none}
 /* 「AI 生成」是实话标注：这是模型给的答案，不是老师批的 */
 .wb-answer__flag{
-  padding:1px 6px;border-radius:var(--math-radius-pill);
+  flex:none;padding:1px 6px;border-radius:var(--math-radius-pill);
   background:var(--math-primary-soft);color:var(--math-primary);
   font-size:calc(10.5px * var(--math-fs));
 }
@@ -393,14 +437,7 @@
 .wb-answer__notes[hidden]{display:none}
 .wb-answer__notes[aria-pressed="true"]{color:var(--math-primary);border-color:var(--math-primary-tint);background:var(--math-primary-soft)}
 .wb-answer__notes:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
-.wb-answer__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
-/* 结果单独一行、主色加重 —— 先看结论再看过程 */
-.wb-answer__result{
-  flex:none;margin:8px 0 0;padding:6px 8px;border-radius:var(--math-radius-sm);
-  background:var(--math-surface);color:var(--math-foreground);
-  font-family:var(--math-font-math);font-size:calc(15px * var(--math-fs));font-weight:600;
-}
-.wb-answer__steps{margin:6px 0 0;padding:0;list-style:none;overflow-y:auto;min-height:0}
+
 
 /* ---------- 编号条目：思路 / 答案 / 转文字三处共用这一套 ---------- */
 .wb-tile{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:6px 0;border-top:1px solid var(--math-border)}
@@ -429,16 +466,6 @@
 .wb-tile[data-tone="ok"] .wb-tile__tone{color:var(--math-state-success)}
 .wb-tile[data-tone="careful"] .wb-tile__tone{color:var(--math-state-warning,#b45309)}
 .wb-tile[data-tone="warn"] .wb-tile__tone{color:var(--math-state-error)}
-
-/* ---------- 「上传我的题」的实话便签 ---------- */
-.wb-note{
-  position:absolute;left:0;top:0;z-index:5;max-width:280px;padding:9px 11px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
-  background:var(--math-popover);box-shadow:var(--math-shadow-2);
-}
-.wb-note[hidden]{display:none}
-.wb-note__title{margin:0;font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
-.wb-note__text{margin:5px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-2)}
 
   </style>
 </head>
@@ -578,6 +605,11 @@
             <button type="button" class="wb-dock__btn" id="wb-bank-toggle" aria-pressed="false" aria-controls="wb-bank" data-wb-tip="题库 ⌘B" aria-label="题库">
               <i data-lucide="library-big"></i>
             </button>
+            <!-- 上传我的题：独立功能（拍照 / 传图识别在 Plan 3），点开选一道自己的题上传。
+                 放在底部这条工具条上 —— 它是"往板上搬一道题"，跟题目旁边那几个动作不是一回事。 -->
+            <button type="button" class="wb-dock__btn" id="wb-act-upload" data-wb-tip="上传我的题" aria-label="上传我自己的题">
+              <i data-lucide="image-up"></i>
+            </button>
             <button type="button" class="wb-dock__btn" id="wb-jump-kp" data-wb-tip="回到知识点" aria-label="回到知识点">
               <i data-lucide="git-fork"></i>
             </button>
@@ -636,52 +668,65 @@
             </div>
           </div>
 
-          <!-- 题目前面那三个小按钮：上传我的题 / 分析 / 答案（用户定的三个，位置在题目上方、左对齐）。
-               「转文字」挪进思路框底部 —— 那一排就三个，不再多挂一个。 -->
-          <div class="wb-acts" id="wb-acts" role="group" aria-label="对这道题做什么" hidden>
-            <button type="button" class="wb-act" id="wb-act-upload" aria-pressed="false" aria-label="上传我自己的题">上传我的题</button>
-            <button type="button" class="wb-act" id="wb-act-analysis" aria-pressed="false" aria-label="看这道题的思路">分析</button>
-            <button type="button" class="wb-act" id="wb-act-answer" aria-pressed="false" aria-label="对这道题的答案">答案</button>
+          <!-- 右侧竖工具条：对"**这道题**"做的事（底部那条是画板自己的工具）。
+               用户定的：题目周围要干干净净，所以这些动作一个都不挂在题目上。
+               三个按钮：分析（里面带答案两个 tab）/ 转译 / 保存。图标用的还是这一套。 -->
+          <div class="wb-side" id="wb-side" role="toolbar" aria-label="对这道题做什么">
+            <button type="button" class="wb-side__btn" id="wb-act-analysis" aria-pressed="false"
+                    aria-controls="wb-panel" data-wb-tip="分析（含答案）" aria-label="分析这道题">
+              <i data-lucide="lightbulb"></i>
+            </button>
+            <button type="button" class="wb-side__btn" id="wb-act-transcribe" aria-pressed="false"
+                    aria-controls="wb-ink-text" data-wb-tip="转译手写" aria-label="把手写思路转成电子文字">
+              <i data-lucide="scan-text"></i>
+            </button>
+            <button type="button" class="wb-side__btn" id="wb-act-save" aria-pressed="false"
+                    aria-expanded="false" aria-controls="wb-save" data-wb-tip="保存" aria-label="保存这道题">
+              <i data-lucide="save"></i>
+            </button>
           </div>
 
-          <!-- 分析：题目**右侧**一个只读的「思路」框。原来做成 4~5 个可写的台阶框，
-               用户看过真实效果后否掉了：「就直接出一个框，主体思路是一二三四五六七八……它的目的就是看」。
-               标题栏是拖动把手 —— 拖哪儿都整块动（跟题面共用一份位置）。 -->
-          <div class="wb-think" id="wb-think" role="group" aria-label="这道题的思路" hidden>
-            <div class="wb-think__head" id="wb-think-head">
-              <span class="wb-think__title">思路</span>
-              <span class="wb-think__count" id="wb-think-count"></span>
-              <i data-lucide="grip-vertical" class="wb-think__grip" aria-hidden="true"></i>
+          <!-- 「保存」弹的小菜单：存进「我的题」/ 导出成图片（用户原话："用户可以选择：选择存题；
+               也加一个导出按钮，点击导出文件"）。 -->
+          <div class="wb-menu" id="wb-save" role="menu" aria-label="保存" hidden>
+            <button type="button" class="wb-menu__item" id="wb-save-mine" role="menuitem">
+              <i data-lucide="bookmark-plus"></i><span>存进「我的题」</span>
+              <span class="wb-menu__hint">题面 + 你写的 + 生成的文字</span>
+            </button>
+            <button type="button" class="wb-menu__item" id="wb-save-file" role="menuitem">
+              <i data-lucide="download"></i><span>导出成图片</span>
+              <span class="wb-menu__hint">一张 PNG，带生成的文字</span>
+            </button>
+          </div>
+
+          <!-- 分析 / 答案：**一个框、两个 tab**（用户原话："分析按钮就相当于带着答案……
+               弹出来那个框里面有两部分，第一部分是分析，第二部分就相当于答案，只不过它是个 tab 标签"）。
+               只读；位置是自己的（屏幕像素），标题栏就是拖动抓手 —— 跟题目完全无关。 -->
+          <div class="wb-panel" id="wb-panel" role="group" aria-label="这道题的分析与答案" hidden>
+            <div class="wb-panel__head" id="wb-panel-head">
+              <div class="wb-tabs" role="tablist" aria-label="分析与答案">
+                <button type="button" class="wb-tab is-on" id="wb-tab-think" role="tab"
+                        aria-selected="true" aria-controls="wb-pane-think">分析<span class="wb-tab__n" id="wb-think-count"></span></button>
+                <button type="button" class="wb-tab" id="wb-tab-answer" role="tab"
+                        aria-selected="false" aria-controls="wb-pane-answer">答案</button>
+              </div>
+              <button type="button" class="wb-panel__close" id="wb-panel-close" aria-label="收起分析与答案">×</button>
+              <i data-lucide="grip-vertical" class="wb-panel__grip" aria-hidden="true"></i>
             </div>
-            <ol class="wb-think__list" id="wb-think-list"></ol>
-            <div class="wb-think__foot">
-              <button type="button" class="wb-think__act" id="wb-act-transcribe" aria-pressed="false" aria-label="把手写思路转成电子文字">把手写转成文字</button>
+            <div class="wb-panel__body" id="wb-pane-think" role="tabpanel" aria-labelledby="wb-tab-think">
+              <ol class="wb-think__list" id="wb-think-list"></ol>
+            </div>
+            <div class="wb-panel__body" id="wb-pane-answer" role="tabpanel" aria-labelledby="wb-tab-answer" hidden>
+              <p class="wb-answer__result" id="wb-answer-result"></p>
+              <ol class="wb-answer__steps" id="wb-answer-steps"></ol>
+              <div class="wb-panel__foot">
+                <span class="wb-answer__flag">AI 生成</span>
+                <button type="button" class="wb-answer__notes" id="wb-act-notes" aria-pressed="true" aria-label="收起注释">收起注释</button>
+              </div>
             </div>
           </div>
 
-          <!-- 答案：直接写在题目**下方**、就写在板上（用户原话）。
-               结果在前、分步在后，每步下面挂 AI 注释，注释可以整块收起。 -->
-          <div class="wb-answer" id="wb-answer" role="group" aria-label="这道题的答案" hidden>
-            <div class="wb-answer__head" id="wb-answer-head">
-              <span class="wb-answer__title">标准答案</span>
-              <span class="wb-answer__flag">AI 生成</span>
-              <button type="button" class="wb-answer__notes" id="wb-act-notes" aria-pressed="true" aria-label="收起注释">收起注释</button>
-              <i data-lucide="grip-vertical" class="wb-answer__grip" aria-hidden="true"></i>
-            </div>
-            <p class="wb-answer__result" id="wb-answer-result"></p>
-            <ol class="wb-answer__steps" id="wb-answer-steps"></ol>
-          </div>
-
-          <!-- 「上传我的题」的实话：拍照 / 传图识别还没做（在 Plan 3）。
-               按钮先占住位置（这一排要三个，位置定下来就不返工），点了给一句实话 + 一条现在就能走的路，
-               不做点了没反应的假按钮。 -->
-          <div class="wb-note" id="wb-upload-tip" role="status" hidden>
-            <p class="wb-note__title">拍照上传还在做</p>
-            <p class="wb-note__text">现在可以：① 在题库里选一道题上板；② 用笔写出你的推导，再点思路框底部的「把手写转成文字」生成电子版。</p>
-          </div>
-
-          <!-- 题目下方那一块：手写转文字。位置由白板按世界坐标投影出来，
-               与「答案块」共用一张"往下排"的登记表（见 belowBlocks）。 -->
+          <!-- 转译窗口：把手写转成电子文字。位置也是自己的（屏幕像素）、自己可以拖。 -->
           <div class="wb-ink" id="wb-ink-text" role="group" aria-label="手写转文字" hidden>
             <div class="wb-ink__head" id="wb-ink-head">
               <span class="wb-ink__title">手写转文字</span>
