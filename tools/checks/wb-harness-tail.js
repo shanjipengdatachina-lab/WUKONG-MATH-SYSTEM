@@ -532,8 +532,8 @@ var hoverFills = fillDelta(function () { WB.redraw(); });
 WB.setProblemHover(false);
 
 assert(idleFills === 0, '未悬停时题面不画底（填充增量应为 0，实际 ' + idleFills + '）');
-assert(hoverFills === 4,
-  '悬停时浮现底 + 竖条 + 把手的两道短横（填充增量应为 4，实际 ' + hoverFills + '）');
+assert(hoverFills === 3,
+  '悬停时只浮现「浅底 + 两道短横」（填充增量应为 3，实际 ' + hoverFills + '）—— 那条通高竖条已去掉');
 
 /* 命中判定：悬停和（后面的）拖动共用同一个谓词 */
 var hovBox = WB.problemLayout();
