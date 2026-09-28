@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>章节阅读</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" data-active="true" aria-current="page" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-left" aria-pressed="true" aria-controls="chapter-tree" title="左栏：目录（⌘/Ctrl + B）">
+          <i data-lucide="panel-left" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">目录</span>
+        </button>
+        <button type="button" class="ide-rail__item" id="toggle-right" aria-pressed="true" aria-controls="related-quiz" title="右栏：本页目录（⌘/Ctrl + ⌥/Alt + B）">
+          <i data-lucide="panel-right" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">本页</span>
+        </button>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__account" href="login.html" title="登录 / 注册">
+          <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
+          <span class="ide-rail__label">登录</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+    <main class="reader-shell" data-left-default="open">
+
+      <!-- ===== 左栏：章节树 ===== -->
+      <aside id="chapter-tree" class="reader-tree" aria-label="章节目录">
+        <input type="checkbox" id="tree-toggle" class="tree-toggle">
+        <label class="tree-head" for="tree-toggle">
+          <span class="tree-head__title">目录</span>
+          <span class="tree-head__meta">六册 · 29 章</span>
+          <i data-lucide="chevron-down" class="tree-head__icon"></i>
+          <button type="button" class="tree-collapse" id="tree-collapse" aria-expanded="true"
+                  aria-label="收起目录" title="收起 / 展开目录">
+            <i data-lucide="chevron-left" class="tree-collapse__icon"></i>
+          </button>
+        </label>
+
+        <div class="tree-body">
+          <section class="tree-volume">
+            <div class="volume-head">
+              <span class="volume-head__name">七年级（上）</span>
+              <i data-lucide="chevron-down" class="volume-head__icon"></i>
+            </div>
+            <ul class="chapter-list" data-subtree="expanded">
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="01" data-active="true" aria-current="true">
+                  <span class="ch-row__num">01</span>
+                  <span class="ch-row__name">有理数</span>
+                </a>
+                <ul class="section-list" data-subtree="expanded">
+                  <li>
+                    <a class="sec-row" href="reader.html" data-section="1.1">
+                      <span class="sec-row__num">1.1</span>
+                      <span class="sec-row__name">知识速查</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="sec-row" href="reader.html" data-section="1.2" data-active="true" aria-current="true">
+                      <span class="sec-row__num">1.2</span>
+                      <span class="sec-row__name">有理数</span>
+                    </a>
+                    <ul class="point-list" data-subtree="expanded">
+                      <li>
+                        <a class="pt-row" href="reader.html" data-point="1">
+                          <span class="pt-row__idx">知识点</span>
+                          <span class="pt-row__num">1</span>
+                          <span class="pt-row__name">有理数的有关概念</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="pt-row" href="concept.html" data-point="2" data-active="true" aria-current="true">
+                          <span class="pt-row__idx">知识点</span>
+                          <span class="pt-row__num">2</span>
+                          <span class="pt-row__name">数轴</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="pt-row" href="reader.html" data-point="3">
+                          <span class="pt-row__idx">知识点</span>
+                          <span class="pt-row__num">3</span>
+                          <span class="pt-row__name">相反数</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="pt-row" href="reader.html" data-point="4">
+                          <span class="pt-row__idx">知识点</span>
+                          <span class="pt-row__num">4</span>
+                          <span class="pt-row__name">绝对值</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="pt-row" href="reader.html" data-point="5">
+                          <span class="pt-row__idx">知识点</span>
+                          <span class="pt-row__num">5</span>
+                          <span class="pt-row__name">有理数大小的比较</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <a class="sec-row" href="reader.html" data-section="1.3">
+                      <span class="sec-row__num">1.3</span>
+                      <span class="sec-row__name">有理数的加减法</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="sec-row" href="reader.html" data-section="1.4">
+                      <span class="sec-row__num">1.4</span>
+                      <span class="sec-row__name">有理数的乘除法</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="sec-row" href="reader.html" data-section="1.5">
+                      <span class="sec-row__num">1.5</span>
+                      <span class="sec-row__name">有理数的乘方</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="sec-row" href="methods.html" data-section="method">
+                      <span class="sec-row__num"></span>
+                      <span class="sec-row__name">方法速学</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a class="sec-row" href="pitfalls.html" data-section="error">
+                      <span class="sec-row__num"></span>
+                      <span class="sec-row__name">易错速析</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="02">
+                  <span class="ch-row__num">02</span>
+                  <span class="ch-row__name">整式的加减</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="03">
+                  <span class="ch-row__num">03</span>
+                  <span class="ch-row__name">一元一次方程</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="reader.html" data-chapter="04" data-dom-id="open-chapter-4">
+                  <span class="ch-row__num">04</span>
+                  <span class="ch-row__name">几何图形初步</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="tree-volume">
+            <div class="volume-head">
+              <span class="volume-head__name">七年级（下）</span>
+              <i data-lucide="chevron-down" class="volume-head__icon"></i>
+            </div>
+            <ul class="chapter-list" data-subtree="expanded">
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="05">
+                  <span class="ch-row__num">05</span>
+                  <span class="ch-row__name">相交线与平行线</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="06">
+                  <span class="ch-row__num">06</span>
+                  <span class="ch-row__name">实数</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="07">
+                  <span class="ch-row__num">07</span>
+                  <span class="ch-row__name">平面直角坐标系</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="08">
+                  <span class="ch-row__num">08</span>
+                  <span class="ch-row__name">二元一次方程组</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="09">
+                  <span class="ch-row__num">09</span>
+                  <span class="ch-row__name">不等式与不等式组</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="10">
+                  <span class="ch-row__num">10</span>
+                  <span class="ch-row__name">数据的收集、整理与描述</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="tree-volume">
+            <div class="volume-head">
+              <span class="volume-head__name">八年级（上）</span>
+              <i data-lucide="chevron-down" class="volume-head__icon"></i>
+            </div>
+            <ul class="chapter-list" data-subtree="expanded">
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="11">
+                  <span class="ch-row__num">11</span>
+                  <span class="ch-row__name">三角形</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="12">
+                  <span class="ch-row__num">12</span>
+                  <span class="ch-row__name">全等三角形</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="13">
+                  <span class="ch-row__num">13</span>
+                  <span class="ch-row__name">轴对称</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="14">
+                  <span class="ch-row__num">14</span>
+                  <span class="ch-row__name">整式的乘法与因式分解</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="15">
+                  <span class="ch-row__num">15</span>
+                  <span class="ch-row__name">分式</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="tree-volume">
+            <div class="volume-head">
+              <span class="volume-head__name">八年级（下）</span>
+              <i data-lucide="chevron-down" class="volume-head__icon"></i>
+            </div>
+            <ul class="chapter-list" data-subtree="expanded">
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="16">
+                  <span class="ch-row__num">16</span>
+                  <span class="ch-row__name">二次根式</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="17">
+                  <span class="ch-row__num">17</span>
+                  <span class="ch-row__name">勾股定理</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="18">
+                  <span class="ch-row__num">18</span>
+                  <span class="ch-row__name">平行四边形</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="19">
+                  <span class="ch-row__num">19</span>
+                  <span class="ch-row__name">一次函数</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="20">
+                  <span class="ch-row__num">20</span>
+                  <span class="ch-row__name">数据的分析</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="tree-volume">
+            <div class="volume-head">
+              <span class="volume-head__name">九年级（上）</span>
+              <i data-lucide="chevron-down" class="volume-head__icon"></i>
+            </div>
+            <ul class="chapter-list" data-subtree="expanded">
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="21">
+                  <span class="ch-row__num">21</span>
+                  <span class="ch-row__name">一元二次方程</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="22">
+                  <span class="ch-row__num">22</span>
+                  <span class="ch-row__name">二次函数</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="23">
+                  <span class="ch-row__num">23</span>
+                  <span class="ch-row__name">旋转</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="24">
+                  <span class="ch-row__num">24</span>
+                  <span class="ch-row__name">圆</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <section class="tree-volume">
+            <div class="volume-head">
+              <span class="volume-head__name">九年级（下）</span>
+              <i data-lucide="chevron-down" class="volume-head__icon"></i>
+            </div>
+            <ul class="chapter-list" data-subtree="expanded">
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="25">
+                  <span class="ch-row__num">25</span>
+                  <span class="ch-row__name">概率初步</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="26">
+                  <span class="ch-row__num">26</span>
+                  <span class="ch-row__name">反比例函数</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="27">
+                  <span class="ch-row__num">27</span>
+                  <span class="ch-row__name">相似</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="28">
+                  <span class="ch-row__num">28</span>
+                  <span class="ch-row__name">锐角三角函数</span>
+                </a>
+              </li>
+              <li>
+                <a class="ch-row" href="chapter.html" data-chapter="29">
+                  <span class="ch-row__num">29</span>
+                  <span class="ch-row__name">投影与视图</span>
+                </a>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+      </aside>
+
+      <!-- ===== 中栏：知识点正文 ===== -->
+      <article id="knowledge-point" class="reader-article">
+        <nav class="breadcrumb" aria-label="面包屑">
+          <span class="breadcrumb__item">七年级（上）</span>
+          <span class="breadcrumb__sep">／</span>
+          <a class="breadcrumb__item" href="chapter.html" data-dom-id="open-chapter">第一章 有理数</a>
+          <span class="breadcrumb__sep">／</span>
+          <span class="breadcrumb__item">1.2 有理数</span>
+        </nav>
+
+        <p class="kp-index">知识点 2</p>
+        <h1 class="kp-title">数轴</h1>
+
+        <p class="kp-def">规定了原点、正方向、单位长度的直线叫做数轴。</p>
+
+        <figure class="axis-figure">
+          <svg class="axis-svg" viewBox="0 0 560 110" role="img" aria-labelledby="axis-title axis-desc">
+            <title id="axis-title">数轴示意图</title>
+            <desc id="axis-desc">一条水平数轴，标出 −3 到 3 的整数点，并在 −2 与 3 处各有一个实心圆点。</desc>
+            <line class="axis-line" x1="14" y1="64" x2="532" y2="64"></line>
+            <path class="axis-arrow" d="M548 64 L532 57.5 L532 70.5 Z"></path>
+            <line class="axis-tick" x1="40" y1="57" x2="40" y2="71"></line>
+            <line class="axis-tick" x1="120" y1="57" x2="120" y2="71"></line>
+            <line class="axis-tick" x1="200" y1="57" x2="200" y2="71"></line>
+            <line class="axis-origin-tick" x1="280" y1="53" x2="280" y2="75"></line>
+            <line class="axis-tick" x1="360" y1="57" x2="360" y2="71"></line>
+            <line class="axis-tick" x1="440" y1="57" x2="440" y2="71"></line>
+            <line class="axis-tick" x1="520" y1="57" x2="520" y2="71"></line>
+            <circle class="axis-dot" cx="120" cy="64" r="4.5"></circle>
+            <circle class="axis-dot" cx="520" cy="64" r="4.5"></circle>
+            <text x="40" y="92" text-anchor="middle">−3</text>
+            <text x="120" y="92" text-anchor="middle">−2</text>
+            <text x="200" y="92" text-anchor="middle">−1</text>
+            <text class="axis-num--origin" x="280" y="92" text-anchor="middle">0</text>
+            <text x="360" y="92" text-anchor="middle">1</text>
+            <text x="440" y="92" text-anchor="middle">2</text>
+            <text x="520" y="92" text-anchor="middle">3</text>
+          </svg>
+          <figcaption class="axis-caption">−2 与 3 在数轴上的位置</figcaption>
+        </figure>
+
+        <section class="kp-block">
+          <h3 class="kp-h3">三要素</h3>
+          <div class="triple">
+            <div class="triple__item">
+              <p class="triple__title">原点</p>
+              <p class="triple__desc">数轴上的 0 点，是正数与负数的分界点。</p>
+            </div>
+            <div class="triple__item">
+              <p class="triple__title">正方向</p>
+              <p class="triple__desc">通常规定向右为正方向，用箭头表示。</p>
+            </div>
+            <div class="triple__item">
+              <p class="triple__title">单位长度</p>
+              <p class="triple__desc">取适当长度作为单位长度，刻度要均匀。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="kp-block">
+          <h3 class="kp-h3">要点</h3>
+          <ol class="points-list">
+            <li class="points-list__item">
+              <span class="points-list__num">1</span>
+              <p class="points-list__text">原点、正方向、单位长度称为数轴的三要素，三者缺一不可。</p>
+            </li>
+            <li class="points-list__item">
+              <span class="points-list__num">2</span>
+              <p class="points-list__text">设 <i class="m">a</i> 是一个正数，则数轴上表示数 <i class="m">a</i> 的点在原点的右边，与原点的距离是 <i class="m">a</i> 个单位长度。</p>
+            </li>
+            <li class="points-list__item">
+              <span class="points-list__num">3</span>
+              <p class="points-list__text">表示数 <i class="m">−a</i> 的点在原点的左边，与原点的距离是 <i class="m">a</i> 个单位长度。</p>
+            </li>
+            <li class="points-list__item">
+              <span class="points-list__num">4</span>
+              <p class="points-list__text">任何一个有理数都可以用数轴上的一个点表示。</p>
+            </li>
+          </ol>
+        </section>
+
+        <div class="end-mark">
+          <div class="end-mark__rule"></div>
+          <p class="end-mark__label">本页完</p>
+        </div>
+
+        <section class="kp-extend">
+          <h3 class="kp-h3">延伸</h3>
+          <p class="kp-extend__desc">第四章 几何图形初步中的立体图形支持三维演示。</p>
+          <a class="btn-ghost" href="concept-3d.html" data-dom-id="open-3d">打开三维演示 →</a>
+        </section>
+      </article>
+
+      <!-- ===== 右栏：本页目录 / 方法 / 易错 / 练习 ===== -->
+      <aside id="related-quiz" class="reader-side" aria-label="本页目录与方法练习">
+        <div class="side-bar">
+          <span class="side-bar__label">本页</span>
+          <button type="button" class="side-collapse" id="side-collapse" aria-expanded="true"
+                  aria-label="隐藏右栏" title="隐藏右栏（⌘/Ctrl + ⌥/Alt + B）">
+            <i data-lucide="panel-right-close" class="side-collapse__icon"></i>
+          </button>
+        </div>
+
+        <section id="page-outline" class="side-block" aria-label="本页目录" hidden>
+          <h2 class="side-block__title">本页目录</h2>
+          <ul class="outline" id="outline-list"></ul>
+        </section>
+
+        <section class="side-block side-block--fold">
+          <div class="side-block__head">
+            <h2 class="side-block__title">方法速学</h2>
+            <a class="side-block__more" href="methods.html" data-dom-id="open-methods">查看全部</a>
+          </div>
+          <div class="side-block__body">
+            <p class="side-item">
+              <span class="side-item__idx">方法 <span class="mono-num">1</span></span>
+              <span class="side-item__text">用数轴表示有理数的方法</span>
+            </p>
+          </div>
+        </section>
+
+        <section class="side-block side-block--fold">
+          <div class="side-block__head">
+            <h2 class="side-block__title">易错速析</h2>
+            <a class="side-block__more" href="pitfalls.html" data-dom-id="open-pitfalls">查看全部</a>
+          </div>
+          <div class="side-block__body">
+            <p class="side-item">
+              <span class="side-item__idx">易错点 <span class="mono-num">1</span></span>
+              <span class="side-item__text">对「0」的含义理解不透彻</span>
+            </p>
+            <p class="side-note">0 既不是正数也不是负数，它是正数与负数的分界点。</p>
+          </div>
+        </section>
+
+        <section id="related-quiz-body" class="side-block side-block--fold">
+          <h2 class="side-block__title">对应练习</h2>
+          <div class="side-block__body">
+
+          <article class="quiz">
+            <div class="quiz__head">
+              <p class="quiz__stem">在数轴上，表示 −3 的点在（　）</p>
+              <span class="quiz__verdict">
+                <i data-lucide="check" class="quiz__verdict-icon"></i>
+                <span>正确</span>
+              </span>
+            </div>
+            <ul class="quiz__options">
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-1" value="A">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">A</span>
+                  <span class="opt__text">原点的右边，距原点 3 个单位长度</span>
+                </label>
+              </li>
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-1" value="B" checked>
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">B</span>
+                  <span class="opt__text">原点的左边，距原点 3 个单位长度</span>
+                </label>
+              </li>
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-1" value="C">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">C</span>
+                  <span class="opt__text">原点的左边，距原点 −3 个单位长度</span>
+                </label>
+              </li>
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-1" value="D">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">D</span>
+                  <span class="opt__text">原点的右边，距原点 −3 个单位长度</span>
+                </label>
+              </li>
+            </ul>
+          </article>
+
+          <article class="quiz">
+            <div class="quiz__head">
+              <p class="quiz__stem">数轴上表示 −2.5 与 2.5 的两点之间的距离是（　）</p>
+            </div>
+            <ul class="quiz__options">
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-2" value="A">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">A</span>
+                  <span class="opt__text opt__text--num">0</span>
+                </label>
+              </li>
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-2" value="B">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">B</span>
+                  <span class="opt__text opt__text--num">2.5</span>
+                </label>
+              </li>
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-2" value="C">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">C</span>
+                  <span class="opt__text opt__text--num">5</span>
+                </label>
+              </li>
+              <li>
+                <label class="opt">
+                  <input class="opt__input" type="radio" name="quiz-2" value="D">
+                  <span class="opt__radio" aria-hidden="true"></span>
+                  <span class="opt__key">D</span>
+                  <span class="opt__text opt__text--num">−5</span>
+                </label>
+              </li>
+            </ul>
+          </article>
+          </div>
+        </section>
+
+        <div class="side-cta">
+          <a class="btn-ghost btn-ghost--block" href="practice.html" data-dom-id="open-practice">打开考点速练</a>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="shell-footer">
+      <div class="shell-footer__inner">
+        <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+        <nav class="shell-footer__links" aria-label="页脚导航">
+          <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+          <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+          <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+          <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+        </nav>
+      </div>
+    </footer>
+
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}body{padding-top:0}
+</style>
+
+    <style id="page-styles">
+.shell-footer__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px;border-radius:var(--math-radius-sm)}.reader-shell{
+  display:grid;
+  grid-template-columns:288px minmax(0,1fr) 320px;
+  align-items:start;
+  width:100%;
+  max-width:none;
+  margin:0;
+}.reader-shell > *{min-width:0}#chapter-tree{grid-column:1;grid-row:1}#knowledge-point{grid-column:2;grid-row:1}#related-quiz{grid-column:3;grid-row:1}.reader-tree{
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+  background:var(--math-background);
+  border-right:1px solid var(--math-border);
+}.tree-toggle{position:absolute;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}.tree-head{
+  position:sticky;top:0;z-index:2;
+  display:flex;align-items:center;gap:8px;
+  padding:20px 12px 12px;
+  background:var(--math-background);
+  border-bottom:1px solid var(--math-border);
+}.tree-head__title{font-size:12px;letter-spacing:.08em;color:var(--math-ink-3)}.tree-head__meta{margin-left:auto;font-size:12px;color:var(--math-ink-3);font-variant-numeric:tabular-nums}.tree-head__icon{display:none;flex:none;width:16px;height:16px;color:var(--math-ink-3)}.tree-body{padding-bottom:24px}.tree-volume{margin-top:4px}.volume-head{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  background:var(--math-surface);
+  font-size:13px;font-weight:600;color:var(--math-foreground);
+}.volume-head__name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.volume-head__icon{flex:none;width:14px;height:14px;color:var(--math-ink-4)}.chapter-list,.section-list,.point-list{list-style:none;margin:0;padding:0}.ch-row,.sec-row,.pt-row{
+  position:relative;
+  display:flex;align-items:center;
+  text-decoration:none;
+  transition:background-color 140ms cubic-bezier(.2,.8,.2,1);
+}.ch-row{height:32px;gap:8px;padding:0 12px}.ch-row__num{
+  flex:0 0 20px;
+  font-family:var(--math-font-mono);font-size:12px;
+  font-variant-numeric:tabular-nums;color:var(--math-ink-3);
+}.ch-row__name{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:14px;color:var(--math-ink-2);
+  transition:color 140ms cubic-bezier(.2,.8,.2,1);
+}.ch-row:hover{background:var(--math-surface)}.ch-row:hover .ch-row__name{color:var(--math-foreground)}.sec-row{height:30px;gap:8px;padding:0 12px 0 24px}.sec-row__num{
+  flex:0 0 28px;
+  font-family:var(--math-font-mono);font-size:12px;
+  font-variant-numeric:tabular-nums;color:var(--math-ink-3);
+}.sec-row__name{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:14px;color:var(--math-ink-2);
+  transition:color 140ms cubic-bezier(.2,.8,.2,1);
+}.sec-row:hover{background:var(--math-surface)}.sec-row:hover .sec-row__name{color:var(--math-foreground)}.pt-row{height:28px;gap:6px;padding:0 12px 0 36px}.pt-row__idx{flex:none;font-size:13px;color:var(--math-ink-3)}.pt-row__num{
+  flex:0 0 10px;
+  font-family:var(--math-font-mono);font-size:12px;
+  font-variant-numeric:tabular-nums;color:var(--math-ink-3);
+}.pt-row__name{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:13px;color:var(--math-ink-2);
+  transition:color 140ms cubic-bezier(.2,.8,.2,1);
+}.pt-row:hover{background:var(--math-surface)}.pt-row:hover .pt-row__name{color:var(--math-foreground)}.ch-row[data-active="true"]::before,.sec-row[data-active="true"]::before,.pt-row[data-active="true"]::before{
+  content:"";position:absolute;top:0;bottom:0;width:2px;
+  background:var(--math-primary);
+}.ch-row[data-active="true"]::before{left:0}.sec-row[data-active="true"]::before{left:12px}.pt-row[data-active="true"]::before{left:24px}.ch-row[data-active="true"] .ch-row__name,.sec-row[data-active="true"] .sec-row__name,.pt-row[data-active="true"] .pt-row__name{color:var(--math-primary);font-weight:500}.ch-row:focus-visible,.sec-row:focus-visible,.pt-row:focus-visible{
+  outline:2px solid var(--math-primary);outline-offset:-2px;
+}.reader-article{padding:40px 56px 0}.breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--math-ink-3)}.breadcrumb__sep{color:var(--math-ink-4)}.kp-index{
+  margin:24px 0 0;
+  font-family:var(--math-font-mono);font-size:12px;
+  letter-spacing:.04em;color:var(--math-ink-3);
+}.kp-title{
+  margin:8px 0 0;
+  font-size:clamp(1.75rem,2.4vw,2.25rem);
+  line-height:1.25;font-weight:600;letter-spacing:-.01em;
+  color:var(--math-foreground);
+}.kp-def{
+  margin:20px 0 0;max-width:34em;
+  font-size:1.125rem;line-height:1.75;color:var(--math-ink-2);
+}.axis-figure{
+  width:fit-content;max-width:100%;
+  margin:32px 0 0;padding:24px;
+  background:var(--math-background);
+  border:1px solid var(--math-border);
+  border-radius:var(--math-radius-md);
+}.axis-svg{display:block;width:100%;height:auto;max-width:560px}.axis-svg text{
+  font-family:var(--math-font-mono);font-size:12px;
+  fill:var(--math-ink-2);font-variant-numeric:tabular-nums;
+}.axis-svg .axis-line{stroke:var(--math-primary);stroke-width:1.5;fill:none}.axis-svg .axis-arrow{fill:var(--math-primary)}.axis-svg .axis-tick{stroke:var(--math-line-strong);stroke-width:1}.axis-svg .axis-origin-tick{stroke:var(--math-primary);stroke-width:1.5}.axis-svg .axis-dot{fill:var(--math-primary)}.axis-svg .axis-num--origin{fill:var(--math-primary);font-weight:600}.axis-caption{margin:16px 0 0;font-size:12px;color:var(--math-ink-3)}.kp-block{margin-top:48px}.kp-h3{margin:0;font-size:18px;font-weight:600;line-height:1.4;color:var(--math-foreground)}.triple{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-top:20px;
+  border-top:1px solid var(--math-border);
+  border-bottom:1px solid var(--math-border);
+}.triple__item{padding:20px 24px 20px 0;min-width:0}.triple__item + .triple__item{border-left:1px solid var(--math-border);padding-left:24px}.triple__title{margin:0;font-size:16px;font-weight:600;line-height:1.4;color:var(--math-foreground)}.triple__desc{margin:8px 0 0;font-size:14px;line-height:1.7;color:var(--math-ink-2)}.points-list{list-style:none;margin:20px 0 0;padding:0}.points-list__item{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--math-border)}.points-list__item:first-child{border-top:0;padding-top:0}.points-list__num{
+  flex:0 0 18px;
+  font-family:var(--math-font-mono);font-size:13px;line-height:1.8;
+  font-variant-numeric:tabular-nums;color:var(--math-ink-3);
+}.points-list__text{margin:0;font-size:15px;line-height:1.8;color:var(--math-ink-2)}.m{font-family:var(--math-font-math);font-style:italic}.end-mark{margin-top:56px}.end-mark__rule{border-top:1px solid var(--math-border)}.end-mark__label{margin:12px 0 0;text-align:center;font-size:12px;color:var(--math-ink-4)}.kp-extend{margin-top:32px;padding-top:24px;border-top:1px solid var(--math-border)}.kp-extend__desc{margin:12px 0 20px;font-size:15px;line-height:1.8;color:var(--math-ink-2)}.btn-ghost{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:36px;padding:0 16px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
+  background:transparent;
+  font-size:14px;font-weight:500;color:var(--math-foreground);
+  text-decoration:none;white-space:nowrap;
+  transition:border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}.btn-ghost:hover{border-color:var(--math-primary);color:var(--math-primary);background:var(--math-primary-soft)}.btn-ghost:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.btn-ghost--block{display:flex;width:100%}.reader-side{
+  position:sticky;top:0;
+  height:100vh;overflow-y:auto;
+  background:var(--math-background);
+  border-left:1px solid var(--math-border);
+}.side-block{padding:24px 28px;border-bottom:1px solid var(--math-border)}.side-block:first-child{padding-top:32px}.side-block__title{
+  margin:0 0 14px;
+  font-size:12px;font-weight:500;letter-spacing:.08em;
+  color:var(--math-ink-3);
+}.side-item{display:flex;align-items:baseline;gap:8px;margin:0;font-size:14px;line-height:1.6;color:var(--math-foreground)}.side-item__idx{flex:none}.side-item__text{min-width:0}.mono-num{font-family:var(--math-font-mono);font-variant-numeric:tabular-nums}.side-note{margin:10px 0 0;font-size:13px;line-height:1.7;color:var(--math-ink-2)}.quiz + .quiz{margin-top:20px;padding-top:20px;border-top:1px solid var(--math-border)}.quiz__head{display:flex;align-items:flex-start;gap:12px}.quiz__stem{margin:0;flex:1 1 auto;min-width:0;font-size:14px;line-height:1.6;color:var(--math-foreground)}.quiz__verdict{
+  flex:none;display:inline-flex;align-items:center;gap:4px;
+  font-size:13px;color:var(--math-state-success);white-space:nowrap;
+}.quiz__verdict-icon{flex:none;width:14px;height:14px}.quiz__options{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.opt{position:relative;display:flex;align-items:center;gap:10px;min-height:34px;padding:4px 0;cursor:pointer}.opt__input{position:absolute;width:1px;height:1px;margin:0;opacity:0;pointer-events:none}.opt__radio{
+  position:relative;flex:none;width:16px;height:16px;
+  border:1px solid var(--math-border);border-radius:50%;
+  transition:border-color 140ms cubic-bezier(.2,.8,.2,1);
+}.opt:hover .opt__radio{border-color:var(--math-line-strong)}.opt__input:checked + .opt__radio{border-color:var(--math-primary)}.opt__input:checked + .opt__radio::after{
+  content:"";position:absolute;inset:3px;border-radius:50%;background:var(--math-primary);
+}.opt__input:focus-visible + .opt__radio{outline:2px solid var(--math-primary);outline-offset:2px}.opt__key{flex:0 0 14px;font-family:var(--math-font-mono);font-size:13px;color:var(--math-ink-3)}.opt__text{min-width:0;font-size:14px;line-height:1.5;color:var(--math-ink-2)}.opt__text--num{font-family:var(--math-font-mono);font-variant-numeric:tabular-nums}.side-cta{padding:20px 28px 32px}@media (max-width:1279px) and (min-width:1024px){.reader-shell{grid-template-columns:288px minmax(0,1fr)}#chapter-tree{grid-row:1 / span 2}#related-quiz{
+    grid-column:2;grid-row:2;
+    position:static;height:auto;overflow:visible;
+    border-left:0;border-top:1px solid var(--math-border);
+    margin-top:48px;
+  }.reader-article{padding:40px 32px 0}.side-block{padding:24px 32px}.side-block:first-child{padding-top:24px}.side-cta{padding:20px 32px 32px}}@media (max-width:1023px){.reader-shell{grid-template-columns:minmax(0,1fr)}#chapter-tree,#knowledge-point,#related-quiz{grid-column:1}#chapter-tree{grid-row:1}#knowledge-point{grid-row:2}#related-quiz{grid-row:3}.reader-tree{
+    position:static;height:auto;overflow:visible;
+    border-right:0;border-bottom:1px solid var(--math-border);
+  }.tree-head{position:static;padding:14px 16px;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.tree-head:hover{background:var(--math-surface)}.tree-head__icon{display:block;transition:transform 140ms cubic-bezier(.2,.8,.2,1)}.tree-toggle:focus-visible + .tree-head{outline:2px solid var(--math-primary);outline-offset:-2px}.tree-toggle:checked ~ .tree-head .tree-head__icon{transform:rotate(180deg)}.tree-body{display:none;padding-bottom:0}.tree-toggle:checked ~ .tree-body{display:block}.reader-article{padding:40px 32px 0}#related-quiz{
+    position:static;height:auto;overflow:visible;
+    border-left:0;border-top:1px solid var(--math-border);
+    margin-top:48px;
+  }.side-block{padding:24px 32px}.side-block:first-child{padding-top:24px}.side-cta{padding:20px 32px 32px}}@media (max-width:640px){.reader-article{padding:20px}.side-block{padding:20px}.side-block:first-child{padding-top:20px}.side-cta{padding:16px 20px 28px}.triple{grid-template-columns:minmax(0,1fr)}.triple__item{padding:16px 0}.triple__item + .triple__item{border-left:0;border-top:1px solid var(--math-border);padding-left:0}.axis-figure{padding:16px}.axis-svg text{font-size:19px}.axis-svg .axis-tick,.axis-svg .axis-line,.axis-svg .axis-origin-tick{stroke-width:2}.axis-svg .axis-num--origin{font-weight:600}.shell-footer__inner{padding:24px 20px}}@media (max-width:767px){.shell-footer__links{gap:16px}}@media (max-width:1023px){.reader-shell,.reader-article,.reader-tree,.reader-side{max-width:100%;overflow-wrap:break-word}.axis-svg,.axis-figure{max-width:100%}}@media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important}}.breadcrumb__item{
+  color:var(--math-ink-3);text-decoration:none;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1);
+}.breadcrumb__item:hover{color:var(--math-primary)}.breadcrumb__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.side-block__head{display:flex;align-items:baseline;gap:8px;margin:0 0 14px}.side-block__head .side-block__title{margin:0}.side-block__more{
+  margin-left:auto;
+  font-size:13px;color:var(--math-ink-3);
+  text-decoration:none;white-space:nowrap;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1);
+}.side-block__more:hover{color:var(--math-primary)}.side-block__more:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+</style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+
+    <style id="reader-live-styles">
+.sec-title{
+  margin:0;font-size:20px;line-height:1.4;font-weight:600;
+  letter-spacing:-.01em;color:var(--math-foreground);
+}.kp-block + .kp-block{margin-top:40px}.kp-block,.points-list__item{scroll-margin-top:78px}.sec-empty{margin:12px 0 0;font-size:13px;line-height:1.7;color:var(--math-ink-4)}.pt-detail{
+  margin-left:6px;font-size:12px;line-height:1.6;
+  color:var(--math-primary);text-decoration:none;white-space:nowrap;
+}.pt-detail:hover{text-decoration:underline}.pt-detail:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px;border-radius:var(--math-radius-xs)}@keyframes reader-flash{from{background:var(--math-primary-soft)}to{background:transparent}}.points-list__item.is-flash,.kp-block.is-flash{
+  animation:reader-flash 1200ms cubic-bezier(.2,.8,.2,1) 1;
+  border-radius:var(--math-radius-sm);
+}.outline{margin:0;padding:0;list-style:none;border-left:1px solid var(--math-border)}.outline__item{padding:0}.outline__item--sub{padding-left:12px}.outline__link{
+  display:block;margin-left:-1px;padding:5px 0 5px 12px;
+  border-left:2px solid transparent;
+  font-size:13px;line-height:1.55;color:var(--math-ink-3);
+  text-decoration:none;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+}.outline__link:hover{color:var(--math-foreground)}.outline__link[data-active="true"]{
+  color:var(--math-primary);border-left-color:var(--math-primary);font-weight:500;
+}.outline__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.shell-panels{display:inline-flex;align-items:center;gap:4px}.shell-panel-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;padding:0;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:var(--math-background);color:var(--math-ink-3);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}.shell-panel-btn:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.shell-panel-btn[aria-pressed="true"]{color:var(--math-primary);border-color:var(--math-primary-200);background:var(--math-primary-soft)}.shell-panel-btn[aria-pressed="false"]{color:var(--math-ink-4)}.shell-panel-btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.shell-panel-btn__icon{width:15px;height:15px}.tree-collapse{
+  flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;margin-left:2px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-sm);
+  background:none;color:var(--math-ink-3);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}.tree-collapse:hover{border-color:var(--math-border);background:var(--math-surface);color:var(--math-foreground)}.tree-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.tree-collapse__icon{width:16px;height:16px;transition:transform 200ms cubic-bezier(.2,.8,.2,1)}.side-bar{
+  position:sticky;top:0;z-index:2;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px 8px;
+  background:var(--math-background);
+  border-bottom:1px solid var(--math-border);
+}.side-bar__label{font-size:12px;letter-spacing:.08em;color:var(--math-ink-3)}.side-collapse{
+  margin-left:auto;display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-sm);
+  background:none;color:var(--math-ink-3);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}.side-collapse:hover{border-color:var(--math-border);background:var(--math-surface);color:var(--math-foreground)}.side-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.side-collapse__icon{width:15px;height:15px}@media (min-width:1024px){.reader-shell{
+    --panel-left:288px;
+    --panel-right:320px;
+    grid-template-columns:var(--panel-left) minmax(0,1fr) var(--panel-right);
+    transition:grid-template-columns 220ms cubic-bezier(.2,.8,.2,1);
+  }.reader-shell[data-left="hidden"]{--panel-left:56px}.reader-shell[data-right="hidden"]{--panel-right:0px}.reader-tree{display:flex;flex-direction:column;overflow:hidden}.tree-body{flex:1 1 auto;min-height:0;overflow-y:auto}.reader-shell[data-left="hidden"] .tree-head{justify-content:center;padding:18px 0 12px}.reader-shell[data-left="hidden"] .tree-head__title,.reader-shell[data-left="hidden"] .tree-head__meta,.reader-shell[data-left="hidden"] .tree-head__icon,.reader-shell[data-left="hidden"] .tree-body,.reader-shell[data-left="hidden"] .tree-account__text,.reader-shell[data-left="hidden"] .tree-account__icon{display:none}.reader-shell[data-left="hidden"] .tree-collapse{margin-left:0}.reader-shell[data-left="hidden"] .tree-collapse__icon{transform:rotate(180deg)}.reader-shell[data-left="hidden"] .tree-account{justify-content:center;padding:10px 0}.reader-shell[data-right="hidden"] .reader-side{
+    overflow:hidden;border-left:0;opacity:0;pointer-events:none;
+  }}@media (max-width:1023px){.tree-collapse,.shell-panels{display:none}}.side-block--fold .side-block__body{display:none}.side-block--fold .side-block__head,.side-block--fold > .side-block__title{cursor:pointer}.side-block--fold .side-block__title::after{
+  content:"";display:inline-block;width:5px;height:5px;margin-left:7px;
+  border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+  transform:rotate(45deg) translate(-1px,-2px);
+  transition:transform 180ms cubic-bezier(.2,.8,.2,1);
+}.side-block--fold:hover .side-block__title::after,.side-block--fold.is-open .side-block__title::after{transform:rotate(225deg) translate(-2px,-1px)}.side-block--fold .side-block__head:focus-visible,.side-block--fold > .side-block__title:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px;border-radius:var(--math-radius-xs)}@media (hover:hover){.side-block--fold:hover .side-block__body,.side-block--fold:focus-within .side-block__body{display:block}}.side-block--fold.is-open .side-block__body{display:block}
+</style>
+
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+    <script src="assets/js/math-tree.js"></script>
+    <script src="assets/js/reader-live.js"></script>
+</body>
+</html>

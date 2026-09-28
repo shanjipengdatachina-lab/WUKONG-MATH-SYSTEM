@@ -1,0 +1,213 @@
+/* ==========================================================================
+   IDE 工作台外壳 (ide.css)
+   --------------------------------------------------------------------------
+   没有顶部栏。全部收进左侧栏：
+     · 顶部：logo + 站点标题
+     · 中部：主导航（当前页高亮）
+     · 底部：搜索 / 通知 / 账号 / 设置（左下角）
+   侧栏常驻 56px，鼠标移入展开成 212px 显示文字，展开时覆盖内容不推动布局。
+   页面内容整体让出 56px，纵向空间完全还给工作区。
+   ========================================================================== */
+
+:root {
+  --ide-rail-w: 56px;
+  --ide-rail-open: 212px;
+}
+
+body { padding-left: var(--ide-rail-w); }
+
+@media (max-width: 640px) {
+  :root { --ide-rail-w: 48px; }
+}
+
+/* ---------- 左侧栏 ---------- */
+.ide-rail {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--ide-rail-w); z-index: 70;
+  display: flex; flex-direction: column;
+  padding: 10px 9px 12px;
+  background: var(--math-surface);
+  border-right: 1px solid var(--math-border);
+  overflow: hidden;
+  transition: width 160ms cubic-bezier(.2,.8,.2,1), box-shadow 160ms cubic-bezier(.2,.8,.2,1);
+}
+.ide-rail:hover,
+.ide-rail:focus-within {
+  width: var(--ide-rail-open);
+  box-shadow: 0 0 0 1px var(--math-border), 0 12px 32px rgba(15, 23, 42, .12);
+}
+
+.ide-rail__group,
+.ide-rail__foot {
+  display: flex; flex-direction: column; gap: 2px; width: 100%;
+}
+.ide-rail__foot { margin-top: auto; }
+.ide-rail__sep {
+  width: 24px; height: 1px; margin: 8px 9px;
+  background: var(--math-border); flex: none;
+}
+.ide-rail__foot .ide-rail__sep { margin-top: 10px; }
+
+/* 品牌区：logo + 标题 */
+.ide-rail__brand {
+  display: flex; align-items: center; gap: 12px;
+  height: 40px; padding: 0 9px; margin-bottom: 4px;
+  border-radius: var(--math-radius-md);
+  text-decoration: none; flex: none;
+  transition: background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.ide-rail__brand:hover { background: var(--math-background); }
+.ide-rail__brand:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+.ide-rail__mark {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: var(--math-radius-sm);
+  background: var(--math-primary); color: #fff;
+  font-size: 13px; font-weight: 600; line-height: 1;
+}
+.ide-rail__brand-text { display: flex; flex-direction: column; min-width: 0; }
+.ide-rail__brand-name {
+  font-size: 14px; font-weight: 600; line-height: 1.3;
+  color: var(--math-foreground); white-space: nowrap;
+}
+.ide-rail__brand-sub { font-size: 11px; line-height: 1.3; color: var(--math-ink-4); white-space: nowrap; }
+
+/* 导航 / 底部条目 */
+.ide-rail__item,
+.ide-rail__account {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; height: 38px; padding: 0 9px;
+  border: 0; border-radius: var(--math-radius-md);
+  background: none; cursor: pointer; flex: none;
+  font: inherit; font-size: 13.5px; text-align: left;
+  color: var(--math-ink-3); text-decoration: none;
+  transition: color 140ms cubic-bezier(.2,.8,.2,1), background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.ide-rail__item:hover,
+.ide-rail__account:hover { color: var(--math-foreground); background: var(--math-background); }
+.ide-rail__item:focus-visible,
+.ide-rail__account:focus-visible { outline: 2px solid var(--math-primary); outline-offset: -2px; }
+.ide-rail__item[data-active="true"] { color: var(--math-primary); background: var(--math-primary-soft); }
+.ide-rail__item[aria-pressed="false"] { color: var(--math-ink-4); }
+
+.ide-rail__icon,
+.ide-rail__item svg,
+.ide-rail__account svg {
+  flex: none; width: 18px; height: 18px;
+}
+.ide-rail__label {
+  flex: 1 1 auto; min-width: 0;
+  white-space: nowrap; overflow: hidden;
+  opacity: 0; transition: opacity 130ms cubic-bezier(.2,.8,.2,1);
+}
+.ide-rail:hover .ide-rail__label,
+.ide-rail:focus-within .ide-rail__label { opacity: 1; }
+.ide-rail__kbd {
+  flex: none; font-size: 11px; color: var(--math-ink-4);
+  opacity: 0; transition: opacity 130ms cubic-bezier(.2,.8,.2,1);
+}
+.ide-rail:hover .ide-rail__kbd,
+.ide-rail:focus-within .ide-rail__kbd { opacity: 1; }
+
+/* 全屏按钮：两个图标按状态切换（避免重绘 lucide） */
+.ide-rail__icon--fs-off { display: none; }
+#toggle-fullscreen[aria-pressed="true"] .ide-rail__icon--fs-on { display: none; }
+#toggle-fullscreen[aria-pressed="true"] .ide-rail__icon--fs-off { display: block; }
+
+/* ---------- 全屏覆盖区：全屏切页面时装目标页，顶层文档不卸载 ---------- */
+/* z-index 压在侧栏（70）之下，侧栏依旧可见可点；顶层自己的回顶按钮由脚本让位 */
+.fs-shell {
+  position: fixed; top: 0; right: 0; bottom: 0; left: var(--ide-rail-w);
+  z-index: 60;
+  background: var(--math-background);
+}
+.fs-shell__frame { display: block; width: 100%; height: 100%; border: 0; background: var(--math-background); }
+/* 覆盖区里的页面：藏掉自己的侧栏，导航交给外层那一份 */
+html[data-embed] body { padding-left: 0; }
+html[data-embed] .ide-rail { display: none; }
+
+/* 账号头像 */
+.ide-rail__avatar {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; margin: 0 -4px;
+  border-radius: 999px;
+  background: var(--math-primary-soft); color: var(--math-primary);
+  font-size: 12px; font-weight: 600;
+}
+.ide-rail__avatar svg { width: 15px; height: 15px; }
+.ide-rail__dot {
+  flex: none; width: 6px; height: 6px; border-radius: 999px;
+  background: var(--math-primary);
+}
+.ide-rail__dot + .ide-rail__label { flex: 0 0 auto; }
+
+@media (max-width: 640px) {
+  .ide-rail__item,
+  .ide-rail__account { height: 36px; }
+  .ide-rail__icon,
+  .ide-rail__item svg,
+  .ide-rail__account svg { width: 16px; height: 16px; }
+}
+
+/* ---------- 面板内的收起按钮 ---------- */
+.tree-collapse {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; margin-left: 2px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--math-radius-sm);
+  background: none; color: var(--math-ink-3); cursor: pointer;
+  transition: color 140ms cubic-bezier(.2,.8,.2,1), border-color 140ms cubic-bezier(.2,.8,.2,1), background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.tree-collapse:hover { border-color: var(--math-border); background: var(--math-surface); color: var(--math-foreground); }
+.tree-collapse:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+.tree-collapse__icon { width: 16px; height: 16px; transition: transform 200ms cubic-bezier(.2,.8,.2,1); }
+
+.side-bar {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 8px;
+  background: var(--math-background);
+  border-bottom: 1px solid var(--math-border);
+}
+.side-bar__label { font-size: 12px; letter-spacing: .08em; color: var(--math-ink-3); }
+.side-collapse {
+  margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--math-radius-sm);
+  background: none; color: var(--math-ink-3); cursor: pointer;
+  transition: color 140ms cubic-bezier(.2,.8,.2,1), border-color 140ms cubic-bezier(.2,.8,.2,1), background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.side-collapse:hover { border-color: var(--math-border); background: var(--math-surface); color: var(--math-foreground); }
+.side-collapse:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+.side-collapse__icon { width: 15px; height: 15px; }
+
+/* ---------- 三栏面板：左右都可以隐藏 ---------- */
+@media (min-width: 1024px) {
+  .reader-shell {
+    --panel-left: 288px;
+    --panel-right: 320px;
+    grid-template-columns: var(--panel-left) minmax(0, 1fr) var(--panel-right);
+    transition: grid-template-columns 220ms cubic-bezier(.2,.8,.2,1);
+  }
+  .reader-shell[data-left="hidden"] { --panel-left: 56px; }
+  .reader-shell[data-right="hidden"] { --panel-right: 0px; }
+
+  .reader-tree { display: flex; flex-direction: column; overflow: hidden; }
+  .tree-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+
+  .reader-shell[data-left="hidden"] .tree-head { justify-content: center; padding: 18px 0 12px; }
+  .reader-shell[data-left="hidden"] .tree-head__title,
+  .reader-shell[data-left="hidden"] .tree-head__meta,
+  .reader-shell[data-left="hidden"] .tree-head__icon,
+  .reader-shell[data-left="hidden"] .tree-body { display: none; }
+  .reader-shell[data-left="hidden"] .tree-collapse { margin-left: 0; }
+  .reader-shell[data-left="hidden"] .tree-collapse__icon { transform: rotate(180deg); }
+
+  .reader-shell[data-right="hidden"] .reader-side {
+    overflow: hidden; border-left: 0; opacity: 0; pointer-events: none;
+  }
+}
+@media (max-width: 1023px) {
+  .tree-collapse { display: none; }
+}
+
+/* ---------- 兼容自带顶栏的页面（concept.html 的 .kp-bar） ---------- */
+.kp-bar { left: var(--ide-rail-w); }

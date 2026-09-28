@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>立体图形演示</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" data-active="true" aria-current="page" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__account" href="login.html" title="登录 / 注册">
+          <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
+          <span class="ide-rail__label">登录</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+      <div class="page">
+        <section class="page-head">
+          <nav class="crumb" aria-label="面包屑">
+            <span class="crumb__part">七年级（上）</span>
+            <span class="crumb__sep" aria-hidden="true">／</span>
+            <span class="crumb__part">第四章 几何图形初步</span>
+            <span class="crumb__sep" aria-hidden="true">／</span>
+            <span class="crumb__part">4.1 几何图形</span>
+          </nav>
+          <p class="meta-line"><span class="meta-chip">知识点 2</span></p>
+          <h1 class="page-title">立体图形</h1>
+          <p class="page-lede">有些几何图形（如长方体、正方体、圆柱、圆锥、球等）的各部分不都在同一平面内，它们是立体图形。</p>
+        </section>
+
+        <div class="layout">
+          <section class="col-stage" aria-label="正方体三维演示">
+            <div class="solid-stage" id="solid-demo">
+              <div class="solid-body" role="img" aria-label="可自转的正方体，六个面分别标注 1 至 6">
+                <div class="solid-face solid-face--front"><span>1</span></div>
+                <div class="solid-face solid-face--back"><span>2</span></div>
+                <div class="solid-face solid-face--right"><span>3</span></div>
+                <div class="solid-face solid-face--left"><span>4</span></div>
+                <div class="solid-face solid-face--top"><span>5</span></div>
+                <div class="solid-face solid-face--bottom"><span>6</span></div>
+              </div>
+              <p class="solid-hint">拖拽旋转 · 滚轮缩放</p>
+            </div>
+          </section>
+
+          <aside class="col-side" aria-label="立体图形要点">
+            <section class="side-block">
+              <p class="side-block__label">展开图</p>
+              <svg class="net-svg" viewBox="0 0 160 120" width="160" height="120" role="img" aria-label="正方体的十字形展开图，由六个正方形组成">
+                <rect class="net-cell" x="40" y="0" width="40" height="40"></rect>
+                <text class="net-num" x="60" y="20" dy="0.35em" text-anchor="middle">5</text>
+                <rect class="net-cell" x="0" y="40" width="40" height="40"></rect>
+                <text class="net-num" x="20" y="60" dy="0.35em" text-anchor="middle">4</text>
+                <rect class="net-cell" x="40" y="40" width="40" height="40"></rect>
+                <text class="net-num" x="60" y="60" dy="0.35em" text-anchor="middle">1</text>
+                <rect class="net-cell" x="80" y="40" width="40" height="40"></rect>
+                <text class="net-num" x="100" y="60" dy="0.35em" text-anchor="middle">3</text>
+                <rect class="net-cell" x="120" y="40" width="40" height="40"></rect>
+                <text class="net-num" x="140" y="60" dy="0.35em" text-anchor="middle">2</text>
+                <rect class="net-cell" x="80" y="80" width="40" height="40"></rect>
+                <text class="net-num" x="100" y="100" dy="0.35em" text-anchor="middle">6</text>
+              </svg>
+              <p class="net-caption">沿棱剪开后铺平，得到 6 个正方形。</p>
+            </section>
+
+            <section class="side-block">
+              <p class="side-block__label">三视图</p>
+              <div class="views">
+                <div class="view">
+                  <div class="view__box" aria-hidden="true"></div>
+                  <p class="view__label">正面看</p>
+                </div>
+                <div class="view">
+                  <div class="view__box" aria-hidden="true"></div>
+                  <p class="view__label">左面看</p>
+                </div>
+                <div class="view">
+                  <div class="view__box" aria-hidden="true"></div>
+                  <p class="view__label">上面看</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="side-block">
+              <p class="side-block__label">要点</p>
+              <ul class="points">
+                <li class="points__item"><span class="points__mark" aria-hidden="true"></span><span>棱柱、棱锥的各面都是平面图形，圆柱、圆锥、球的表面有曲面。</span></li>
+                <li class="points__item"><span class="points__mark" aria-hidden="true"></span><span>从不同方向看立体图形，得到的平面图形可能不同。</span></li>
+                <li class="points__item"><span class="points__mark" aria-hidden="true"></span><span>立体图形的表面展开图可能有多种，正方体共有 11 种不同的展开图。</span></li>
+              </ul>
+            </section>
+          </aside>
+        </div>
+
+        <section class="related">
+          <h3 class="related__title">关联知识点</h3>
+          <ul class="related__grid">
+            <li class="related__item">知识点 4　从不同方向看物体</li>
+            <li class="related__item">知识点 5　立体图形的展开图</li>
+            <li class="related__item">知识点 6　点、线、面、体</li>
+          </ul>
+        </section>
+
+        <div class="page-actions">
+          <a class="btn btn--ghost" href="reader.html" data-dom-id="back-reader">返回章节</a>
+          <button type="button" class="btn btn--primary" data-dom-id="open-practice">打开考点速练</button>
+        </div>
+      </div>
+
+      <footer class="shell-footer">
+        <div class="shell-footer__inner">
+          <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+          <nav class="shell-footer__links" aria-label="页脚导航">
+            <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+            <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+            <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+            <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}body{padding-top:0}.shell-footer__link:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}@media (max-width:767px){.shell-footer__inner{padding:24px 20px}.shell-footer__links{gap:16px}}
+</style>
+
+    <style id="page-styles">
+*{box-sizing:border-box}.page{max-width:1280px;margin:0 auto;padding:40px 32px 0}.crumb{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0;font-size:12px;line-height:1.6;color:var(--math-ink-3)}.crumb__sep{color:var(--math-ink-4)}.meta-line{margin:14px 0 0}.meta-chip{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;border:1px solid var(--math-border);border-radius:var(--math-radius-xs);font-family:var(--math-font-mono);font-size:12px;line-height:1;color:var(--math-ink-3);font-variant-numeric:tabular-nums}.page-title{margin:16px 0 0;font-family:var(--math-font-sans);font-size:clamp(1.75rem,3vw,2.125rem);font-weight:600;line-height:1.24;letter-spacing:-0.01em;color:var(--math-foreground)}.page-lede{margin:14px 0 0;max-width:38.5rem;font-size:1.125rem;line-height:1.75;color:var(--math-ink-2)}.layout{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:32px;margin-top:36px;align-items:start}.col-stage{grid-column:span 8;min-width:0}.col-side{grid-column:span 4;min-width:0}.solid-stage{position:relative;width:100%;height:480px;perspective:1000px;background:var(--math-surface);border:1px solid var(--math-border);border-radius:var(--math-radius-lg);display:flex;align-items:center;justify-content:center;overflow:hidden}.solid-body{position:relative;width:200px;height:200px;transform-style:preserve-3d;transform:rotateX(-18deg) rotateY(-32deg);animation:math-solid-spin 24s linear infinite}@keyframes math-solid-spin{from{transform:rotateX(-18deg) rotateY(-32deg)}to{transform:rotateX(-18deg) rotateY(328deg)}}.solid-stage:hover .solid-body{animation-play-state:paused}.solid-face{position:absolute;inset:0;width:200px;height:200px;display:flex;align-items:center;justify-content:center;background:var(--math-background);border:1px solid var(--math-border);backface-visibility:visible}.solid-face span{font-family:var(--math-font-mono);font-size:18px;line-height:1;color:var(--math-ink-3);font-variant-numeric:tabular-nums}.solid-face--front{background:var(--math-primary-soft);transform:translateZ(100px)}.solid-face--back{transform:rotateY(180deg) translateZ(100px)}.solid-face--right{transform:rotateY(90deg) translateZ(100px)}.solid-face--left{transform:rotateY(-90deg) translateZ(100px)}.solid-face--top{background:var(--math-primary-soft);transform:rotateX(90deg) translateZ(100px)}.solid-face--bottom{transform:rotateX(-90deg) translateZ(100px)}.solid-hint{position:absolute;right:20px;bottom:16px;margin:0;font-size:12px;line-height:1.4;color:var(--math-ink-3)}.side-block{margin:0;padding:24px 0}.side-block + .side-block{border-top:1px solid var(--math-border)}.side-block:first-child{padding-top:0}.side-block:last-child{padding-bottom:0}.side-block__label{margin:0 0 16px;font-size:12px;font-weight:500;line-height:1.2;letter-spacing:0.08em;color:var(--math-ink-3)}.net-svg{display:block;width:100%;max-width:220px;height:auto}.net-cell{fill:var(--math-surface);stroke:var(--math-border);stroke-width:1;vector-effect:non-scaling-stroke}.net-num{font-family:var(--math-font-mono);font-size:12px;fill:var(--math-ink-3);font-variant-numeric:tabular-nums}.net-caption{margin:14px 0 0;font-size:13px;line-height:1.6;color:var(--math-ink-2)}.views{display:flex;gap:16px;flex-wrap:wrap}.view{display:flex;flex-direction:column;align-items:center;gap:8px}.view__box{width:56px;height:56px;background:var(--math-surface-2);border:1px solid var(--math-border);border-radius:var(--math-radius-sm)}.view__label{margin:0;font-size:12px;line-height:1.4;color:var(--math-ink-3)}.points{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}.points__item{display:flex;gap:10px;font-size:14px;line-height:1.8;color:var(--math-ink-2)}.points__mark{flex:0 0 auto;width:10px;height:1px;margin-top:12px;background:var(--math-line-strong)}.related{margin-top:64px;padding-top:32px;border-top:1px solid var(--math-border)}.related__title{margin:0;font-size:1.25rem;font-weight:600;line-height:1.35;color:var(--math-foreground)}.related__grid{margin:24px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px 32px}.related__item{padding-left:16px;border-left:1px solid var(--math-border);font-size:14px;line-height:1.6;color:var(--math-ink-2)}.page-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:56px}.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border-radius:var(--math-radius-md);font-family:var(--math-font-sans);font-size:14px;font-weight:500;line-height:1;white-space:nowrap;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}.btn--ghost{background:transparent;border:1px solid var(--math-border);color:var(--math-ink-2)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--primary{background:var(--math-primary);border:1px solid var(--math-primary);color:var(--math-primary-foreground)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}@media (max-width:1023px){.layout{grid-template-columns:minmax(0,1fr);gap:32px}.col-stage,.col-side{grid-column:auto}}@media (min-width:768px) and (max-width:1023px){.col-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 40px}.side-block{padding:24px 0;border-top:1px solid var(--math-border)}.side-block:last-child{grid-column:1 / -1;padding-bottom:0}}@media (max-width:767px){.page{padding:28px 20px 0}.layout{gap:24px;margin-top:28px}.page-title{font-size:1.75rem}.page-lede{font-size:1rem;line-height:1.7}.meta-line{margin-top:12px}.solid-stage{height:360px}.solid-body{scale:0.8;animation-duration:32s}.solid-hint{right:14px;bottom:12px}.side-block{padding:20px 0}.views{gap:12px}.related{margin-top:48px;padding-top:24px}.related__grid{grid-template-columns:minmax(0,1fr);gap:16px}.page-actions{flex-direction:column;align-items:stretch;gap:12px;margin-top:40px}.btn{width:100%}}@media (prefers-reduced-motion: reduce){.solid-body{animation:none;transform:rotateX(-18deg) rotateY(-32deg)}.btn,.shell-footer__link{transition:none}}
+</style>
+
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

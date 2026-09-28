@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识图谱</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" data-active="true" aria-current="page" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__account" href="login.html" title="登录 / 注册">
+          <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
+          <span class="ide-rail__label">登录</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+<main class="reader-shell mm-shell" id="mm-shell">
+  <section class="mm-stage">
+
+    <div class="mm-canvas" id="mm-canvas">
+      <svg class="mm-svg" id="mm-svg" role="application" aria-label="知识网络画布，可平移缩放">
+        <g class="mm-world" id="mm-world"></g>
+      </svg>
+
+      <!-- 悬浮：节点信息（点节点出现，可拖动，和白板题库面板同一套） -->
+      <aside class="mm-card mm-card--info" id="mm-panel" aria-label="节点信息" hidden>
+        <div class="mm-card__head" id="mm-panel-head">
+          <i data-lucide="grip-vertical" class="mm-card__grip"></i>
+          <span class="mm-panel__kind" id="mm-panel-kind"></span>
+          <span class="mm-card__title" id="mm-panel-title">节点信息</span>
+          <span class="mm-card__count" id="mm-panel-no"></span>
+          <button type="button" class="mm-card__close" id="mm-panel-close" aria-label="关闭节点信息">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="mm-card__body" id="mm-panel-body"></div>
+      </aside>
+
+      <!-- 悬浮：定位知识点（工具条上的搜索按钮打开，可拖动） -->
+      <div class="mm-card mm-card--search" id="mm-search-panel" hidden>
+        <div class="mm-card__head" id="mm-search-head">
+          <i data-lucide="grip-vertical" class="mm-card__grip"></i>
+          <span class="mm-card__title">定位知识点</span>
+          <button type="button" class="mm-card__close" id="mm-search-close" aria-label="关闭搜索">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="mm-card__body">
+          <div class="mm-search">
+            <i data-lucide="search" style="width:14px;height:14px"></i>
+            <input id="mm-search" type="search" autocomplete="off" spellcheck="false"
+                   placeholder="输入知识点名称…" aria-label="定位知识点" aria-expanded="false"
+                   aria-controls="mm-search-results">
+          </div>
+          <ul class="mm-search__results" id="mm-search-results" role="listbox" aria-label="匹配结果" hidden></ul>
+        </div>
+      </div>
+
+      <!-- 底部工具条：与白板同一套形状、尺寸与提示 -->
+      <div class="mm-dock" role="toolbar" aria-label="图谱工具">
+
+        <div class="mm-dock__group">
+          <button type="button" class="mm-dock__btn mm-dock__btn--group" id="mm-book-btn"
+                  aria-haspopup="true" aria-expanded="false" aria-controls="mm-book-menu"
+                  data-mm-tip="只看某一册" aria-label="按册筛选">
+            <i data-lucide="layers"></i>
+            <span class="mm-dock__label" id="mm-book-label">总览</span>
+            <span class="mm-dock__caret" aria-hidden="true"></span>
+          </button>
+          <div class="mm-flyout" id="mm-book-menu" role="menu" aria-label="按册筛选" hidden>
+            <button type="button" class="mm-flyout__item" data-book="" aria-pressed="true">
+              <i data-lucide="layout-grid"></i><span class="mm-flyout__label">总览 · 六册</span><kbd>0</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" data-book="七年级（上）" aria-pressed="false">
+              <i data-lucide="book"></i><span class="mm-flyout__label">七年级（上）</span><kbd>1</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" data-book="七年级（下）" aria-pressed="false">
+              <i data-lucide="book"></i><span class="mm-flyout__label">七年级（下）</span><kbd>2</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" data-book="八年级（上）" aria-pressed="false">
+              <i data-lucide="book"></i><span class="mm-flyout__label">八年级（上）</span><kbd>3</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" data-book="八年级（下）" aria-pressed="false">
+              <i data-lucide="book"></i><span class="mm-flyout__label">八年级（下）</span><kbd>4</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" data-book="九年级（上）" aria-pressed="false">
+              <i data-lucide="book"></i><span class="mm-flyout__label">九年级（上）</span><kbd>5</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" data-book="九年级（下）" aria-pressed="false">
+              <i data-lucide="book"></i><span class="mm-flyout__label">九年级（下）</span><kbd>6</kbd>
+            </button>
+          </div>
+        </div>
+
+        <div class="mm-dock__group">
+          <button type="button" class="mm-dock__btn mm-dock__btn--group" id="mm-level-btn"
+                  aria-haspopup="true" aria-expanded="false" aria-controls="mm-level-menu"
+                  data-mm-tip="显示到哪一层" aria-label="折叠层级">
+            <i data-lucide="list-tree"></i>
+            <span class="mm-dock__label" id="mm-level-label">到章</span>
+            <span class="mm-dock__caret" aria-hidden="true"></span>
+          </button>
+          <div class="mm-flyout" id="mm-level-menu" role="menu" aria-label="折叠层级" hidden>
+            <button type="button" class="mm-flyout__item" id="mm-fold-chapter" data-fold="2" aria-pressed="true">
+              <i data-lucide="minus"></i><span class="mm-flyout__label">收起到章</span><kbd>⇧2</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" id="mm-fold-section" data-fold="3" aria-pressed="false">
+              <i data-lucide="list"></i><span class="mm-flyout__label">展开到节</span><kbd>⇧3</kbd>
+            </button>
+            <button type="button" class="mm-flyout__item" id="mm-fold-all" data-fold="99" aria-pressed="false">
+              <i data-lucide="telescope"></i><span class="mm-flyout__label">全部展开</span><kbd>⇧4</kbd>
+            </button>
+          </div>
+        </div>
+
+        <span class="mm-dock__sep" aria-hidden="true"></span>
+
+        <button type="button" class="mm-dock__btn" id="mm-search-toggle"
+                data-mm-tip="定位知识点" aria-label="定位知识点" aria-expanded="false">
+          <i data-lucide="search"></i>
+        </button>
+        <button type="button" class="mm-dock__btn" id="mm-fit"
+                data-mm-tip="适应窗口 ⇧1" aria-label="适应窗口">
+          <i data-lucide="maximize-2"></i>
+        </button>
+
+        <span class="mm-dock__sep" aria-hidden="true"></span>
+
+        <button type="button" class="mm-dock__btn" id="mm-out" data-mm-tip="缩小" aria-label="缩小">
+          <i data-lucide="minus"></i>
+        </button>
+        <button type="button" class="mm-dock__level" id="mm-reset" data-mm-tip="回到 100%" aria-label="重置缩放">
+          <span id="mm-zoom-label">100%</span>
+        </button>
+        <button type="button" class="mm-dock__btn" id="mm-in" data-mm-tip="放大" aria-label="放大">
+          <i data-lucide="plus"></i>
+        </button>
+
+        <span class="mm-dock__sep" aria-hidden="true"></span>
+
+        <div class="mm-dock__group">
+          <button type="button" class="mm-dock__btn" id="mm-help-btn"
+                  aria-haspopup="true" aria-expanded="false" aria-controls="mm-help-menu"
+                  data-mm-tip="说明与提示" aria-label="说明与提示">
+            <i data-lucide="circle-help"></i>
+          </button>
+          <div class="mm-flyout mm-flyout--wide" id="mm-help-menu" role="dialog" aria-label="说明与提示" hidden>
+            <p class="mm-help__title">知识图谱</p>
+            <p class="mm-help__text">六册 · 二十九章 · <span class="num" data-mm-total>780</span> 个节点，一张可以随便拖放的平面网。</p>
+            <p class="mm-help__label">操作</p>
+            <ul class="mm-help__list">
+              <li><kbd>拖动</kbd> 空白处平移整张图</li>
+              <li><kbd>⌘/Ctrl</kbd> + <kbd>滚轮</kbd> 缩放，滚轮上下左右平移</li>
+              <li><kbd>点击节点</kbd> 在右侧弹出信息，可拖动位置</li>
+              <li><kbd>方向键</kbd> 在节点间移动，<kbd>←</kbd> <kbd>→</kbd> 折叠展开</li>
+              <li><kbd>⇧1</kbd> 适应窗口 · <kbd>⇧2</kbd> 收起到章 · <kbd>0</kbd> 回到 100% · <kbd>Esc</kbd> 收起面板</li>
+            </ul>
+            <p class="mm-help__label">图例</p>
+            <ul class="mm-help__legend">
+              <li><span class="lg lg--root"></span>总览</li>
+              <li><span class="lg lg--book"></span>册</li>
+              <li><span class="lg lg--chapter"></span>章</li>
+              <li><span class="lg lg--dot"></span>知识点</li>
+              <li><span class="lg lg--method"></span>方法</li>
+              <li><span class="lg lg--error"></span>易错</li>
+              <li><span class="lg lg--exam"></span>考点</li>
+              <li><span class="lg lg--cross"></span>关联（虚线）</li>
+            </ul>
+            <p class="mm-help__note" id="mm-scope-note">按学生当前年级默认聚焦；未登录时先看总览。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<style id="shell-styles">
+body{padding-top:0}
+</style>
+
+<style id="page-styles">
+.num{font-family:var(--math-font-mono);font-variant-numeric:tabular-nums}
+
+/* ==== 满屏骨架：除了左侧栏，整屏都给图谱 ==== */
+.reader-shell.mm-shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:100vh}
+.mm-stage{grid-column:1;grid-row:1;position:relative;height:100vh;min-width:0}
+.mm-canvas{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;
+  background-color:var(--math-background);
+  background-image:radial-gradient(var(--math-border) 1px,transparent 1px);
+  background-size:24px 24px;background-position:0 0}
+.mm-canvas.is-panning{cursor:grabbing}
+.mm-canvas:focus-visible{outline:2px solid var(--math-ring);outline-offset:-2px}
+.mm-svg{display:block;width:100%;height:100%;user-select:none}
+
+/* ==== 与白板同源的悬浮面板 / 工具条 / 浮层 ==== */
+/* MM-SHARED-BEGIN */
+/* ---------- 悬浮题库面板（可拖动） ---------- */
+.mm-card{position:absolute;left:20px;bottom:80px;z-index:7;
+  width:300px;max-width:calc(100% - 40px);
+  max-height:min(560px,72vh);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  border:1px solid var(--math-border);border-radius:16px;
+  background:var(--math-background);
+  box-shadow:0 16px 44px rgba(15,23,42,.16);}
+.mm-card[hidden]{display:none}
+.mm-card__head{display:flex;align-items:center;gap:8px;flex:none;
+  padding:9px 10px 9px 9px;
+  border-bottom:1px solid var(--math-border);
+  background:var(--math-surface);
+  cursor:grab;touch-action:none;
+  -webkit-user-select:none;user-select:none;}
+.mm-card__head:active{cursor:grabbing}
+.mm-card__grip{flex:none;width:15px;height:15px;color:var(--math-ink-4)}
+.mm-card__title{font-size:13px;font-weight:600;color:var(--math-foreground)}
+.mm-card__count{margin-left:auto;font-size:11.5px;color:var(--math-ink-4);font-variant-numeric:tabular-nums}
+.mm-card__close{flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-sm);
+  background:none;color:var(--math-ink-3);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);}
+.mm-card__close svg{width:14px;height:14px}
+.mm-card__close:hover{border-color:var(--math-border);color:var(--math-foreground)}
+.mm-card__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.mm-card.is-dragging{box-shadow:0 22px 60px rgba(15,23,42,.22)}
+.mm-card.is-dragging .mm-card__head{cursor:grabbing}
+/* ---------- 悬浮工具条（底部居中，平时半透明，用时全亮） ---------- */
+.mm-dock{position:absolute;left:50%;bottom:18px;z-index:5;
+  transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:1px;
+  max-width:calc(100% - 24px);
+  padding:5px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
+  background:rgba(255,255,255,.86);
+  box-shadow:0 6px 24px rgba(15,23,42,.10);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:.34;
+  transition:opacity 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms cubic-bezier(.2,.8,.2,1);}
+.mm-dock:hover,
+.mm-dock:focus-within{opacity:1;box-shadow:0 10px 32px rgba(15,23,42,.16)}
+/* 按钮用圆角方形：跟浮层、设置面板同一套方圆，激活态是一块实心的浅色块，
+   不再是"圈住图标"的圆环（Figma / Excalidraw / PS 的工具栏都是这个做法） */
+.mm-dock__btn{position:relative;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-md);
+  background:none;color:var(--math-ink-2);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);}
+.mm-dock__btn svg{width:16px;height:16px}
+.mm-dock__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
+.mm-dock__btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.mm-dock__btn.is-on{border-color:transparent;background:var(--math-primary-tint);color:var(--math-primary)}
+.mm-dock__btn.is-on:hover{background:var(--math-primary-200)}
+.mm-dock__btn:disabled{color:var(--math-ink-4);cursor:default;background:none}
+.mm-dock__sep{width:1px;height:20px;margin:0 3px;background:var(--math-border)}
+.mm-dock__dot{position:absolute;right:4px;bottom:4px;
+  width:7px;height:7px;border-radius:999px;
+  border:1px solid #fff;background:var(--math-foreground);}
+.mm-dock__level{min-width:44px;height:34px;padding:0 6px;
+  border:0;border-radius:var(--math-radius-md);background:none;cursor:pointer;
+  font:inherit;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);}
+.mm-dock__level:hover{background:var(--math-surface);color:var(--math-foreground)}
+.mm-dock__level:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+/* ---------- 悬浮提示：自绘小气泡，替掉系统那层灰框气泡 ---------- */
+[data-mm-tip]{position:relative}
+[data-mm-tip]::after{content:attr(data-wb-tip);
+  position:absolute;left:50%;bottom:calc(100% + 8px);z-index:9;
+  transform:translateX(-50%) translateY(2px);
+  padding:4px 8px;
+  border-radius:var(--math-radius-sm);
+  background:rgba(15,23,42,.92);color:#fff;
+  font-size:11.5px;font-weight:400;line-height:1.45;white-space:nowrap;
+  pointer-events:none;
+  box-shadow:0 8px 22px rgba(15,23,42,.22);
+  opacity:0;visibility:hidden;
+  transition:opacity 120ms cubic-bezier(.2,.8,.2,1),transform 120ms cubic-bezier(.2,.8,.2,1),visibility 120ms;}
+[data-mm-tip]:hover::after,
+[data-mm-tip]:focus-visible::after{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
+/* 工具组浮层已经展开时不再弹提示，免得两块叠在一起 */
+[data-mm-tip][aria-expanded="true"]::after{display:none}
+/* ---------- 工具组（仿 PS：同类工具合成一个格子，点开再选） ---------- */
+.mm-dock__group{position:relative;display:inline-flex;align-items:center}
+/* 格子里同时放着这一组的图标，只有当前那个露出来 */
+.mm-dock__slot{display:none}
+.mm-dock__btn--group .mm-dock__slot svg{width:16px;height:16px}
+.mm-dock__btn--group[data-active="pen"] [data-wb-ico="pen"],
+.mm-dock__btn--group[data-active="highlighter"] [data-wb-ico="highlighter"],
+.mm-dock__btn--group[data-active="eraser"] [data-wb-ico="eraser"],
+.mm-dock__btn--group[data-active="line"] [data-wb-ico="line"],
+.mm-dock__btn--group[data-active="arrow"] [data-wb-ico="arrow"],
+.mm-dock__btn--group[data-active="rect"] [data-wb-ico="rect"],
+.mm-dock__btn--group[data-active="ellipse"] [data-wb-ico="ellipse"]{display:inline-flex}
+/* 右下角小三角：PS 的用户一眼就知道"里面还有东西" */
+.mm-dock__caret{position:absolute;right:3px;bottom:3px;width:0;height:0;
+  border-left:3.5px solid transparent;border-bottom:3.5px solid currentColor;
+  opacity:.45;
+  transition:opacity 140ms cubic-bezier(.2,.8,.2,1);}
+.mm-dock__btn--group[aria-expanded="true"]{background:var(--math-surface);color:var(--math-foreground)}
+.mm-dock__btn--group[aria-expanded="true"] .mm-dock__caret{opacity:.9}
+/* ---------- 工具组浮层：贴在该格子上方（紧凑排布，一行一个工具） ---------- */
+.mm-flyout{position:absolute;left:50%;bottom:calc(100% + 6px);z-index:8;
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:1px;
+  min-width:146px;padding:4px;
+  border:1px solid var(--math-border);border-radius:12px;
+  background:var(--math-background);
+  box-shadow:0 14px 36px rgba(15,23,42,.16);}
+.mm-flyout[hidden]{display:none}
+.mm-flyout__item{display:flex;align-items:center;gap:7px;width:100%;
+  height:26px;padding:0 7px;
+  border:0;border-radius:6px;background:none;cursor:pointer;
+  font:inherit;font-size:12.5px;line-height:1;color:var(--math-ink-2);text-align:left;
+  transition:background-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1);}
+.mm-flyout__item svg{flex:none;width:14px;height:14px}
+.mm-flyout__item:hover{background:var(--math-surface);color:var(--math-foreground)}
+.mm-flyout__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:-2px}
+.mm-flyout__item.is-on{background:var(--math-primary-tint);color:var(--math-primary)}
+.mm-flyout__label{flex:1 1 auto;min-width:0}
+.mm-flyout__item kbd{flex:none;min-width:16px;padding:1px 4px;
+  border:1px solid var(--math-border);border-radius:4px;
+  background:var(--math-surface);
+  font-family:var(--math-font-mono);font-size:10px;line-height:1.4;text-align:center;color:var(--math-ink-3);}
+@media (max-width:640px){
+  .mm-dock__btn{width:30px;height:30px}
+  .mm-dock__btn svg{width:14px;height:14px}
+  .mm-dock__level{min-width:40px;height:30px}
+  .mm-flyout__item{height:24px;font-size:12px}
+}
+/* MM-SHARED-END */
+
+/* 节点信息面板：贴右侧；搜索面板：贴左上 */
+.mm-dock__label{min-width:26px;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums}
+.mm-dock__btn--group[aria-expanded="true"] .mm-dock__label{color:var(--math-foreground)}
+.mm-card--info{left:auto;right:20px;top:20px;bottom:auto;width:340px;max-height:min(640px,calc(100vh - 120px))}
+.mm-card--search{left:20px;top:20px;width:320px;max-height:min(460px,calc(100vh - 120px))}
+.mm-card__title{font-size:13px;font-weight:600;color:var(--math-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mm-card__body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:14px 16px 18px}
+
+/* 搜索面板内部 */
+.mm-search{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);background:var(--math-background)}
+.mm-search:focus-within{border-color:var(--math-primary)}
+.mm-search > svg,.mm-search > i{color:var(--math-ink-3);flex:0 0 auto}
+.mm-search input{flex:1 1 auto;min-width:0;border:0;background:transparent;font-family:var(--math-font-sans);font-size:13px;color:var(--math-foreground);outline:none}
+.mm-search input::-webkit-search-cancel-button{-webkit-appearance:none}
+.mm-search input::placeholder{color:var(--math-ink-4)}
+.mm-search__results{margin:8px 0 0;padding:0;list-style:none}
+.mm-search__results button{display:flex;align-items:baseline;gap:10px;width:100%;min-height:30px;padding:5px 7px;border:0;border-radius:var(--math-radius-sm);background:none;font-family:inherit;text-align:left;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}
+.mm-search__results button:hover{background:var(--math-surface)}
+.mm-search__results button.is-on{background:var(--math-primary-tint)}
+.mm-search__results .r-name{flex:1;min-width:0;font-size:12.5px;line-height:1.5;color:var(--math-foreground)}
+.mm-search__results .r-path{flex:0 0 auto;font-family:var(--math-font-mono);font-size:10.5px;color:var(--math-ink-3)}
+.mm-search__empty{padding:10px 7px;font-size:12px;color:var(--math-ink-3)}
+
+/* 说明浮层里的排版 */
+.mm-flyout--wide{width:290px;padding:12px 13px 13px}
+.mm-help__title{margin:0;font-size:13px;font-weight:600;color:var(--math-foreground)}
+.mm-help__text{margin:6px 0 0;font-size:12px;line-height:1.7;color:var(--math-ink-3)}
+.mm-help__label{margin:11px 0 0;font-family:var(--math-font-mono);font-size:11px;letter-spacing:0.06em;color:var(--math-ink-4)}
+.mm-help__list{margin:6px 0 0;padding:0;list-style:none}
+.mm-help__list li{font-size:12px;line-height:1.95;color:var(--math-ink-2)}
+.mm-help__list kbd{font-family:var(--math-font-mono);font-size:10.5px;color:var(--math-ink-3);border:1px solid var(--math-border);border-radius:4px;padding:0 4px;background:var(--math-surface)}
+.mm-help__legend{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:6px 0 0;padding:0;list-style:none;font-size:12px;color:var(--math-ink-3)}
+.mm-help__legend li{display:flex;align-items:center;gap:6px}
+.mm-help__legend .lg{flex:none;width:12px;height:12px;border-radius:3px;border:1px solid var(--math-border)}
+.lg--root{background:var(--math-primary);border-color:var(--math-primary)}
+.lg--book{background:var(--math-primary-soft);border-color:var(--math-primary-soft)}
+.lg--chapter{background:var(--math-background);border-color:var(--math-line-strong)}
+.lg--dot{width:7px;height:7px;border-radius:999px;background:var(--math-ink-4);border:0}
+.lg--method{width:7px;height:7px;border-radius:999px;background:var(--math-primary-300);border:0}
+.lg--error{width:7px;height:7px;border-radius:999px;background:var(--math-state-error);border:0}
+.lg--exam{width:7px;height:7px;border-radius:999px;background:var(--math-state-success);border:0}
+.lg--cross{background:none;border:0;border-top:1px dashed var(--math-primary-400);border-radius:0}
+.mm-help__note{margin:11px 0 0;padding-top:9px;border-top:1px solid var(--math-border);font-size:11.5px;line-height:1.7;color:var(--math-ink-4)}
+
+/* ==== 画布内容（节点、连线、面板内容）==== */
+.mm-link{fill:none;stroke:var(--math-line-strong);stroke-width:1.2}
+.mm-link--deep{stroke:var(--math-border)}
+.mm-crosslink{fill:none;stroke:var(--math-primary-400);stroke-width:1;stroke-dasharray:3 3}
+.mm-node{cursor:pointer}
+.mm-node__box{fill:var(--math-background);stroke:var(--math-border);stroke-width:1}
+.mm-node--root .mm-node__box{fill:var(--math-primary);stroke:var(--math-primary)}
+.mm-node--book .mm-node__box{fill:var(--math-primary-soft);stroke:var(--math-primary-soft)}
+.mm-label{fill:var(--math-ink-2);font-family:var(--math-font-sans)}
+.mm-node--root .mm-label{fill:var(--math-primary-foreground);font-weight:600}
+.mm-node--book .mm-label{fill:var(--math-primary);font-weight:600}
+.mm-node--chapter .mm-label{fill:var(--math-foreground);font-weight:500}
+.mm-node--section .mm-label{fill:var(--math-foreground);font-weight:500}
+.mm-node--group .mm-label{font-weight:500}
+.mm-node--group[data-tone="method"] .mm-label{fill:var(--math-primary)}
+.mm-node--group[data-tone="error"] .mm-label{fill:var(--math-state-error)}
+.mm-node--group[data-tone="exam"] .mm-label{fill:var(--math-state-success)}
+.mm-no{font-family:var(--math-font-mono);font-variant-numeric:tabular-nums}
+.mm-node--chapter .mm-no{fill:var(--math-ink-3)}
+.mm-node--root .mm-no,.mm-node--book .mm-no{fill:currentColor;opacity:.75}
+.mm-dot{fill:var(--math-ink-4)}
+.mm-node--method .mm-dot{fill:var(--math-primary-300)}
+.mm-node--error .mm-dot{fill:var(--math-state-error);opacity:.6}
+.mm-node--exam .mm-dot{fill:var(--math-state-success);opacity:.6}
+.mm-node:hover .mm-node__box{stroke:var(--math-primary-400)}
+.mm-node:hover .mm-label{fill:var(--math-primary)}
+.mm-node__hit{fill:transparent}
+.mm-node:focus-visible{outline:none}
+.mm-node:focus-visible .mm-node__box{stroke:var(--math-ring);stroke-width:2}
+.mm-node:focus-visible .mm-label{text-decoration:underline}
+.mm-node.is-selected .mm-node__box{fill:var(--math-primary);stroke:var(--math-primary)}
+.mm-node.is-selected .mm-label{fill:var(--math-primary-foreground);font-weight:600}
+.mm-node.is-selected .mm-no{fill:var(--math-primary-foreground);opacity:.8}
+.mm-node.has-children.is-collapsed .mm-node__box{stroke:var(--math-line-strong)}
+.mm-node.is-on-path .mm-label{fill:var(--math-primary)}
+.mm-node.is-match .mm-node__box{stroke:var(--math-state-warning);stroke-width:2}
+.mm-node.is-match .mm-label{fill:var(--math-state-warning)}
+.mm-node.is-related .mm-node__box{stroke:var(--math-primary-400);stroke-width:2;stroke-dasharray:3 2}
+.mm-node.is-related .mm-label{fill:var(--math-primary)}
+.mm-toggle circle{fill:var(--math-background);stroke:var(--math-line-strong);stroke-width:1}
+.mm-toggle line{stroke:var(--math-ink-2);stroke-width:1.2;stroke-linecap:round}
+.mm-toggle{cursor:pointer}
+.mm-toggle:hover circle{stroke:var(--math-primary);fill:var(--math-primary-soft)}
+.mm-toggle:hover line{stroke:var(--math-primary)}
+.mm-toggle__count{fill:var(--math-ink-3);font-family:var(--math-font-mono);font-size:10px;text-anchor:middle}
+
+/* 面板内容 */
+.mm-panel__kind{display:inline-flex;align-items:center;flex:none;height:20px;padding:0 7px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);font-size:11.5px;color:var(--math-ink-3)}
+.mm-panel__kind[data-tone="method"]{border-color:var(--math-primary-200);background:var(--math-primary-soft);color:var(--math-primary)}
+.mm-panel__kind[data-tone="error"]{border-color:var(--math-state-error);color:var(--math-state-error)}
+.mm-panel__kind[data-tone="exam"]{border-color:var(--math-state-success);color:var(--math-state-success)}
+.mm-panel__kind:empty{display:none}
+.mm-panel__title{margin:0;font-size:18px;line-height:1.35;font-weight:600;letter-spacing:-0.01em;color:var(--math-foreground)}
+.mm-path{margin:10px 0 0;font-size:12px;line-height:1.9;color:var(--math-ink-3)}
+.mm-path button{padding:0;border:0;background:none;font:inherit;color:var(--math-ink-3);cursor:pointer;text-decoration:underline;text-decoration-color:var(--math-border);text-underline-offset:3px}
+.mm-path button:hover{color:var(--math-primary)}
+.mm-path .sep{margin:0 5px;color:var(--math-ink-4)}
+.mm-stats{margin:14px 0 0;border-top:1px solid var(--math-border)}
+.mm-stats__row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid var(--math-border)}
+.mm-stats dt{font-size:12.5px;color:var(--math-ink-3)}
+.mm-stats dd{margin:0;font-family:var(--math-font-mono);font-size:12.5px;color:var(--math-foreground);font-variant-numeric:tabular-nums}
+.mm-block{margin-top:18px}
+.mm-block__label{margin:0;font-family:var(--math-font-mono);font-size:11.5px;letter-spacing:0.06em;color:var(--math-ink-3)}
+.mm-list{margin:8px 0 0;padding:0;list-style:none}
+.mm-list button{display:flex;align-items:baseline;gap:10px;width:calc(100% + 16px);min-height:30px;padding:5px 8px;margin:0 -8px;border:0;border-radius:var(--math-radius-sm);background:none;font-family:inherit;text-align:left;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}
+.mm-list button:hover{background:var(--math-surface)}
+.mm-list button:focus-visible{outline:2px solid var(--math-ring);outline-offset:-2px}
+.mm-list .l-name{flex:1;min-width:0;font-size:12.5px;line-height:1.6;color:var(--math-foreground)}
+.mm-list .l-no{flex:0 0 auto;font-family:var(--math-font-mono);font-size:11px;color:var(--math-ink-3)}
+.mm-list .l-rel{flex:0 0 auto;font-size:11px;color:var(--math-ink-3)}
+.mm-list .l-rel[data-rel="后续"]{color:var(--math-primary)}
+.mm-cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:36px;margin-top:16px;border:1px solid var(--math-primary);border-radius:var(--math-radius-sm);background:var(--math-primary);color:var(--math-primary-foreground);font-size:13px;font-weight:500;text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}
+.mm-cta:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}
+.mm-cta:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}
+.mm-pending{margin:12px 0 0;padding:10px 12px;border:1px dashed var(--math-line-strong);border-radius:var(--math-radius-md);font-size:12px;line-height:1.8;color:var(--math-ink-3)}
+.mm-count-note{margin:10px 0 0;font-size:11px;line-height:1.8;color:var(--math-ink-4)}
+
+@media (max-width:1023px){
+  .reader-shell.mm-shell{grid-template-columns:minmax(0,1fr)}
+  .mm-dock{bottom:12px;opacity:.9;border-radius:12px}
+  .mm-card--info{left:12px;right:12px;top:auto;bottom:66px;width:auto;max-height:52vh}
+  .mm-card--search{left:12px;right:12px;width:auto}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}}
+</style>
+
+<script>lucide.createIcons();</script>
+<link rel="stylesheet" href="assets/css/shell.css">
+<link rel="stylesheet" href="assets/css/ide.css">
+
+<script src="assets/js/shell.js"></script>
+<script src="assets/js/ide-shell.js"></script>
+<script src="assets/js/board-link.js"></script>
+<script src="assets/js/pages.js"></script>
+<script src="assets/js/math-tree.js"></script>
+<script src="assets/js/mindmap.js"></script>
+</body>
+</html>

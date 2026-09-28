@@ -1,0 +1,174 @@
+/* ==========================================================================
+   悟空数学知识图谱 — 极简白底设计系统
+   Design tokens: one surface family, one ink family, one brand hue.
+   Brand prefix: math
+   --------------------------------------------------------------------------
+   本文件由 42 张设计稿中完全一致的 <style id="theme-vars"> 与
+   <style id="semantic-token-fallback"> 抽取而来，作为全站唯一的设计令牌来源。
+   ========================================================================== */
+
+:root {
+  /* ---------- Surface & foreground (5-channel palette) ---------- */
+  --math-background: #ffffff;
+  --math-foreground: #101215;
+
+  --math-surface: #fafafa;
+  --math-surface-2: #f4f5f7;
+
+  --math-card: #ffffff;
+  --math-card-foreground: #101215;
+
+  --math-popover: #ffffff;
+  --math-popover-foreground: #101215;
+
+  --math-muted: #f4f5f7;
+  --math-muted-foreground: #6b7280;
+
+  --math-ink-2: #5b6069;
+  --math-ink-3: #9ba1a9;
+  --math-ink-4: #c4c8ce;
+
+  /* ---------- Lines / dividers (< 6% contrast) ---------- */
+  --math-border: #e8e9ec;
+  --math-line: #e8e9ec;
+  --math-line-strong: #d7d9de;
+  --math-input: #e8e9ec;
+
+  /* ---------- Brand: exactly one hue ---------- */
+  --math-primary: #1a3a8f;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #142e72;
+  --math-primary-soft: #eef1f9;
+  --math-primary-tint: #dfe5f5;
+  --math-primary-200: #c2cde9;
+  --math-primary-400: #6c86cc;
+  --math-primary-300: #93a6d6;
+
+  /* ---------- State (status only, never identity) ---------- */
+  --math-state-success: #1f7a4d;
+  --math-state-warning: #a8690b;
+  --math-state-error: #b3402f;
+  --math-state-info: #1a3a8f;
+
+  --math-ring: #1a3a8f;
+
+  /* ---------- Radius (2 / 4 / 8 / 16) ---------- */
+  --math-radius-xs: 2px;
+  --math-radius-sm: 4px;
+  --math-radius-md: 8px;
+  --math-radius-lg: 16px;
+  --math-radius-pill: 999px;
+
+  /* ---------- Depth (static surfaces stay <= .05 alpha) ---------- */
+  --math-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --math-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.18);
+
+  /* ---------- Typography ---------- */
+  --math-font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC",
+    "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --math-font-display: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC",
+    system-ui, sans-serif;
+  --math-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --math-font-math: "Times New Roman", "Songti SC", "Source Han Serif SC", serif;
+
+  /* ---------- Type scale ---------- */
+  --math-text-display: clamp(2.5rem, 5.2vw, 4.5rem);
+  --math-text-h1: clamp(1.75rem, 3vw, 2.75rem);
+  --math-text-h2: clamp(1.375rem, 2.1vw, 2rem);
+  --math-text-h3: 1.25rem;
+  --math-text-body-lg: 1.125rem;
+  --math-text-body: 0.9375rem;
+  --math-text-caption: 0.8125rem;
+
+  /* ---------- Spacing (8pt grid) ---------- */
+  --math-space-1: 4px;
+  --math-space-2: 8px;
+  --math-space-3: 12px;
+  --math-space-4: 16px;
+  --math-space-5: 24px;
+  --math-space-6: 32px;
+  --math-space-7: 48px;
+  --math-space-8: 80px;
+
+  /* ---------- Shell metrics ---------- */
+  --math-shell-height: 56px;
+}
+
+/* ==========================================================================
+   Semantic token fallback
+   设计稿使用 Tailwind 的语义色工具类（bg-primary / text-muted-foreground …）。
+   这里以纯 CSS 等价实现，使项目无需任何构建步骤与 CDN 依赖即可运行。
+   ========================================================================== */
+
+.bg-background { background-color: var(--math-background); }
+.text-background { color: var(--math-background); }
+.border-background { border-color: var(--math-background); }
+.ring-background { --tw-ring-color: var(--math-background); }
+.bg-foreground { background-color: var(--math-foreground); }
+.text-foreground { color: var(--math-foreground); }
+.border-foreground { border-color: var(--math-foreground); }
+.ring-foreground { --tw-ring-color: var(--math-foreground); }
+.bg-card { background-color: var(--math-card); }
+.text-card { color: var(--math-card); }
+.border-card { border-color: var(--math-card); }
+.ring-card { --tw-ring-color: var(--math-card); }
+.bg-card-foreground { background-color: var(--math-card-foreground); }
+.text-card-foreground { color: var(--math-card-foreground); }
+.border-card-foreground { border-color: var(--math-card-foreground); }
+.ring-card-foreground { --tw-ring-color: var(--math-card-foreground); }
+.bg-popover { background-color: var(--math-popover); }
+.text-popover { color: var(--math-popover); }
+.border-popover { border-color: var(--math-popover); }
+.ring-popover { --tw-ring-color: var(--math-popover); }
+.bg-popover-foreground { background-color: var(--math-popover-foreground); }
+.text-popover-foreground { color: var(--math-popover-foreground); }
+.border-popover-foreground { border-color: var(--math-popover-foreground); }
+.ring-popover-foreground { --tw-ring-color: var(--math-popover-foreground); }
+.bg-primary { background-color: var(--math-primary); }
+.text-primary { color: var(--math-primary); }
+.border-primary { border-color: var(--math-primary); }
+.ring-primary { --tw-ring-color: var(--math-primary); }
+.bg-primary-foreground { background-color: var(--math-primary-foreground); }
+.text-primary-foreground { color: var(--math-primary-foreground); }
+.border-primary-foreground { border-color: var(--math-primary-foreground); }
+.ring-primary-foreground { --tw-ring-color: var(--math-primary-foreground); }
+.bg-muted { background-color: var(--math-muted); }
+.text-muted { color: var(--math-muted); }
+.border-muted { border-color: var(--math-muted); }
+.ring-muted { --tw-ring-color: var(--math-muted); }
+.bg-muted-foreground { background-color: var(--math-muted-foreground); }
+.text-muted-foreground { color: var(--math-muted-foreground); }
+.border-muted-foreground { border-color: var(--math-muted-foreground); }
+.ring-muted-foreground { --tw-ring-color: var(--math-muted-foreground); }
+.bg-border { background-color: var(--math-border); }
+.text-border { color: var(--math-border); }
+.border-border { border-color: var(--math-border); }
+.ring-border { --tw-ring-color: var(--math-border); }
+.bg-input { background-color: var(--math-input); }
+.text-input { color: var(--math-input); }
+.border-input { border-color: var(--math-input); }
+.ring-input { --tw-ring-color: var(--math-input); }
+.bg-ring { background-color: var(--math-ring); }
+.text-ring { color: var(--math-ring); }
+.border-ring { border-color: var(--math-ring); }
+.ring-ring { --tw-ring-color: var(--math-ring); }
+
+/* ==========================================================================
+   Shared utilities
+   ========================================================================== */
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+[data-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>章首页</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" data-active="true" aria-current="page" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+    <main>
+      <div class="wrap">
+        <nav class="crumb" aria-label="面包屑导航">
+          <span>七年级（上）</span>
+          <span class="crumb__sep" aria-hidden="true">／</span>
+          <a href="reader.html">第四章 几何图形初步</a>
+        </nav>
+
+        <header class="chead">
+          <div class="chead__id">
+            <div class="chead__line">
+              <span class="chead__no">第四章</span>
+              <h1 class="chead__title">几何图形初步</h1>
+            </div>
+            <div class="chead__meta">
+              <span>人教版 · 七年级（上）</span>
+              <span class="chead__sep" aria-hidden="true"></span>
+              <span>3 节 · 29 个条目</span>
+            </div>
+          </div>
+          <div class="chead__actions">
+            <a class="btn btn--primary" href="reader.html" data-dom-id="chapter-open-section">开始学习</a>
+            <a class="btn btn--ghost" href="practice.html" data-dom-id="chapter-practice">本章真题速练</a>
+          </div>
+        </header>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat__num">3</div>
+            <div class="stat__label">节</div>
+          </div>
+          <div class="stat">
+            <div class="stat__num">17</div>
+            <div class="stat__label">个知识点</div>
+          </div>
+          <div class="stat">
+            <div class="stat__num">8</div>
+            <div class="stat__label">条方法</div>
+          </div>
+          <div class="stat">
+            <div class="stat__num">2</div>
+            <div class="stat__label">个易错点</div>
+          </div>
+        </div>
+
+        <div class="prog">
+          <div class="prog__row">
+            <span>本章进度</span>
+            <span class="prog__val">已完成 3 / 29</span>
+          </div>
+          <div class="bar">
+            <div class="bar__fill" style="width:10%"></div>
+          </div>
+        </div>
+
+        <section class="sec">
+          <div class="sec__head">
+            <h2 class="sec__title">本节</h2>
+            <span class="sec__note">3 节</span>
+          </div>
+          <a class="srow" href="reader.html">
+            <span class="srow__code">4.1</span>
+            <div class="srow__body">
+              <div class="srow__name">几何图形</div>
+              <div class="srow__items">
+                <span class="srow__item">知识点1 几何图形</span>
+                <span class="srow__item">知识点2 立体图形</span>
+                <span class="srow__item">知识点3 平面图形</span>
+                <span class="srow__item">知识点4 从不同方向看物体</span>
+                <span class="srow__item">知识点5 立体图形的展开图</span>
+                <span class="srow__item">知识点6 点、线、面、体</span>
+              </div>
+            </div>
+            <div class="srow__right">
+              <span class="srow__count">6 个知识点</span>
+              <i data-lucide="chevron-right" class="srow__arrow"></i>
+            </div>
+          </a>
+          <a class="srow" href="reader.html">
+            <span class="srow__code">4.2</span>
+            <div class="srow__body">
+              <div class="srow__name">直线、射线、线段</div>
+              <div class="srow__items">
+                <span class="srow__item">知识点1 直线</span>
+                <span class="srow__item">知识点2 射线</span>
+                <span class="srow__item">知识点3 线段</span>
+                <span class="srow__item">知识点4 线段的画法及比较</span>
+                <span class="srow__item">知识点5 线段的中点及等分点的概念</span>
+                <span class="srow__item">知识点6 线段的性质</span>
+              </div>
+            </div>
+            <div class="srow__right">
+              <span class="srow__count">6 个知识点</span>
+              <i data-lucide="chevron-right" class="srow__arrow"></i>
+            </div>
+          </a>
+          <a class="srow" href="reader.html">
+            <span class="srow__code">4.3</span>
+            <div class="srow__body">
+              <div class="srow__name">角</div>
+              <div class="srow__items">
+                <span class="srow__item">知识点1 角的相关概念</span>
+                <span class="srow__item">知识点2 角的表示方法</span>
+                <span class="srow__item">知识点3 角的单位及角度制</span>
+                <span class="srow__item">知识点4 角的比较与运算</span>
+                <span class="srow__item">知识点5 余角和补角</span>
+              </div>
+            </div>
+            <div class="srow__right">
+              <span class="srow__count">5 个知识点</span>
+              <i data-lucide="chevron-right" class="srow__arrow"></i>
+            </div>
+          </a>
+        </section>
+
+        <div class="d3">
+          <div>
+            <p class="d3__title">立体图形支持三维演示</p>
+            <p class="d3__note">旋转观察正方体的展开与三视图。</p>
+          </div>
+          <a class="btn btn--ghost" href="concept-3d.html" data-dom-id="chapter-open-3d">打开三维演示</a>
+        </div>
+
+        <section class="sec">
+          <div class="sec__head">
+            <h2 class="sec__title">方法速学</h2>
+            <span class="sec__note">8 条</span>
+          </div>
+          <a class="mod" href="pitfalls.html" data-dom-id="chapter-open-pitfalls">
+            <span class="mod__name">方法速学</span>
+            <span class="mod__count">8 条</span>
+            <i data-lucide="chevron-right" class="srow__arrow"></i>
+          </a>
+          <a class="mod" href="pitfalls.html">
+            <span class="mod__name">易错速析</span>
+            <span class="mod__count">2 条</span>
+            <i data-lucide="chevron-right" class="srow__arrow"></i>
+          </a>
+          <a class="mod" href="exams.html">
+            <span class="mod__name">真题速练</span>
+            <span class="mod__count">2 个考点</span>
+            <i data-lucide="chevron-right" class="srow__arrow"></i>
+          </a>
+        </section>
+      </div>
+    </main>
+    <footer class="shell-footer">
+      <div class="shell-footer__inner">
+        <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+        <nav class="shell-footer__links" aria-label="页脚导航">
+          <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+          <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+          <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+          <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+        </nav>
+      </div>
+    </footer>
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+    <style id="page-styles">
+.wrap{max-width:1280px;margin:0 auto;padding:36px 32px 0}.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--math-ink-3);margin-bottom:16px}.crumb a{color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.crumb a:hover{color:var(--math-primary)}.chead{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--math-border);padding-bottom:24px}.chead__no{font-family:var(--math-font-mono);font-size:13px;color:var(--math-ink-3);letter-spacing:.06em}.chead__title{font-size:clamp(1.75rem,3vw,2.25rem);font-weight:600;letter-spacing:-0.02em;line-height:1.25;color:var(--math-foreground)}.chead__meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--math-ink-3);margin-top:8px}.chead__actions{margin-left:auto;display:flex;align-items:center;gap:10px}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:28px}.stat{padding:20px 0 20px 20px;border-left:1px solid var(--math-border)}.stat:first-child{border-left:0;padding-left:0}.stat__num{font-size:1.75rem;font-weight:600;color:var(--math-foreground);font-variant-numeric:tabular-nums}.stat__label{font-size:12px;color:var(--math-ink-3);margin-top:6px}.sec{margin-top:36px}.sec__head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}.sec__title{font-size:15px;font-weight:600;color:var(--math-foreground)}.sec__note{font-size:12px;color:var(--math-ink-3);margin-left:auto}.srow{display:flex;align-items:flex-start;gap:16px;padding:18px 0;border-top:1px solid var(--math-border);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.srow:hover{background:var(--math-surface)}.srow:hover .srow__arrow{transform:translateX(2px)}.srow__code{font-family:var(--math-font-mono);font-size:13px;color:var(--math-ink-3);min-width:40px;padding-top:2px}.srow__body{flex:1;min-width:0}.srow__name{font-size:15px;color:var(--math-foreground);line-height:1.7}.srow__items{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.srow__item{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);font-size:12px;color:var(--math-ink-2)}.srow__right{display:flex;align-items:center;gap:10px;padding-top:4px}.srow__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.srow__arrow{width:14px;height:14px;color:var(--math-ink-4);transition:transform 140ms cubic-bezier(.2,.8,.2,1)}.mod{display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid var(--math-border);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.mod:hover{background:var(--math-surface)}.mod__name{font-size:14px;color:var(--math-foreground);flex:1;min-width:0}.mod__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.prog{margin-top:28px;padding:20px 0;border-top:1px solid var(--math-border)}.prog__row{display:flex;align-items:baseline;gap:12px;font-size:13px;color:var(--math-ink-2)}.prog__val{margin-left:auto;font-family:var(--math-font-mono);font-size:13px;color:var(--math-foreground)}.bar{height:2px;background:var(--math-border);margin-top:10px}.bar__fill{height:2px;background:var(--math-primary)}@media (max-width:1023px){.chead__actions{margin-left:0}}@media (max-width:640px){.wrap{padding:24px 20px 0}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding-left:0;border-left:0}}
+.chead__id{display:flex;flex-direction:column;min-width:0}
+.chead__line{display:flex;align-items:baseline;flex-wrap:wrap;gap:12px}
+.chead__sep{display:block;width:1px;height:10px;background:var(--math-border)}
+.crumb__sep{color:var(--math-ink-4)}
+.srow__item{white-space:nowrap;font-variant-numeric:tabular-nums}
+.srow__code,.srow__count,.mod__count,.prog__val{font-variant-numeric:tabular-nums}
+.srow__arrow{flex-shrink:0}
+.mod:hover .srow__arrow{transform:translateX(2px)}
+.d3{margin-top:36px;padding-top:24px;border-top:1px solid var(--math-border);display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.d3__title{font-size:14px;color:var(--math-foreground)}
+.d3__note{font-size:13px;color:var(--math-ink-3);margin-top:6px}
+.chead__title,.sec__title{text-wrap:balance;word-break:keep-all}
+.crumb a:focus-visible,.srow:focus-visible,.mod:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important}}
+    </style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发帖</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" data-active="true" aria-current="page" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+    <div class="wrap">
+      <nav class="crumb" aria-label="面包屑">
+        <a href="forum.html" data-dom-id="compose-cancel">论坛</a>
+        <span aria-hidden="true">／</span>
+        <span>发帖</span>
+      </nav>
+
+      <h1 class="page-title">发表新帖</h1>
+
+      <section class="fsec" aria-label="帖子内容">
+        <div class="frow">
+          <label class="frow__label" for="post-title">标题</label>
+          <div class="field">
+            <input id="post-title" class="field__input" type="text" placeholder="一句话说清你要问的问题" value="一次函数分段讨论的通用判断顺序">
+            <p class="field__count">18 / 60</p>
+          </div>
+        </div>
+
+        <div class="frow">
+          <span class="frow__label" id="post-board-label">板块</span>
+          <div class="field">
+            <div class="picks" role="group" aria-labelledby="post-board-label">
+              <a class="pick" href="#">学习交流</a>
+              <a class="pick" href="#" data-active="true">解题求助</a>
+              <a class="pick" href="#">真题讨论</a>
+            </div>
+            <p class="field__hint">求解类问题请选「解题求助」，会优先展示给答主。</p>
+          </div>
+        </div>
+
+        <div class="frow">
+          <span class="frow__label" id="post-body-label">正文</span>
+          <div class="field">
+            <div class="toolbar" role="toolbar" aria-label="正文格式">
+              <button type="button" class="tb" aria-label="加粗"><i data-lucide="bold" style="width:15px;height:15px"></i></button>
+              <button type="button" class="tb" aria-label="斜体"><i data-lucide="italic" style="width:15px;height:15px"></i></button>
+              <button type="button" class="tb" aria-label="无序列表"><i data-lucide="list" style="width:15px;height:15px"></i></button>
+              <button type="button" class="tb" aria-label="有序列表"><i data-lucide="list-ordered" style="width:15px;height:15px"></i></button>
+              <span class="tb__sep" aria-hidden="true"></span>
+              <button type="button" class="tb" aria-label="插入公式"><i data-lucide="sigma" style="width:15px;height:15px"></i></button>
+              <button type="button" class="tb" aria-label="插入图片"><i data-lucide="image" style="width:15px;height:15px"></i></button>
+              <button type="button" class="tb" aria-label="插入链接"><i data-lucide="link" style="width:15px;height:15px"></i></button>
+              <span class="tb__sep" aria-hidden="true"></span>
+              <button type="button" class="tb" aria-label="预览"><i data-lucide="eye" style="width:15px;height:15px"></i></button>
+            </div>
+            <div class="editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="post-body-label">
+              <p>最近做第十九章的题，遇到 <span class="m">y = kx + b</span> 带分段条件时，不知道从哪一步开始分类。例如：</p>
+              <p>已知一次函数 <span class="m">y = 2x − 4</span>，当 <span class="m">−1 ≤ x ≤ 3</span> 时，求 <span class="m">y</span> 的取值范围。我直接取了两端，但不确定是否总是成立。</p>
+              <p>想请教大家有没有统一的入手顺序。</p>
+            </div>
+            <p class="editor__hint">支持 ▢ 插入公式，公式会以衬线字体渲染。</p>
+          </div>
+        </div>
+
+        <div class="frow">
+          <span class="frow__label">标签</span>
+          <div class="tags">
+            <span class="tag">一次函数<button type="button" aria-label="移除标签">×</button></span>
+            <span class="tag">第十九章<button type="button" aria-label="移除标签">×</button></span>
+            <span class="tag">分类讨论<button type="button" aria-label="移除标签">×</button></span>
+            <button type="button" class="tag-add">+ 添加标签</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <p class="actions__note">发布后 30 分钟内可以编辑。请遵守社区规范，不要直接索要答案。</p>
+        <div class="actions__right">
+          <button type="button" class="btn btn--ghost">保存草稿</button>
+          <a class="btn btn--primary" href="forum.html" data-dom-id="compose-publish">发布</a>
+        </div>
+      </div>
+    </div>
+
+    <footer class="shell-footer">
+      <div class="shell-footer__inner">
+        <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+        <nav class="shell-footer__links" aria-label="页脚导航">
+          <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+          <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+          <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+          <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+        </nav>
+      </div>
+    </footer>
+    </main>
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+    <style id="page-styles">.wrap{max-width:880px;margin:0 auto;padding:32px 32px 0}.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--math-ink-3);margin-bottom:14px}.crumb a{color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.crumb a:hover{color:var(--math-primary)}.page-title{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:600;letter-spacing:-0.02em;line-height:1.35;color:var(--math-foreground);padding-bottom:20px;border-bottom:1px solid var(--math-border)}.fsec{padding:24px 0;border-bottom:1px solid var(--math-border)}.frow{display:grid;grid-template-columns:88px minmax(0,1fr);gap:16px;align-items:start}.frow+.frow{margin-top:16px}.frow__label{font-size:13px;color:var(--math-ink-2);padding-top:11px}.field{display:flex;flex-direction:column;gap:6px}.field__input{height:42px;padding:0 12px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);background:var(--math-background);color:var(--math-foreground);font-size:14px;font-family:var(--math-font-sans);transition:border-color 140ms cubic-bezier(.2,.8,.2,1)}.field__input::placeholder{color:var(--math-ink-4)}.field__input:hover{border-color:var(--math-line-strong)}.field__input:focus{outline:none;border-color:var(--math-primary);box-shadow:0 0 0 2px var(--math-primary-soft)}.field__hint{font-size:12px;color:var(--math-ink-3)}.field__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-4);text-align:right}.picks{display:flex;gap:8px;flex-wrap:wrap}.pick{display:inline-flex;align-items:center;height:34px;padding:0 14px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.pick:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.pick[data-active="true"]{border-color:var(--math-primary);color:var(--math-primary);font-weight:500}.toolbar{display:flex;align-items:center;gap:2px;flex-wrap:wrap;border:1px solid var(--math-border);border-bottom:0;border-radius:var(--math-radius-md) var(--math-radius-md) 0 0;padding:6px 8px;background:var(--math-surface)}.tb{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:0;border-radius:var(--math-radius-sm);background:transparent;color:var(--math-ink-3);cursor:pointer;font-size:13px;transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1)}.tb:hover{color:var(--math-foreground);background:var(--math-surface-2)}.tb__sep{width:1px;height:18px;background:var(--math-border);margin:0 6px}.editor{min-height:280px;border:1px solid var(--math-border);border-radius:0 0 var(--math-radius-md) var(--math-radius-md);padding:16px;font-size:15px;line-height:1.9;color:var(--math-ink-2)}.editor p{margin:0 0 14px}.editor .m{font-family:var(--math-font-math);color:var(--math-foreground)}.editor__hint{font-size:12px;color:var(--math-ink-4);margin-top:10px}.tags{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tag{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);font-size:12px;color:var(--math-ink-2)}.tag button{border:0;background:transparent;color:var(--math-ink-4);cursor:pointer;font-size:12px;line-height:1;padding:0}.tag button:hover{color:var(--math-ink-2)}.tag-add{display:inline-flex;align-items:center;height:28px;padding:0 10px;border:1px dashed var(--math-border);border-radius:var(--math-radius-sm);font-size:12px;color:var(--math-ink-3);background:transparent;cursor:pointer}.actions{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:24px 0}.actions__note{font-size:12px;color:var(--math-ink-3)}.actions__right{display:flex;align-items:center;gap:12px}@media (max-width:640px){.wrap{padding:24px 20px 0}.frow{grid-template-columns:minmax(0,1fr);gap:8px}.frow__label{padding-top:0}}
+body{font-variant-numeric:tabular-nums}
+.editor{font-variant-numeric:tabular-nums}
+.editor:focus{outline:none;border-color:var(--math-primary)}
+.tb__sep{flex:0 0 1px}
+.actions__note{max-width:52ch;line-height:1.7}
+.tag-add{transition:border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}
+.tag-add:hover{border-color:var(--math-line-strong);color:var(--math-ink-2)}
+.pick:focus-visible,.tb:focus-visible,.tag button:focus-visible,.tag-add:focus-visible,.crumb a:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}}
+</style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

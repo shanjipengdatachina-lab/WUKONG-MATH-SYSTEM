@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错题详情</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+      <div class="acct">
+        <aside class="acct-side">
+          <p class="acct-side__title">学习中心</p>
+          <nav class="acct-side__nav" aria-label="学习中心">
+            <a class="acct-side__item" href="profile.html" data-dom-id="side-profile">个人中心</a>
+            <a class="acct-side__item" href="mistakes.html" data-dom-id="side-mistakes" data-active="true">错题本<span class="acct-side__count">37</span></a>
+            <a class="acct-side__item" href="favorites.html" data-dom-id="side-favorites">收藏夹<span class="acct-side__count">24</span></a>
+            <a class="acct-side__item" href="progress.html" data-dom-id="side-progress">学习进度</a>
+            <a class="acct-side__item" href="membership.html" data-dom-id="side-membership">会员中心</a>
+            <a class="acct-side__item" href="notifications.html" data-dom-id="side-notifications">消息通知<span class="acct-side__count">3</span></a>
+            <a class="acct-side__item" href="settings.html" data-dom-id="side-settings">账号设置</a>
+            <a class="acct-side__item" href="notebook.html" data-dom-id="side-notebook">笔记汇总</a>
+            <a class="acct-side__item" href="report.html" data-dom-id="side-report">学习报告</a>
+          </nav>
+        </aside>
+
+        <div class="acct-main">
+          <div class="crumb">
+            <a href="mistakes.html" data-dom-id="back-mistakes">错题本</a>
+            <span>／</span>
+            <span>第 1 题</span>
+          </div>
+
+          <section class="qcard" aria-labelledby="qcard-no">
+            <div class="qmeta">
+              <span class="qmeta__no" id="qcard-no">第 1 题</span>
+              <span class="qmeta__tag">考点 2 一次函数</span>
+              <span class="qmeta__tag">一次函数 · 正比例函数的图象和性质</span>
+              <span class="qmeta__status">
+                <i data-lucide="circle-alert" style="width:14px;height:14px"></i>
+                <span>待订正</span>
+              </span>
+            </div>
+
+            <p class="qstem">若正比例函数 <span class="m">y = kx</span> 的图象经过点 <span class="m">(2, −6)</span>，则 <span class="m">k</span> 的值为（　）</p>
+
+            <div class="opts">
+              <button type="button" class="opt opt--wrong">
+                <span class="opt__mark" aria-hidden="true"></span>
+                <span class="opt__text"><span class="m">A. 3</span></span>
+                <span class="opt__verdict">我的答案</span>
+              </button>
+              <button type="button" class="opt opt--right">
+                <span class="opt__mark" aria-hidden="true"></span>
+                <span class="opt__text"><span class="m">B. −3</span></span>
+                <span class="opt__verdict">正确答案</span>
+              </button>
+              <button type="button" class="opt">
+                <span class="opt__mark" aria-hidden="true"></span>
+                <span class="opt__text"><span class="m">C. 6</span></span>
+              </button>
+              <button type="button" class="opt">
+                <span class="opt__mark" aria-hidden="true"></span>
+                <span class="opt__text"><span class="m">D. −6</span></span>
+              </button>
+            </div>
+          </section>
+
+          <section class="analysis" aria-label="解析">
+            <p class="analysis__label">解析</p>
+            <ol>
+              <li>正比例函数的一般形式是 <span class="m">y = kx</span>，其中 <span class="m">k ≠ 0</span>。</li>
+              <li>图象经过点 <span class="m">(2, −6)</span>，说明当 <span class="m">x = 2</span> 时 <span class="m">y = −6</span>。</li>
+              <li>代入得 <span class="m">−6 = 2k</span>，解得 <span class="m">k = −3</span>。</li>
+              <li>检验 <span class="m">k = −3 ≠ 0</span>，符合正比例函数的定义，故选 B。</li>
+            </ol>
+          </section>
+
+          <section class="reason" aria-label="错误原因">
+            <p class="note__label">错误原因</p>
+            <p class="reason__text">代入时忘记保留负号，把 <span class="m">2k = −6</span> 误算成 <span class="m">2k = 6</span>。</p>
+          </section>
+
+          <section class="note" aria-label="我的笔记">
+            <p class="note__label">我的笔记</p>
+            <div class="note__box note__box--empty">记下这道题的易错点，下次复习时会先看到它。</div>
+          </section>
+
+          <section class="rel" aria-label="关联知识点">
+            <p class="rel__label">关联知识点</p>
+            <a class="rel__item" href="reader.html">
+              <span>19.2 一次函数 · 正比例函数的图象和性质</span>
+              <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+            </a>
+            <a class="rel__item" href="reader.html">
+              <span>易错点 2　判断正比例函数时，忽略 <span class="m">k ≠ 0</span> 的条件</span>
+              <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+            </a>
+          </section>
+
+          <div class="actions">
+            <button type="button" class="btn btn--primary">重做本题</button>
+            <a class="btn btn--ghost" href="reader.html" data-dom-id="cta-open-concept">查看知识点</a>
+          </div>
+        </div>
+      </div>
+
+      <footer class="shell-footer">
+        <div class="shell-footer__inner">
+          <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+          <nav class="shell-footer__links" aria-label="页脚导航">
+            <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+            <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+            <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+            <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+
+    <style id="page-styles">.acct{max-width:1280px;margin:0 auto;padding:36px 32px 0;display:grid;grid-template-columns:216px minmax(0,1fr);gap:48px;align-items:start}.acct-side{position:sticky;top:88px}.acct-side__title{font-size:12px;color:var(--math-ink-3);letter-spacing:.08em;padding:0 12px 10px}.acct-side__nav{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--math-border);padding-top:10px}.acct-side__item{display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 12px;border-radius:var(--math-radius-sm);font-size:14px;color:var(--math-ink-2);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.acct-side__item:hover{background:var(--math-surface);color:var(--math-foreground)}.acct-side__item[data-active="true"]{color:var(--math-primary);font-weight:500}.acct-side__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--math-ink-3);margin-bottom:14px}.crumb a{color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.crumb a:hover{color:var(--math-primary)}.qcard{padding-bottom:28px;border-bottom:1px solid var(--math-border)}.qmeta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}.qmeta__no{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.qmeta__tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);font-size:12px;color:var(--math-ink-2)}.qstem{font-size:17px;line-height:1.8;color:var(--math-foreground);max-width:34em}.qstem .m{font-family:var(--math-font-math)}.opts{margin-top:18px;display:flex;flex-direction:column;gap:8px;max-width:34em}.opt{display:flex;align-items:center;gap:10px;min-height:40px;font-size:15px;color:var(--math-ink-2)}.opt__mark{flex:0 0 auto;width:16px;height:16px;border:1px solid var(--math-border);border-radius:var(--math-radius-xs);display:inline-flex;align-items:center;justify-content:center}.opt--wrong .opt__mark{border-color:var(--math-state-error)}.opt--wrong .opt__mark::after{content:"";width:8px;height:8px;border-radius:2px;background:var(--math-state-error)}.opt--right .opt__mark{border-color:var(--math-state-success)}.opt--right .opt__mark::after{content:"";width:8px;height:8px;border-radius:2px;background:var(--math-state-success)}.opt--wrong .opt__text{color:var(--math-state-error)}.opt--right .opt__text{color:var(--math-state-success);font-weight:500}.opt__verdict{font-size:12px;margin-left:2px}.analysis{margin-top:24px;background:var(--math-surface);border-left:2px solid var(--math-primary);border-radius:var(--math-radius-md);padding:18px 20px}.analysis__label{font-size:12px;color:var(--math-ink-3);letter-spacing:.08em;margin-bottom:10px}.analysis ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px}.analysis li{font-size:14px;line-height:1.9;color:var(--math-ink-2)}.analysis .m{font-family:var(--math-font-math)}.note{margin-top:24px}.note__label{font-size:12px;color:var(--math-ink-3);letter-spacing:.08em;margin-bottom:10px}.note__box{min-height:96px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);padding:14px;font-size:14px;line-height:1.8;color:var(--math-ink-2)}.rel{margin-top:28px;padding-top:24px;border-top:1px solid var(--math-border)}.rel__label{font-size:12px;color:var(--math-ink-3);letter-spacing:.08em;margin-bottom:12px}.rel__item{display:flex;align-items:center;justify-content:space-between;gap:16px;height:44px;border-top:1px solid var(--math-border);font-size:14px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.rel__item:hover{color:var(--math-primary)}.rel__item:last-child{border-bottom:1px solid var(--math-border)}.actions{display:flex;align-items:center;gap:12px;margin-top:28px}@media (max-width:1023px){.acct{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:24px}.acct-side{position:static}}
+body{font-variant-numeric:tabular-nums}
+.acct-main{min-width:0}
+.m{font-family:var(--math-font-math)}
+.btn{white-space:nowrap}
+.qmeta__status{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--math-state-warning)}
+.opt{background:transparent;border:0;padding:0;font-family:inherit;text-align:left;cursor:pointer;transition:color 140ms cubic-bezier(.2,.8,.2,1)}
+.opt:hover{color:var(--math-foreground)}
+.opt:not(.opt--wrong):not(.opt--right):hover .opt__mark{border-color:var(--math-line-strong)}
+.opt--right .opt__verdict{color:var(--math-state-success)}
+.opt--wrong .opt__verdict{color:var(--math-state-error)}
+.reason{margin-top:24px;padding-top:24px;border-top:1px solid var(--math-border)}
+.reason__text{margin:0;font-size:14px;line-height:1.8;color:var(--math-ink-2)}
+.note__box--empty{color:var(--math-ink-4)}
+.rel__item>span{min-width:0}
+.rel__item svg,.rel__item [data-lucide]{flex:0 0 auto;color:var(--math-ink-4);transition:transform 140ms cubic-bezier(.2,.8,.2,1)}
+.rel__item:hover svg,.rel__item:hover [data-lucide]{transform:translateX(2px)}
+.acct-side__item:focus-visible,.crumb a:focus-visible,.rel__item:focus-visible,.opt:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px;border-radius:var(--math-radius-sm)}
+@media (max-width:640px){.qstem{font-size:1rem;line-height:1.75}.opt{font-size:0.875rem}.opts{padding-left:0}.rel__item{height:auto;min-height:44px;padding-top:8px;padding-bottom:8px;align-items:flex-start}.rel__item svg,.rel__item [data-lucide]{margin-top:3px}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}}
+</style>
+
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

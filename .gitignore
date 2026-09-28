@@ -1,0 +1,13 @@
+# 自检产物（由 tools/checks/build_*.rb 生成，随时可重建）
+tools/checks/_build/
+
+# TRAE 页面分享包（本地预览用，体量大且可再生成）
+.trae-html-share-packages/
+
+# 脚本推送用的临时凭据，绝不入库
+.git-token
+
+# 系统 / 编辑器杂项
+.DS_Store
+*.swp
+*~

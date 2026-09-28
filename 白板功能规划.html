@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>数字白板功能规划 · 悟空数学知识图谱</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <style>
+    *{box-sizing:border-box}
+    body{
+      margin:0;padding:48px 24px 96px;
+      background:var(--math-surface);color:var(--math-foreground);
+      font-family:var(--math-font-sans);line-height:1.75;
+    }
+    .doc{max-width:920px;margin:0 auto}
+    header.doc-head{margin-bottom:40px;padding-bottom:28px;border-bottom:1px solid var(--math-border)}
+    .doc-kicker{font-size:13px;letter-spacing:.1em;color:var(--math-ink-4)}
+    h1{margin:10px 0 12px;font-size:30px;line-height:1.3;letter-spacing:-.01em}
+    .doc-lead{margin:0;font-size:16px;color:var(--math-ink-2)}
+    .doc-meta{margin-top:16px;font-size:12.5px;color:var(--math-ink-4)}
+    h2{margin:44px 0 14px;font-size:20px;letter-spacing:-.01em}
+    h3{margin:26px 0 10px;font-size:15.5px}
+    p{margin:0 0 14px;font-size:14.5px;color:var(--math-ink-2)}
+    ul{margin:0 0 14px;padding-left:20px;font-size:14.5px;color:var(--math-ink-2)}
+    li{margin:4px 0}
+    strong{color:var(--math-foreground)}
+    code{
+      padding:1px 5px;border-radius:4px;background:var(--math-surface-2);
+      font-family:var(--math-font-mono);font-size:12.5px;color:var(--math-ink-2);
+    }
+    table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:13.5px}
+    th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--math-border)}
+    th{font-weight:600;font-size:12.5px;letter-spacing:.02em;color:var(--math-ink-3);background:var(--math-surface-2)}
+    td:first-child{white-space:nowrap;color:var(--math-foreground);font-weight:500}
+    .tag{
+      display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;
+      font-size:11px;line-height:1.7;vertical-align:1px;
+    }
+    .tag--done{background:var(--math-primary-soft);color:var(--math-primary);border:1px solid var(--math-primary-200)}
+    .tag--next{background:var(--math-surface-2);color:var(--math-ink-3);border:1px solid var(--math-border)}
+    .card{
+      margin:0 0 18px;padding:18px 20px;
+      background:var(--math-card);border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
+    }
+    .card h3{margin-top:0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:18px}
+    .grid .card{margin:0}
+    .quote{padding-left:14px;border-left:2px solid var(--math-primary-200);color:var(--math-ink-3);font-size:13.5px}
+    a{color:var(--math-primary);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .swatch-row{display:flex;gap:8px;margin:6px 0 16px}
+    .swatch{width:18px;height:18px;border-radius:999px;border:1px solid var(--math-border)}
+    footer.doc-foot{margin-top:56px;padding-top:20px;border-top:1px solid var(--math-border);font-size:12.5px;color:var(--math-ink-4)}
+    @media (max-width:640px){
+      body{padding:28px 16px 64px}
+      h1{font-size:24px}
+      td:first-child{white-space:normal}
+    }
+  </style>
+</head>
+<body>
+<div class="doc">
+
+  <header class="doc-head">
+    <p class="doc-kicker">产品规划 · 数字白板</p>
+    <h1>数字白板：从「能写」到「解题闭环」</h1>
+    <p class="doc-lead">
+      这不是一个通用白板。它的定位是<strong>数学演算台</strong>：题目、知识点、方法、易错点、公式都能一键送上板，
+      用户在板上演算，过程留在题上，不用重抄一个字。
+    </p>
+    <p class="doc-meta">2026-09 · 对照 Goodnotes / Miro / Excalidraw 的能力基线 · 当前站点 41 页、题库 58 题</p>
+  </header>
+
+  <h2>一、已经上线的部分（P0）</h2>
+  <table>
+    <thead>
+      <tr><th>能力</th><th>说明</th><th>状态</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>三种输入</td>
+        <td>鼠标、数位板（含压感笔迹粗细）、手指触控；画布锁定手势，手指划过不带动页面</td>
+        <td><span class="tag tag--done">已上线</span></td>
+      </tr>
+      <tr>
+        <td>书写与擦除</td>
+        <td>六色标记、三档笔粗；橡皮三档大小，按整笔擦除；撤销 / 重做 / 清空（清空也可撤销）</td>
+        <td><span class="tag tag--done">已上线</span></td>
+      </tr>
+      <tr>
+        <td>画质</td>
+        <td>笔画矢量存储 + 二次曲线平滑，按设备像素比放大画布，放大后不虚；改窗口大小重新渲染</td>
+        <td><span class="tag tag--done">已上线</span></td>
+      </tr>
+      <tr>
+        <td>题库上板</td>
+        <td>58 道题按六册分章，可筛选可搜索，点一下题目即上黑板；题面固定在画布上方，不参与绘制、不受清空影响</td>
+        <td><span class="tag tag--done">已上线</span></td>
+      </tr>
+      <tr>
+        <td>全站黑板入口</td>
+        <td>考点题目、练习结果、错题、错题详情、方法、易错点、公式、笔记、章首页知识点、章节目录知识点、知识点卡片、知识图谱节点，旁边都带一个「白板」按钮，点一下内容原样上板</td>
+        <td><span class="tag tag--done">已上线</span></td>
+      </tr>
+      <tr>
+        <td>本地记忆</td>
+        <td>笔迹、颜色、粗细、网格、当前题面记在本地，刷新不丢</td>
+        <td><span class="tag tag--done">已上线</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>二、顶级白板在做什么</h2>
+  <p>三家代表产品的能力侧重不同，取它们的长处即可，不必样样都做。</p>
+  <table>
+    <thead>
+      <tr><th>产品</th><th>值得学的能力</th><th>对本站的启发</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Goodnotes</td>
+        <td>手写数学公式即时验算（Math Assist）；手写方程可转成排版公式与 LaTeX；手写转可编辑文本、可被 AI 检索与总结；AI 数学助手分「讲给我听」与「直接解」两种模式
+          <span class="quote">来源：<a href="https://www.goodnotes.com/ai">goodnotes.com/ai</a>、<a href="https://support.goodnotes.com/hc/en-us/articles/10779567357199-How-to-use-Math-Assist">Math Assist 说明</a></span>
+        </td>
+        <td>「写完能被读懂」是数学白板的核心价值：手写算式识别 + 即时校验 + 分步提示，是 P3 的主线</td>
+      </tr>
+      <tr>
+        <td>Miro</td>
+        <td>无限画布；画笔画的草图能自动转成形状、便签与连线；上千套模板；协作与外部工具集成
+          <span class="quote">来源：<a href="https://miro.com/whiteboard/">miro.com/whiteboard</a></span>
+        </td>
+        <td>无限画布 + 墨迹转形状（直线、圆、辅助线）是画几何图的关键，属于 P2</td>
+      </tr>
+      <tr>
+        <td>Excalidraw</td>
+        <td>极简速记、随手打开就能写；链接即协作；离线可用、端到端加密；本地优先
+          <span class="quote">来源：<a href="https://codepic.cc/blog/excalidraw-vs-miro">Excalidraw 与 Miro 对比</a>、<a href="https://figviz.com/blog/best-miro-alternatives-2026-10-free-tools-ranked-4cvppytl">2026 白板横评</a></span>
+        </td>
+        <td>不要把白板做成功能堆砌的控制台：默认只有笔和橡皮，其余收在侧栏；打开即可写</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>三、规划（P1 → P4）</h2>
+
+  <div class="card">
+    <h3>P1 · 把「上板」做成闭环 <span class="tag tag--next">下一步</span></h3>
+    <table>
+      <thead><tr><th>目标</th><th>内容</th><th>验收标准</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>一题一板</td>
+          <td>白板支持多页；从题目上板时自动开新页并带上题目与来源；页签可切换、可命名</td>
+          <td>连续从 3 道题上板，得到 3 页互不干扰的白板，切页笔迹不串</td>
+        </tr>
+        <tr>
+          <td>选择与编辑</td>
+          <td>套索选择：圈住后可整体移动、缩放、删除、改色；双击进入局部区域</td>
+          <td>圈选一段演算 → 拖到旁边 → 原位置留白，撤销后完全复原</td>
+        </tr>
+        <tr>
+          <td>导出与回看</td>
+          <td>导出 PNG（含题面）与 PDF；把当前白板挂回对应题目，在错题本 / 章节页可回看</td>
+          <td>导出图片含题面与笔迹；从错题条目的「白板」按钮进入能看到上次的演算</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>P2 · 画布能力对齐主流</h3>
+    <table>
+      <thead><tr><th>目标</th><th>内容</th><th>验收标准</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>无限画布</td>
+          <td>平移 / 缩放（双指、滚轮、快捷键），视图与笔迹分离，缩放后笔迹不虚</td>
+          <td>缩放 25%–400%，笔迹边缘始终清晰；平移不影响已写内容</td>
+        </tr>
+        <tr>
+          <td>图形与直尺</td>
+          <td>直线 / 箭头 / 矩形 / 圆；长按出直尺画水平线；墨迹自动吸附成规整图形</td>
+          <td>手画一条歪线，松手后自动变直；画数轴不用再手抖</td>
+        </tr>
+        <tr>
+          <td>笔的细节</td>
+          <td>笔迹倾角、防误触（手掌抑制）、笔尾当橡皮、橡皮分「整笔擦」与「区域擦」两档</td>
+          <td>手掌贴屏书写不产生笔迹；翻转笔尾立即变橡皮</td>
+        </tr>
+        <tr>
+          <td>图层与纸张</td>
+          <td>底层 / 笔迹 / 标注三层；网格、点阵、方格三种纸；背景色（白板 / 深色 / 黑板绿）</td>
+          <td>切换纸张不丢内容；标注层可单独清空</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>P3 · 让手写被读懂（数学专属）</h3>
+    <table>
+      <thead><tr><th>目标</th><th>内容</th><th>验收标准</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>算式识别</td>
+          <td>套住手写算式 → 转成排版公式（可复制为 LaTeX），并即时算出结果做校验</td>
+          <td>手写 <code>(−2)×(−5)</code> 识别为同一式并给出结果</td>
+        </tr>
+        <tr>
+          <td>分步提示</td>
+          <td>「讲给我听」模式：按本站方法速学的口径给下一步提示；「直接解」模式：给完整过程</td>
+          <td>提示口径与站点方法库一致，不出现教材外的解法</td>
+        </tr>
+        <tr>
+          <td>批改留痕</td>
+          <td>对自己写的解答逐步校验，标出第一处出错的位置</td>
+          <td>标错位置与站点易错速析的条目能对上</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>P4 · 协作与同步</h3>
+    <ul>
+      <li>分享链接即协作（对齐 Excalidraw 的「粘贴链接就能一起写」）</li>
+      <li>多人实时光标、老师点名上板、学生白板墙</li>
+      <li>账号体系打通后白板跨设备同步；离线优先，联网后合并</li>
+    </ul>
+  </div>
+
+  <h2>四、本站的差异化</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>内容先于工具</h3>
+      <p>通用白板要用户自己抄题。这里题目、知识点、方法、易错点、公式都在系统里，一个按钮就到板上——这是通用白板做不到的事。</p>
+    </div>
+    <div class="card">
+      <h3>演算与错题闭环</h3>
+      <p>错题 → 上板演算 → 回看复盘。白板不是孤立页面，而是错题本、章节页、练习页的延伸。</p>
+    </div>
+    <div class="card">
+      <h3>克制</h3>
+      <p>默认只有笔、橡皮、撤销；颜色和粗细在右侧栏，画布四周不留控件。宁可少一个功能，也不要让用户先学工具再用工具。</p>
+    </div>
+  </div>
+
+  <h2>五、约束与取舍</h2>
+  <ul>
+    <li><strong>不引入重型依赖</strong>：站点是零构建的纯静态页，白板用原生 Canvas 2D + Pointer Events 实现，保持双击即可打开。</li>
+    <li><strong>离线优先</strong>：笔迹存本地，不依赖网络；识别与讲解这类重能力放在 P3，且要能在弱网下降级。</li>
+    <li><strong>不重复造轮子</strong>：手写识别、OCR 这类成熟能力优先接现成方案，只在「题目上板」「与知识图谱关联」这些差异点上自研。</li>
+    <li><strong>性能红线</strong>：单页 800 笔以内保持 60fps；超过后改为分块重绘。</li>
+  </ul>
+
+  <footer class="doc-foot">
+    本文档为产品规划，非站点页面（未加入侧栏导航）。当前实现见 <a href="whiteboard.html">数字白板</a>。
+  </footer>
+
+</div>
+</body>
+</html>

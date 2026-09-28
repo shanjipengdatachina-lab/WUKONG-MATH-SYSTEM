@@ -1,0 +1,440 @@
+/* ==========================================================================
+   交互增强层 (shell.css)
+   --------------------------------------------------------------------------
+   本文件在 body 末尾加载，用于在不改动设计稿任何既有规则的前提下，
+   补充全局交互组件与多端适配：
+     · 移动端抽屉导航（<=640px 时替代挤压的顶部导航）
+     · ⌘K 全局搜索面板
+     · 返回顶部
+     · 轻量 Toast 反馈
+     · 通用多端适配修正（横滑、表格溢出、触控热区）
+   所有类名均为新增，不与设计稿既有类名冲突。
+   ========================================================================== */
+
+/* ---------- 无障碍工具类 ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- 滚动锁定 ---------- */
+body[data-scroll-locked="true"] {
+  overflow: hidden;
+}
+
+
+/* ==========================================================================
+   2. ⌘K 全局搜索面板
+   ========================================================================== */
+
+.shell-cmdk {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh 16px 24px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 160ms cubic-bezier(.2, .8, .2, 1),
+              visibility 160ms cubic-bezier(.2, .8, .2, 1);
+}
+.shell-cmdk[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+}
+.shell-cmdk__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 18, 21, 0.32);
+}
+.shell-cmdk__panel {
+  position: relative;
+  width: min(100%, 560px);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--math-popover);
+  border: 1px solid var(--math-border);
+  border-radius: var(--math-radius-lg);
+  box-shadow: var(--math-shadow-2);
+  transform: translateY(-8px) scale(0.99);
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1);
+}
+.shell-cmdk[data-open="true"] .shell-cmdk__panel {
+  transform: translateY(0) scale(1);
+}
+.shell-cmdk__field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--math-border);
+}
+.shell-cmdk__field svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  color: var(--math-ink-3);
+}
+.shell-cmdk__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--math-font-sans);
+  font-size: var(--math-text-body-lg);
+  color: var(--math-foreground);
+  outline: none;
+}
+.shell-cmdk__input::placeholder { color: var(--math-ink-4); }
+.shell-cmdk__esc {
+  flex: 0 0 auto;
+  font-family: var(--math-font-mono);
+  font-size: 11px;
+  color: var(--math-ink-4);
+  border: 1px solid var(--math-border);
+  border-radius: var(--math-radius-xs);
+  padding: 2px 6px;
+}
+.shell-cmdk__results {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.shell-cmdk__group {
+  padding: 10px 10px 6px;
+  font-family: var(--math-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--math-ink-4);
+}
+.shell-cmdk__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: var(--math-radius-md);
+  color: var(--math-foreground);
+  text-decoration: none;
+  cursor: pointer;
+}
+.shell-cmdk__item:hover,
+.shell-cmdk__item[data-cursor="true"] {
+  background: var(--math-muted);
+}
+.shell-cmdk__item:focus-visible {
+  outline: 2px solid var(--math-ring);
+  outline-offset: -2px;
+}
+.shell-cmdk__item svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--math-ink-3);
+}
+.shell-cmdk__item-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--math-text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shell-cmdk__item-meta {
+  flex: 0 0 auto;
+  font-family: var(--math-font-mono);
+  font-size: 11px;
+  color: var(--math-ink-3);
+}
+.shell-cmdk__empty {
+  padding: 28px 16px;
+  text-align: center;
+  font-size: var(--math-text-caption);
+  color: var(--math-ink-3);
+}
+.shell-cmdk__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--math-border);
+  font-size: 11px;
+  color: var(--math-ink-4);
+}
+.shell-cmdk__key {
+  font-family: var(--math-font-mono);
+  border: 1px solid var(--math-border);
+  border-radius: var(--math-radius-xs);
+  padding: 1px 5px;
+  margin-right: 4px;
+}
+
+/* ==========================================================================
+   3. 返回顶部
+   ========================================================================== */
+
+.to-top {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--math-border);
+  border-radius: var(--math-radius-pill);
+  background: var(--math-background);
+  color: var(--math-ink-2);
+  box-shadow: var(--math-shadow-1);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 160ms cubic-bezier(.2, .8, .2, 1),
+              transform 160ms cubic-bezier(.2, .8, .2, 1),
+              visibility 160ms cubic-bezier(.2, .8, .2, 1),
+              color 140ms cubic-bezier(.2, .8, .2, 1),
+              border-color 140ms cubic-bezier(.2, .8, .2, 1);
+}
+.to-top[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.to-top:hover {
+  color: var(--math-primary);
+  border-color: var(--math-line-strong);
+}
+.to-top:focus-visible {
+  outline: 2px solid var(--math-ring);
+  outline-offset: 2px;
+}
+.to-top svg { width: 16px; height: 16px; }
+
+/* ==========================================================================
+   4. Toast 反馈
+   ========================================================================== */
+
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(92vw, 420px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--math-border);
+  border-radius: var(--math-radius-md);
+  background: var(--math-popover);
+  color: var(--math-foreground);
+  box-shadow: var(--math-shadow-2);
+  font-size: var(--math-text-caption);
+  line-height: 1.5;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 200ms cubic-bezier(.2, .8, .2, 1),
+              transform 200ms cubic-bezier(.2, .8, .2, 1);
+}
+.toast[data-show="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+.toast__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.toast__icon svg { width: 15px; height: 15px; }
+.toast[data-tone="success"] .toast__icon { color: var(--math-state-success); }
+.toast[data-tone="warning"] .toast__icon { color: var(--math-state-warning); }
+.toast[data-tone="error"] .toast__icon { color: var(--math-state-error); }
+.toast[data-tone="info"] .toast__icon { color: var(--math-state-info); }
+
+/* ==========================================================================
+   5. 多端适配修正
+   ========================================================================== */
+
+/* 兜底：设计稿大量使用 word-break:keep-all（中文不拆行），
+   在极窄屏下会让长标题撑破容器。overflow-wrap 只在「实在放不下」时才断行，
+   因此正常宽度下渲染结果与设计稿完全一致。 */
+body {
+  overflow-wrap: break-word;
+}
+
+/* 表格在窄屏下横向滚动，避免撑破布局 */
+@media (max-width: 767px) {
+  body table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 长公式/代码块可横向滚动 */
+  body pre,
+  body .formula-block {
+    overflow-x: auto;
+  }
+
+  /* 触控热区：保证可点元素不小于 40px */
+  body .shell-footer__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+}
+
+/* 小屏收紧顶栏与面板 */
+@media (max-width: 640px) {
+  body .to-top { right: 16px; bottom: 16px; }
+  body .shell-cmdk { padding: 8vh 12px 16px; }
+  body .shell-cmdk__panel { max-height: 78vh; }
+
+  body .shell-search { padding: 0 9px; }
+  body .shell-search span,
+  body .shell-search kbd { display: none; }
+}
+
+
+
+/* 横屏矮视口：收紧面板高度 */
+@media (max-height: 560px) {
+  body .shell-cmdk { padding-top: 24px; }
+  body .shell-cmdk__panel { max-height: 88vh; }
+}
+
+/* 底部安全区（刘海屏） */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body .shell-footer__inner { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  body .to-top { bottom: calc(24px + env(safe-area-inset-bottom)); }
+  body .toast-stack { bottom: calc(28px + env(safe-area-inset-bottom)); }
+}
+
+/* ==========================================================================
+   6. 页面级交互态
+   --------------------------------------------------------------------------
+   设计稿已给出 correct / idle 两种状态，这里按同一套设计令牌补齐
+   「答错」「填空判定」「编辑器」等交互所需的状态样式。
+   ========================================================================== */
+
+/* ---------- 章节阅读：目录树展开态 ----------
+   设计稿用 data-subtree="expanded|collapsed" 标注展开态（第 2–6 册为
+   collapsed 且图标为 chevron-right），但导出时缺少对应样式，
+   这里补齐；初始渲染与设计稿标注一致。 */
+body [data-subtree="collapsed"] { display: none; }
+body .volume-head { transition: color 140ms cubic-bezier(.2, .8, .2, 1); }
+body .volume-head:hover { color: var(--math-primary); }
+body .volume-head:focus-visible,
+body .ch-row:focus-visible {
+  outline: 2px solid var(--math-ring);
+  outline-offset: -2px;
+}
+
+/* ---------- 考点速练：答错状态 ---------- */
+body .opt[data-state="wrong"] .opt__mark { border-color: var(--math-state-error); }
+body .opt[data-state="wrong"] .opt__dot {
+  display: block;
+  background: var(--math-state-error);
+}
+body .opt[data-state="wrong"] .opt__text { color: var(--math-state-error); }
+body .opt[data-state="correct"],
+body .opt[data-state="wrong"] { cursor: default; }
+body .quiz-status[data-tone="error"] { color: var(--math-state-error); }
+
+/* ---------- 考点速练：填空题 ---------- */
+body input.blank {
+  text-align: center;
+  color: var(--math-foreground);
+}
+body input.blank::placeholder { color: var(--math-ink-4); }
+body input.blank:focus {
+  outline: none;
+  border-bottom-color: var(--math-primary);
+}
+body input.blank[data-state="correct"] {
+  color: var(--math-state-success);
+  border-bottom-color: var(--math-state-success);
+}
+body input.blank[data-state="wrong"] {
+  color: var(--math-state-error);
+  border-bottom-color: var(--math-state-error);
+}
+
+/* ---------- 发帖页：工具栏与编辑器 ---------- */
+body .tb[aria-pressed="true"] {
+  color: var(--math-primary);
+  background: var(--math-primary-soft);
+}
+body .editor-media {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px dashed var(--math-line-strong);
+  border-radius: var(--math-radius-sm);
+  color: var(--math-ink-3);
+  font-size: 12px;
+}
+body .editor-preview {
+  min-height: 280px;
+  padding: 16px;
+  border: 1px solid var(--math-border);
+  border-radius: 0 0 var(--math-radius-md) var(--math-radius-md);
+  background: var(--math-surface);
+  font-size: var(--math-text-body);
+  line-height: 1.9;
+  color: var(--math-ink-2);
+}
+body .editor-preview p { margin: 0 0 14px; }
+body .editor-preview .m {
+  font-family: var(--math-font-math);
+  color: var(--math-foreground);
+}
+body .tag--editing { padding: 0 4px; }
+body .tag--editing input {
+  width: 72px;
+  height: 26px;
+  border: 0;
+  background: transparent;
+  font-family: var(--math-font-sans);
+  font-size: 12px;
+  color: var(--math-foreground);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .shell-cmdk,
+  body .shell-cmdk__panel,
+  body .to-top,
+  body .toast {
+    transition-duration: 0.01ms !important;
+  }
+}

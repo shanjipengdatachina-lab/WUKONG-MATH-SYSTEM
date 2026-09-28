@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>确认订单</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="wrap">
+        <nav class="crumb" aria-label="面包屑">
+          <a href="membership.html" data-dom-id="checkout-back">会员中心</a>
+          <span aria-hidden="true">／</span>
+          <span aria-current="page">确认订单</span>
+        </nav>
+
+        <div class="phead">
+          <h1 class="phead__title">确认订单</h1>
+        </div>
+
+        <div class="cols">
+          <div class="form">
+            <section class="fsec">
+              <h2 class="fsec__title">方案</h2>
+              <div class="frow">
+                <span class="frow__label">已选</span>
+                <div class="picks">
+                  <a class="pick" href="#"><span class="pick__mark"></span>免费版</a>
+                  <a class="pick" href="#" data-active="true"><span class="pick__mark"></span>会员版</a>
+                  <a class="pick" href="#"><span class="pick__mark"></span>尊享版</a>
+                </div>
+              </div>
+            </section>
+
+            <section class="fsec">
+              <h2 class="fsec__title">订阅周期</h2>
+              <div class="frow">
+                <span class="frow__label">周期</span>
+                <div class="seg">
+                  <a class="seg__item" href="#" data-active="true">按月</a>
+                  <a class="seg__item" href="#">按季</a>
+                  <a class="seg__item" href="#">按年</a>
+                </div>
+              </div>
+            </section>
+
+            <section class="fsec">
+              <h2 class="fsec__title">支付方式</h2>
+              <div class="frow">
+                <span class="frow__label">方式</span>
+                <div class="picks">
+                  <a class="pick" href="#" data-active="true"><span class="pick__mark"></span>微信支付</a>
+                  <a class="pick" href="#"><span class="pick__mark"></span>支付宝</a>
+                  <a class="pick" href="#"><span class="pick__mark"></span>银行卡</a>
+                </div>
+              </div>
+            </section>
+
+            <section class="fsec">
+              <h2 class="fsec__title">发票信息</h2>
+              <div class="frow">
+                <label class="frow__label" for="invoice-title">发票</label>
+                <div class="field">
+                  <input class="field__input" id="invoice-title" type="text" placeholder="不开发票（可留空）">
+                </div>
+              </div>
+              <div class="frow">
+                <label class="frow__label" for="invoice-email">邮箱</label>
+                <div class="field">
+                  <input class="field__input" id="invoice-email" type="email" placeholder="接收电子发票的邮箱">
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <aside class="summary" aria-label="金额明细">
+            <h2 class="summary__title">金额明细</h2>
+            <div class="srow">
+              <span class="srow__label">会员版 · 按月</span>
+              <span class="srow__val">¥29.00</span>
+            </div>
+            <div class="srow">
+              <span class="srow__label">首月优惠</span>
+              <span class="srow__val srow__val--off">−¥10.00</span>
+            </div>
+            <div class="srow">
+              <span class="srow__label">优惠码</span>
+              <span class="srow__val">未使用</span>
+            </div>
+            <div class="total">
+              <span class="total__label">应付金额</span>
+              <span class="total__val">¥19.00</span>
+            </div>
+            <a class="btn btn--primary btn--block" href="payment-result.html" data-dom-id="checkout-submit">提交订单</a>
+            <p class="agreement"><a href="payment-failed.html">支付未完成？</a></p>
+            <p class="agreement">提交即表示同意《<a href="terms.html">用户协议</a>》与《<a href="privacy.html">隐私政策</a>》，到期前可随时取消。</p>
+          </aside>
+        </div>
+      </div>
+    </main>
+
+    <footer class="shell-footer">
+      <div class="shell-footer__inner">
+        <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+        <nav class="shell-footer__links" aria-label="页脚导航">
+          <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+          <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+          <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+          <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+        </nav>
+      </div>
+    </footer>
+
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn--block{width:100%}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+
+    <style id="page-styles">
+.wrap{max-width:1080px;margin:0 auto;padding:36px 32px 0}.crumb{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--math-ink-3);margin-bottom:14px}.crumb a{color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.crumb a:hover{color:var(--math-primary)}.phead{padding-bottom:20px;border-bottom:1px solid var(--math-border)}.phead__title{font-size:clamp(1.75rem,3vw,2.25rem);font-weight:600;letter-spacing:-0.02em;line-height:1.25;color:var(--math-foreground)}.cols{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:56px;align-items:start;margin-top:28px}.fsec{padding-bottom:24px;border-bottom:1px solid var(--math-border)}.fsec+.fsec{padding-top:24px}.fsec__title{font-size:15px;font-weight:600;color:var(--math-foreground);margin-bottom:14px}.frow{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;align-items:start;padding:8px 0}.frow__label{font-size:13px;color:var(--math-ink-2);padding-top:11px}.field{display:flex;flex-direction:column;gap:6px;max-width:420px}.field__input{height:42px;padding:0 12px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);background:var(--math-background);color:var(--math-foreground);font-size:14px;font-family:var(--math-font-sans);transition:border-color 140ms cubic-bezier(.2,.8,.2,1)}.field__input::placeholder{color:var(--math-ink-4)}.field__input:hover{border-color:var(--math-line-strong)}.field__input:focus{outline:none;border-color:var(--math-primary);box-shadow:0 0 0 2px var(--math-primary-soft)}.seg{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);padding:3px}.seg__item{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 14px;border-radius:var(--math-radius-sm);font-size:13px;color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.seg__item:hover{color:var(--math-ink-2)}.seg__item[data-active="true"]{color:var(--math-primary);font-weight:500}.picks{display:flex;gap:8px;flex-wrap:wrap}.pick{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);font-size:14px;color:var(--math-ink-2);text-decoration:none;transition:border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.pick:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.pick[data-active="true"]{border-color:var(--math-primary);color:var(--math-primary)}.pick__mark{width:16px;height:16px;border:1px solid var(--math-border);border-radius:999px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}.pick[data-active="true"] .pick__mark{border-color:var(--math-primary)}.pick[data-active="true"] .pick__mark::after{content:"";width:8px;height:8px;border-radius:999px;background:var(--math-primary)}.summary{position:sticky;top:88px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);padding:20px}.summary__title{font-size:12px;color:var(--math-ink-3);letter-spacing:.08em;padding-bottom:12px;border-bottom:1px solid var(--math-border)}.srow{display:flex;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px solid var(--math-border);font-size:14px}.srow__label{color:var(--math-ink-2)}.srow__val{margin-left:auto;color:var(--math-foreground);font-variant-numeric:tabular-nums}.srow__val--off{color:var(--math-state-success)}.total{display:flex;align-items:baseline;gap:12px;padding:16px 0 20px;font-size:15px}.total__label{color:var(--math-ink-2)}.total__val{margin-left:auto;font-size:1.5rem;font-weight:600;color:var(--math-foreground);font-variant-numeric:tabular-nums;font-family:var(--math-font-mono)}.agreement{font-size:12px;color:var(--math-ink-3);line-height:1.8;margin-top:14px}.agreement a{color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.agreement a:hover{color:var(--math-primary)}@media (max-width:1023px){.cols{grid-template-columns:minmax(0,1fr);gap:28px}.summary{position:static}}@media (max-width:640px){.wrap{padding:24px 20px 0}.frow{grid-template-columns:minmax(0,1fr);gap:8px}.frow__label{padding-top:0}}
+.form{min-width:0}.seg{justify-self:start}.field__input{width:100%;box-sizing:border-box}.field__input:disabled{background:var(--math-surface-2);color:var(--math-ink-4);border-color:var(--math-border);cursor:not-allowed}.phead__title,.fsec__title{text-wrap:balance;word-break:keep-all}.summary__title{font-weight:500;text-wrap:balance;word-break:keep-all}.srow__val{font-family:var(--math-font-mono)}.crumb a:focus-visible,.pick:focus-visible,.seg__item:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important}}
+    </style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

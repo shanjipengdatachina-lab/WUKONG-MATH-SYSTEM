@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公式速查</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" data-active="true" aria-current="page" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+<main>
+  <div class="wrap">
+    <div class="phead">
+      <div>
+        <h1 class="phead__title">公式速查</h1>
+        <p class="phead__desc">按册汇总常用公式与性质，可整页打印。</p>
+      </div>
+      <div class="phead__actions">
+        <a class="btn btn--ghost" href="methods.html" data-dom-id="formula-methods">方法速学汇总</a>
+      </div>
+    </div>
+
+    <nav class="tabs" aria-label="按册筛选">
+      <a class="tab" href="#" data-active="true">全部<span class="tab__count">42</span></a>
+      <a class="tab" href="#">七上<span class="tab__count">6</span></a>
+      <a class="tab" href="#">七下<span class="tab__count">8</span></a>
+      <a class="tab" href="#">八上<span class="tab__count">9</span></a>
+      <a class="tab" href="#">八下<span class="tab__count">7</span></a>
+      <a class="tab" href="#">九上<span class="tab__count">9</span></a>
+      <a class="tab" href="#">九下<span class="tab__count">3</span></a>
+    </nav>
+
+    <section class="grp" aria-labelledby="grp-1">
+      <div class="grp__head">
+        <span class="grp__no">七上 · 第一章</span>
+        <h2 class="grp__title" id="grp-1">有理数</h2>
+        <span class="grp__count">3 条</span>
+      </div>
+      <a class="frow" href="chapter.html" data-dom-id="formula-open-chapter">
+        <span class="frow__name">绝对值</span>
+        <span class="frow__formula">|a| ≥ 0，|a| = a (a ≥ 0)；|a| = −a (a &lt; 0)</span>
+        <span class="frow__right">
+          <span class="frow__code">01</span>
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">有理数加法</span>
+        <span class="frow__formula">同号相加取同号，异号相加取绝对值较大者的符号</span>
+        <span class="frow__right">
+          <span class="frow__code">01</span>
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">科学记数法</span>
+        <span class="frow__formula">N = a × 10<sup>n</sup> (1 ≤ a &lt; 10)</span>
+        <span class="frow__right">
+          <span class="frow__code">01</span>
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-2">
+      <div class="grp__head">
+        <span class="grp__no">七上 · 第二章</span>
+        <h2 class="grp__title" id="grp-2">整式的加减</h2>
+        <span class="grp__count">2 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">合并同类项</span>
+        <span class="frow__formula">同类项的系数相加，字母与指数不变</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">乘法分配律</span>
+        <span class="frow__formula">a(b + c) = ab + ac</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-3">
+      <div class="grp__head">
+        <span class="grp__no">七上 · 第三章</span>
+        <h2 class="grp__title" id="grp-3">一元一次方程</h2>
+        <span class="grp__count">1 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">一元一次方程求根</span>
+        <span class="frow__formula">ax + b = 0 (a ≠ 0) ⟹ x = −b ÷ a</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-4">
+      <div class="grp__head">
+        <span class="grp__no">七上 · 第四章</span>
+        <h2 class="grp__title" id="grp-4">几何图形初步</h2>
+        <span class="grp__count">2 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">余角与补角</span>
+        <span class="frow__formula">∠A + ∠B = 90° 互余；∠A + ∠B = 180° 互补</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">线段中点</span>
+        <span class="frow__formula">AM = MB = AB ÷ 2</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-5">
+      <div class="grp__head">
+        <span class="grp__no">八上 · 第十四章</span>
+        <h2 class="grp__title" id="grp-5">整式的乘法与因式分解</h2>
+        <span class="grp__count">3 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">同底数幂的乘法</span>
+        <span class="frow__formula">a<sup>m</sup> · a<sup>n</sup> = a<sup>m+n</sup></span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">平方差公式</span>
+        <span class="frow__formula">(a + b)(a − b) = a<sup>2</sup> − b<sup>2</sup></span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">完全平方公式</span>
+        <span class="frow__formula">(a ± b)<sup>2</sup> = a<sup>2</sup> ± 2ab + b<sup>2</sup></span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-6">
+      <div class="grp__head">
+        <span class="grp__no">八下 · 第十七章</span>
+        <h2 class="grp__title" id="grp-6">勾股定理</h2>
+        <span class="grp__count">2 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">勾股定理</span>
+        <span class="frow__formula">a<sup>2</sup> + b<sup>2</sup> = c<sup>2</sup>（c 为斜边）</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">勾股定理的逆定理</span>
+        <span class="frow__formula">若 a<sup>2</sup> + b<sup>2</sup> = c<sup>2</sup>，则 △ABC 是直角三角形</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-7">
+      <div class="grp__head">
+        <span class="grp__no">九上 · 第二十一章</span>
+        <h2 class="grp__title" id="grp-7">一元二次方程</h2>
+        <span class="grp__count">2 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">求根公式</span>
+        <span class="frow__formula">x = (−b ± √(b<sup>2</sup> − 4ac)) ÷ 2a (a ≠ 0)</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">根与系数的关系</span>
+        <span class="frow__formula">x₁ + x₂ = −b ÷ a；x₁ · x₂ = c ÷ a</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-8">
+      <div class="grp__head">
+        <span class="grp__no">九上 · 第二十二章</span>
+        <h2 class="grp__title" id="grp-8">二次函数</h2>
+        <span class="grp__count">2 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">顶点式</span>
+        <span class="frow__formula">y = a(x − h)<sup>2</sup> + k，顶点 (h, k)</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">对称轴</span>
+        <span class="frow__formula">x = −b ÷ 2a</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-9">
+      <div class="grp__head">
+        <span class="grp__no">九上 · 第二十四章</span>
+        <h2 class="grp__title" id="grp-9">圆</h2>
+        <span class="grp__count">3 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">弧长公式</span>
+        <span class="frow__formula">l = nπr ÷ 180</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">扇形面积</span>
+        <span class="frow__formula">S = nπr<sup>2</sup> ÷ 360</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">圆锥侧面积</span>
+        <span class="frow__formula">S侧 = πrl（l 为母线长）</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <section class="grp" aria-labelledby="grp-10">
+      <div class="grp__head">
+        <span class="grp__no">九下 · 第二十八章</span>
+        <h2 class="grp__title" id="grp-10">锐角三角函数</h2>
+        <span class="grp__count">2 条</span>
+      </div>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">锐角三角函数定义</span>
+        <span class="frow__formula">sinA = 对边 ÷ 斜边；cosA = 邻边 ÷ 斜边；tanA = 对边 ÷ 邻边</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+      <a class="frow" href="chapter.html">
+        <span class="frow__name">特殊角三角函数值</span>
+        <span class="frow__formula">sin30° = 1/2；sin45° = √2/2；sin60° = √3/2</span>
+        <span class="frow__right">
+          <i data-lucide="arrow-right" class="frow__arrow" style="width:14px;height:14px"></i>
+        </span>
+      </a>
+    </section>
+
+    <p class="tip">公式用衬线字体排版以便与正文区分；共 42 条，其中上表展示常用 22 条。</p>
+  </div>
+</main>
+<footer class="shell-footer">
+  <div class="shell-footer__inner">
+    <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+    <nav class="shell-footer__links" aria-label="页脚导航">
+      <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+      <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+      <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+      <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+    </nav>
+  </div>
+</footer>
+<style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+<style id="page-styles">
+.phead__title,.phead__desc,.grp__title,.grp__head,.tip{margin:0}
+.wrap{max-width:1080px;margin:0 auto;padding:36px 32px 0}.phead{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--math-border);padding-bottom:20px}.phead__title{font-size:clamp(1.75rem,3vw,2.25rem);font-weight:600;letter-spacing:-0.02em;line-height:1.25;color:var(--math-foreground)}.phead__desc{font-size:14px;color:var(--math-ink-2);margin-top:8px;line-height:1.7}.phead__actions{margin-left:auto;display:flex;align-items:center;gap:10px}.tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--math-border);padding-bottom:14px}.tab{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:var(--math-radius-sm);font-size:13px;color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.tab:hover{color:var(--math-ink-2)}.tab[data-active="true"]{color:var(--math-primary);font-weight:500}.tab__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-4)}.grp{margin-top:36px}.grp__head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}.grp__no{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.grp__title{font-size:15px;font-weight:600;color:var(--math-foreground)}.grp__count{margin-left:auto;font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.frow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) auto;gap:20px;align-items:baseline;padding:18px 0;border-top:1px solid var(--math-border);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.frow:hover{background:var(--math-surface)}.frow:hover .frow__arrow{transform:translateX(2px)}.frow__name{font-size:14px;color:var(--math-ink-2);line-height:1.7}.frow__formula{font-family:var(--math-font-math);font-size:1.125rem;line-height:1.6;color:var(--math-foreground);word-break:break-word}.frow__right{display:flex;align-items:center;gap:10px}.frow__code{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.frow__arrow{width:14px;height:14px;color:var(--math-ink-4);transition:transform 140ms cubic-bezier(.2,.8,.2,1)}.tip{font-size:12px;color:var(--math-ink-3);padding:14px 0 0;line-height:1.8}
+body{font-family:var(--math-font-sans)}
+.phead__title,.grp__title{text-wrap:balance;word-break:keep-all}
+.grp__title{font-weight:600;margin:0}
+.frow__right{min-width:44px;justify-content:flex-end}
+.frow__arrow{flex:none}
+.frow__formula sup{font-size:0.7em;line-height:0}
+.grp__no,.grp__count,.frow__code,.tab__count,.tip{font-variant-numeric:tabular-nums}
+.tabs{margin-top:24px}
+.tip{border-top:1px solid var(--math-border);margin-top:8px;padding-top:16px}
+.frow:focus-visible,.tab:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+@media (max-width:767px){.frow{grid-template-columns:minmax(0,1fr);gap:8px}.frow__right{margin-top:4px}}
+@media (max-width:640px){.wrap{padding:24px 20px 0}.phead__actions{margin-left:0}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:0.01ms !important;animation-duration:0.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important}}
+</style>
+<script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

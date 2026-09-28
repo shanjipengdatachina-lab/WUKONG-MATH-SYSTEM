@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方法速学汇总</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" data-active="true" aria-current="page" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="wrap">
+
+        <section class="phead">
+          <div>
+            <h1 class="phead__title">方法速学</h1>
+            <p class="phead__desc">六册共 147 条解题方法，按册与章节归档。</p>
+          </div>
+          <div class="phead__actions">
+            <a class="btn btn--ghost" href="pitfalls.html" data-dom-id="method-pitfalls">易错速析汇总</a>
+          </div>
+        </section>
+
+        <nav class="tabs" aria-label="按册筛选方法">
+          <a class="tab" href="#" data-active="true">全部<span class="tab__count">147</span></a>
+          <a class="tab" href="#">七上<span class="tab__count">26</span></a>
+          <a class="tab" href="#">七下<span class="tab__count">30</span></a>
+          <a class="tab" href="#">八上<span class="tab__count">21</span></a>
+          <a class="tab" href="#">八下<span class="tab__count">26</span></a>
+          <a class="tab" href="#">九上<span class="tab__count">24</span></a>
+          <a class="tab" href="#">九下<span class="tab__count">20</span></a>
+        </nav>
+
+        <section class="grp">
+          <div class="grp__head">
+            <span class="grp__no">七上 · 第一章</span>
+            <h2 class="grp__title">有理数</h2>
+            <span class="grp__count">7 条</span>
+          </div>
+          <a class="mrow" href="reader.html" data-dom-id="method-open">
+            <span class="mrow__no">方法 1</span>
+            <span class="mrow__body">
+              <span class="mrow__name">用数轴表示有理数的方法</span>
+              <span class="mrow__use">先画数轴并标出原点、正方向、单位长度，再按点与原点的距离和左右位置落点。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 2</span>
+            <span class="mrow__body">
+              <span class="mrow__name">相反数的求法与多层性质符号的化简</span>
+              <span class="mrow__use">去掉括号与负号时，按负号个数判断：偶数个负号结果为正，奇数个为负。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 3</span>
+            <span class="mrow__body">
+              <span class="mrow__name">求绝对值</span>
+              <span class="mrow__use">先判断绝对值内式子的正负，再按 <span class="m">|a| = a (a ≥ 0)</span> 或 <span class="m">|a| = −a (a &lt; 0)</span> 化简。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+        </section>
+
+        <section class="grp">
+          <div class="grp__head">
+            <span class="grp__no">七上 · 第二章</span>
+            <h2 class="grp__title">整式的加减</h2>
+            <span class="grp__count">5 条</span>
+          </div>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 1</span>
+            <span class="mrow__body">
+              <span class="mrow__name">求单项式的次数</span>
+              <span class="mrow__use">把所有字母的指数相加，系数不参与次数计算。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 2</span>
+            <span class="mrow__body">
+              <span class="mrow__name">同类项的应用</span>
+              <span class="mrow__use">字母相同且相同字母的指数也相同才是同类项，与系数无关。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 3</span>
+            <span class="mrow__body">
+              <span class="mrow__name">利用整体代入的方法求代数式的值</span>
+              <span class="mrow__use">把重复出现的式子看成一个整体，用字母代替后再代入求值。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+        </section>
+
+        <section class="grp">
+          <div class="grp__head">
+            <span class="grp__no">七上 · 第四章</span>
+            <h2 class="grp__title">几何图形初步</h2>
+            <span class="grp__count">8 条</span>
+          </div>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 1</span>
+            <span class="mrow__body">
+              <span class="mrow__name">正方体表面展开图的应用</span>
+              <span class="mrow__use">记住「一四一」「二三一」「二二二」「三三」四类共 11 种展开方式。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 5</span>
+            <span class="mrow__body">
+              <span class="mrow__name">角的计算方法</span>
+              <span class="mrow__use">把角度化成度分秒后按 60 进制对齐相加或相减。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 6</span>
+            <span class="mrow__body">
+              <span class="mrow__name">角平分线的应用</span>
+              <span class="mrow__use">出现角平分线时，优先把相等的两个角设为同一个字母，再列方程。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+        </section>
+
+        <section class="grp">
+          <div class="grp__head">
+            <span class="grp__no">八下 · 第十七章</span>
+            <h2 class="grp__title">勾股定理</h2>
+            <span class="grp__count">3 条</span>
+          </div>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 1</span>
+            <span class="mrow__body">
+              <span class="mrow__name">运用勾股定理进行计算</span>
+              <span class="mrow__use">先确认直角三角形，再分清直角边与斜边，最后代入 <span class="m">a² + b² = c²</span>。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 2</span>
+            <span class="mrow__body">
+              <span class="mrow__name">应用勾股定理的逆定理</span>
+              <span class="mrow__use">先找最长边，再检验两短边平方和是否等于最长边的平方。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 3</span>
+            <span class="mrow__body">
+              <span class="mrow__name">“翻折问题”与勾股定理的结合</span>
+              <span class="mrow__use">把翻折后的等长线段标出，设未知数后在一个直角三角形内列方程。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+        </section>
+
+        <section class="grp">
+          <div class="grp__head">
+            <span class="grp__no">九上 · 第二十四章</span>
+            <h2 class="grp__title">圆</h2>
+            <span class="grp__count">6 条</span>
+          </div>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 6</span>
+            <span class="mrow__body">
+              <span class="mrow__name">切线的判定方法</span>
+              <span class="mrow__use">有交点时连半径证垂直；无交点时作垂线证距离等于半径。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 7</span>
+            <span class="mrow__body">
+              <span class="mrow__name">切线性质的应用方法</span>
+              <span class="mrow__use">见切线就连半径，得到垂直关系后再用勾股或相似求解。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+          <a class="mrow" href="reader.html">
+            <span class="mrow__no">方法 11</span>
+            <span class="mrow__body">
+              <span class="mrow__name">求阴影部分面积方法举例</span>
+              <span class="mrow__use">把不规则图形转化为几个扇形与三角形的和差。</span>
+            </span>
+            <i data-lucide="arrow-right" class="mrow__arrow" aria-hidden="true"></i>
+          </a>
+        </section>
+
+        <div class="cross">
+          <p class="cross__note">共 147 条，上表展示常用 15 条。</p>
+          <a class="btn btn--ghost" href="exams.html" data-dom-id="method-exams">考点速练总览</a>
+          <a class="btn btn--ghost" href="graph.html">打开知识图谱</a>
+          <a class="btn btn--ghost" href="formulas.html">公式速查</a>
+        </div>
+
+      </div>
+    </main>
+
+    <footer class="shell-footer">
+      <div class="shell-footer__inner">
+        <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+        <nav class="shell-footer__links" aria-label="页脚导航">
+          <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+          <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+          <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+          <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+        </nav>
+      </div>
+    </footer>
+
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+    <style id="page-styles">.wrap{max-width:1000px;margin:0 auto;padding:36px 32px 0}.phead{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--math-border);padding-bottom:20px}.phead__title{font-size:clamp(1.75rem,3vw,2.25rem);font-weight:600;letter-spacing:-0.02em;line-height:1.25;color:var(--math-foreground)}.phead__desc{font-size:14px;color:var(--math-ink-2);margin-top:8px;line-height:1.7}.phead__actions{margin-left:auto;display:flex;align-items:center;gap:10px}.tabs{display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--math-border);padding-bottom:14px}.tab{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:var(--math-radius-sm);font-size:13px;color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.tab:hover{color:var(--math-ink-2)}.tab[data-active="true"]{color:var(--math-primary);font-weight:500}.tab__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-4)}.grp{margin-top:32px}.grp__head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}.grp__no{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.grp__title{font-size:15px;font-weight:600;color:var(--math-foreground)}.grp__count{margin-left:auto;font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}.mrow{display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-top:1px solid var(--math-border);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.mrow:hover{background:var(--math-surface)}.mrow:hover .mrow__arrow{transform:translateX(2px)}.mrow__no{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3);min-width:52px;padding-top:3px}.mrow__body{flex:1;min-width:0}.mrow__name{font-size:15px;color:var(--math-foreground);line-height:1.7}.mrow__use{font-size:13px;color:var(--math-ink-2);line-height:1.8;margin-top:6px}.mrow__use .m{font-family:var(--math-font-math);color:var(--math-foreground)}.mrow__arrow{width:14px;height:14px;color:var(--math-ink-4);margin-top:6px;transition:transform 140ms cubic-bezier(.2,.8,.2,1)}.cross{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:32px;padding-top:24px;border-top:1px solid var(--math-border)}.cross__note{font-size:13px;color:var(--math-ink-3);margin-right:auto}@media (max-width:640px){.wrap{padding:24px 20px 0}.phead__actions{margin-left:0}.mrow__no{min-width:44px}}
+h1,h2,h3,p{margin:0}
+body{font-family:var(--math-font-sans);font-size:0.9375rem;line-height:1.8;font-variant-numeric:tabular-nums;color:var(--math-foreground);background:var(--math-background);-webkit-font-smoothing:antialiased}
+.phead__title{text-wrap:balance;word-break:keep-all}
+.grp__title{text-wrap:balance;word-break:keep-all;line-height:1.3}
+.mrow__name,.mrow__use{display:block}
+.mrow__use .m{font-style:italic}
+.tab:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}
+.mrow:focus-visible{outline:2px solid var(--math-ring);outline-offset:-1px;background:var(--math-surface)}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition-duration:0.01ms !important;animation-duration:0.01ms !important;animation-iteration-count:1 !important;scroll-behavior:auto !important}}</style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

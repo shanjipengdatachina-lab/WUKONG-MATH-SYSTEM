@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论坛</title>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" data-active="true" aria-current="page" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+            <span class="ide-rail__dot" aria-hidden="true"></span>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+    <main>
+      <nav class="forum-nav" aria-label="论坛视图">
+        <div class="forum-nav__inner">
+          <div class="forum-nav__tabs">
+            <a class="forum-tab" href="#" data-active="true" data-tab="latest" data-dom-id="forum-tab-latest">最新</a>
+            <a class="forum-tab" href="#" data-tab="hot" data-dom-id="forum-tab-hot">热门</a>
+            <a class="forum-tab" href="my-posts.html" data-dom-id="forum-tab-mine">我的帖子<span class="forum-tab__count">3</span></a>
+          </div>
+          <div class="forum-nav__actions">
+            <button type="button" class="btn btn--primary btn--sm" id="forum-compose-open" aria-expanded="false" data-dom-id="forum-compose"><i data-lucide="square-pen" style="width:14px;height:14px"></i><span>发帖</span></button>
+          </div>
+        </div>
+      </nav>
+
+      <div class="forum-wrap">
+        <div>
+          <section class="compose" id="forum-compose-box" hidden aria-label="发表新帖">
+            <div class="compose__head">
+              <h2 class="compose__title">发表新帖</h2>
+              <button type="button" class="compose__close" id="forum-compose-cancel" aria-label="收起发帖框"><i data-lucide="x" class="compose__close-icon"></i></button>
+            </div>
+            <div class="compose__row">
+              <label class="compose__label" for="compose-title">标题</label>
+              <input class="compose__input" id="compose-title" type="text" maxlength="60" placeholder="一句话说清你想讨论什么">
+            </div>
+            <div class="compose__row">
+              <label class="compose__label" for="compose-board">专题</label>
+              <select class="compose__input" id="compose-board">
+                <option value="study">学习交流</option>
+                <option value="help">解题求助</option>
+                <option value="exam">真题讨论</option>
+              </select>
+            </div>
+            <div class="compose__row">
+              <label class="compose__label" for="compose-body">正文</label>
+              <textarea class="compose__input compose__input--area" id="compose-body" rows="5" placeholder="写清题目或你的思路。公式用 $…$ 包起来，例如 $y = kx + b$；单独一行以「- 」开头会变成列表。"></textarea>
+            </div>
+            <div class="compose__foot">
+              <p class="compose__note">演示版：帖子存在本机浏览器里，刷新不丢。</p>
+              <div class="compose__acts">
+                <a class="compose__more" href="forum-compose.html">用完整编辑器</a>
+                <button type="button" class="btn btn--primary btn--sm" id="compose-submit">发布</button>
+              </div>
+            </div>
+          </section>
+          <div class="boards">
+            <a class="board" href="forum.html?board=study" data-board="study" data-dom-id="board-open">
+              <p class="board__name">学习交流</p>
+              <p class="board__desc">方法、笔记与学习节奏</p>
+              <p class="board__count">128 主题</p>
+            </a>
+            <a class="board" href="forum.html?board=help" data-board="help">
+              <p class="board__name">解题求助</p>
+              <p class="board__desc">卡住的题，发出来一起看</p>
+              <p class="board__count">96 主题</p>
+            </a>
+            <a class="board" href="forum.html?board=exam" data-board="exam">
+              <p class="board__name">真题讨论</p>
+              <p class="board__desc">历年真题的解法与坑</p>
+              <p class="board__count">64 主题</p>
+            </a>
+          </div>
+
+          <section class="sec" aria-labelledby="latest-topics">
+            <div class="sec__head">
+              <h2 class="sec__title" id="forum-sec-title">最新主题</h2>
+              <span class="sec__note" id="forum-count">共 0 个主题</span>
+              <a class="sec__link" id="forum-board-link" href="board.html" hidden>进入专题页</a>
+            </div>
+                        <div id="forum-list"></div>
+          </section>
+        </div>
+
+        <aside class="side" style="position:sticky;top:88px" aria-label="论坛侧栏">
+          <p class="side__title">活跃作者</p>
+          <a class="side__row" href="user.html" data-dom-id="side-author">
+            <span class="side__name">陈知远</span>
+            <span class="side__val">18 帖</span>
+          </a>
+          <a class="side__row" href="user.html">
+            <span class="side__name">周予安</span>
+            <span class="side__val">15 帖</span>
+          </a>
+          <a class="side__row" href="user.html">
+            <span class="side__name">郑向晚</span>
+            <span class="side__val">11 帖</span>
+          </a>
+          <a class="side__row" href="user.html">
+            <span class="side__name">林一鸣</span>
+            <span class="side__val">3 帖</span>
+          </a>
+          <p class="side__title" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--math-border)">本周热议</p>
+          <a class="side__row" href="reader.html">
+            <span class="side__name">一次函数</span>
+            <span class="side__val">24</span>
+          </a>
+          <a class="side__row" href="reader.html">
+            <span class="side__name">勾股定理</span>
+            <span class="side__val">18</span>
+          </a>
+          <a class="side__row" href="reader.html">
+            <span class="side__name">二次函数</span>
+            <span class="side__val">13</span>
+          </a>
+        </aside>
+      </div>
+    </main>
+<footer class="shell-footer">
+  <div class="shell-footer__inner">
+    <p class="shell-footer__legal">悟空数学知识图谱 · 人教版七至九年级 · 六册二十九章</p>
+    <nav class="shell-footer__links" aria-label="页脚导航">
+      <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+      <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+      <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+      <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+    </nav>
+  </div>
+</footer>
+<style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:14px;font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:13px}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+/* ---------- 论坛：内嵌发帖表单与状态 ---------- */
+.compose{border:1px solid var(--math-border);border-radius:var(--math-radius-md);background:var(--math-surface);padding:16px 18px;margin-bottom:24px}
+.compose[hidden]{display:none}
+.compose__head{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.compose__title{font-size:15px;font-weight:600;color:var(--math-foreground)}
+.compose__close{margin-left:auto;width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:var(--math-radius-sm);background:transparent;color:var(--math-ink-3);cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}
+.compose__close:hover{background:var(--math-background);color:var(--math-foreground)}
+.compose__close-icon{width:14px;height:14px}
+.compose__row{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:start;gap:12px;margin-top:12px}
+.compose__label{font-size:13px;color:var(--math-ink-3);line-height:36px}
+.compose__input{width:100%;height:36px;padding:0 12px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);background:var(--math-background);color:var(--math-foreground);font-family:var(--math-font-sans);font-size:14px}
+.compose__input--area{height:auto;min-height:112px;padding:10px 12px;line-height:1.8;resize:vertical}
+.compose__input:focus{outline:none;border-color:var(--math-primary);box-shadow:0 0 0 3px var(--math-primary-tint)}
+.compose__foot{display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--math-border)}
+.compose__note{font-size:12px;color:var(--math-ink-4)}
+.compose__acts{margin-left:auto;display:flex;align-items:center;gap:12px}
+.compose__more{font-size:12px;color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}
+.compose__more:hover{color:var(--math-primary)}
+.board[data-active="true"]{background:var(--math-primary-tint)}
+.empty{padding:20px 0;border-top:1px solid var(--math-border);font-size:13px;color:var(--math-ink-3)}
+.sec__link{font-size:12px;color:var(--math-primary);text-decoration:none;white-space:nowrap;transition:color 140ms cubic-bezier(.2,.8,.2,1)}
+.sec__link:hover{text-decoration:underline}
+.sec__link[hidden]{display:none}
+</style>
+<style id="page-styles">
+.forum-nav{border-bottom:1px solid var(--math-border)}.forum-nav__inner{max-width:1280px;margin:0 auto;padding:0 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}.forum-nav__tabs{display:flex;align-items:center;gap:6px}.forum-tab{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:var(--math-radius-sm);font-size:14px;color:var(--math-ink-3);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.forum-tab:hover{color:var(--math-ink-2)}.forum-tab[data-active="true"]{color:var(--math-primary);font-weight:500}.forum-tab__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-4)}.forum-nav__actions{margin-left:auto;display:flex;align-items:center;gap:10px;padding:10px 0}.forum-wrap{max-width:1280px;margin:0 auto;padding:32px 32px 0;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:start}.boards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--math-border);border-bottom:1px solid var(--math-border)}.board{padding:16px 18px;border-left:1px solid var(--math-border);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.board:first-child{border-left:0}.board:hover{background:var(--math-surface)}.board__name{font-size:14px;font-weight:600;color:var(--math-foreground)}.board__desc{font-size:12px;color:var(--math-ink-3);margin-top:6px;line-height:1.7}.board__count{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3);margin-top:10px}.sec{margin-top:32px}.sec__head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}.sec__title{font-size:15px;font-weight:600;color:var(--math-foreground)}.sec__note{font-size:12px;color:var(--math-ink-3);margin-left:auto}.post{display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-top:1px solid var(--math-border);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1)}.post:hover{background:var(--math-surface)}.post:hover .post__arrow{transform:translateX(2px)}.post__body{flex:1;min-width:0}.post__title{font-size:15px;color:var(--math-foreground);line-height:1.7}.post__title .m{font-family:var(--math-font-math)}.post__meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}.post__tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);font-size:12px;color:var(--math-ink-2)}.post__info{font-size:12px;color:var(--math-ink-3)}.post__info b{font-family:var(--math-font-mono);font-weight:400;color:var(--math-ink-2)}.post__arrow{flex:0 0 auto;width:14px;height:14px;color:var(--math-ink-4);margin-top:6px;transition:transform 140ms cubic-bezier(.2,.8,.2,1)}.side{border-top:1px solid var(--math-border);padding-top:16px}.side__title{font-size:12px;color:var(--math-ink-3);letter-spacing:.08em;margin-bottom:12px}.side__row{display:flex;align-items:baseline;gap:10px;padding:10px 0;border-bottom:1px solid var(--math-border);text-decoration:none}.side__row:hover .side__name{color:var(--math-primary)}.side__name{font-size:13px;color:var(--math-ink-2);flex:1;min-width:0;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.side__val{font-family:var(--math-font-mono);font-size:12px;color:var(--math-ink-3)}@media (max-width:1023px){.forum-wrap{grid-template-columns:minmax(0,1fr);gap:32px}.boards{grid-template-columns:minmax(0,1fr)}.board{border-left:0;border-top:1px solid var(--math-border)}.board:first-child{border-top:0}}@media (max-width:640px){.forum-wrap,.forum-nav__inner{padding-left:20px;padding-right:20px}}.forum-tab__count,.board__count,.post__info,.side__val,.sec__note{font-variant-numeric:tabular-nums}.board__name,.sec__title,.post__title,.side__name{word-break:keep-all}.sec__title,.side__title{text-wrap:balance}@media (prefers-reduced-motion: reduce){.btn,.forum-tab,.board,.post,.post__arrow,.side__row,.side__name{transition-duration:0.01ms !important;animation-duration:0.01ms !important;animation-iteration-count:1 !important}}
+</style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+    <script src="assets/js/forum.js"></script>
+</body>
+</html>

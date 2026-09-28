@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>数字白板 · 悟空数学</title>
+  <link rel="stylesheet" href="assets/css/tokens.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <script src="assets/js/lucide.min.js"></script>
+  <style id="wb-styles">
+/* ---------- 画板（独占整屏，不再有左右固定栏） ---------- */
+/* 注意：ide.css 里 @media(min-width:1024px) 的 .reader-shell 会把网格拆成三列，
+   白板必须始终单列，所以这里用双类选择器（.reader-shell.wb-shell）压过它。 */
+.reader-shell.wb-shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:100vh}
+.wb-stage{grid-column:1;grid-row:1}
+
+/* ---------- 悬浮题库面板（可拖动） ---------- */
+.wb-bank{
+  position:absolute;left:20px;bottom:80px;z-index:7;
+  width:300px;max-width:calc(100% - 40px);
+  max-height:min(560px,72vh);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  border:1px solid var(--math-border);border-radius:16px;
+  background:var(--math-background);
+  box-shadow:0 16px 44px rgba(15,23,42,.16);
+}
+.wb-bank[hidden]{display:none}
+.wb-bank__head{
+  display:flex;align-items:center;gap:8px;flex:none;
+  padding:9px 10px 9px 9px;
+  border-bottom:1px solid var(--math-border);
+  background:var(--math-surface);
+  cursor:grab;touch-action:none;
+  -webkit-user-select:none;user-select:none;
+}
+.wb-bank__head:active{cursor:grabbing}
+.wb-bank__grip{flex:none;width:15px;height:15px;color:var(--math-ink-4)}
+.wb-bank__title{font-size:13px;font-weight:600;color:var(--math-foreground)}
+.wb-bank__count{margin-left:auto;font-size:11.5px;color:var(--math-ink-4);font-variant-numeric:tabular-nums}
+.wb-bank__close{
+  flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-sm);
+  background:none;color:var(--math-ink-3);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-bank__close svg{width:14px;height:14px}
+.wb-bank__close:hover{border-color:var(--math-border);color:var(--math-foreground)}
+.wb-bank__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.wb-bank.is-dragging{box-shadow:0 22px 60px rgba(15,23,42,.22)}
+.wb-bank.is-dragging .wb-bank__head{cursor:grabbing}
+.wb-filters{display:flex;flex-wrap:wrap;gap:6px;flex:none;padding:10px 12px 4px}
+.wb-filters button{
+  height:24px;padding:0 9px;
+  border:1px solid var(--math-border);border-radius:999px;
+  background:var(--math-background);color:var(--math-ink-3);
+  font:inherit;font-size:12px;line-height:1;cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-filters button:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}
+.wb-filters button.is-on{border-color:var(--math-primary);background:var(--math-primary-soft);color:var(--math-primary)}
+.wb-filters button:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.wb-search{
+  display:flex;align-items:center;gap:8px;height:32px;flex:none;margin:8px 12px;
+  padding:0 10px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  color:var(--math-ink-4);
+  transition:border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-search:focus-within{border-color:var(--math-primary-200)}
+.wb-search svg{flex:none;width:15px;height:15px}
+.wb-search input{
+  flex:1 1 auto;min-width:0;height:100%;
+  border:0;background:none;outline:none;
+  font:inherit;font-size:13px;color:var(--math-foreground);
+}
+.wb-search input::placeholder{color:var(--math-ink-4)}
+.wb-list{
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+  display:flex;flex-direction:column;gap:4px;
+  padding:0 10px 12px;
+}
+.wb-item{
+  display:flex;flex-direction:column;gap:4px;width:100%;
+  padding:9px 10px;text-align:left;
+  border:1px solid transparent;border-radius:var(--math-radius-md);
+  background:none;cursor:pointer;font:inherit;
+  transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-item:hover{background:var(--math-surface)}
+.wb-item:focus-visible{outline:2px solid var(--math-primary);outline-offset:-2px}
+.wb-item__tag{font-size:11px;color:var(--math-ink-4)}
+.wb-item__text{font-size:13.5px;line-height:1.55;color:var(--math-foreground);overflow-wrap:break-word}
+.wb-item__cue{font-size:11px;color:var(--math-ink-4);opacity:0;transition:opacity 140ms cubic-bezier(.2,.8,.2,1)}
+.wb-item:hover .wb-item__cue{opacity:1}
+.wb-item.is-active{border-color:var(--math-primary-200);background:var(--math-primary-soft)}
+.wb-item.is-active .wb-item__cue{opacity:1;color:var(--math-primary)}
+.wb-empty{margin:16px 6px;font-size:13px;color:var(--math-ink-4)}
+.wb-list::-webkit-scrollbar{width:8px}
+.wb-list::-webkit-scrollbar-thumb{background:var(--math-surface-2);border-radius:8px}
+
+/* ---------- 白板 ---------- */
+.wb-stage{position:relative;height:100vh;min-width:0}
+.wb-canvas-wrap{
+  position:absolute;inset:0;overflow:hidden;
+  background:#fff;touch-action:none;
+}
+#wb-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;overscroll-behavior:contain}
+
+/* ---------- 悬浮工具条（底部居中，平时半透明，用时全亮） ---------- */
+.wb-dock{
+  position:absolute;left:50%;bottom:18px;z-index:5;
+  transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:1px;
+  max-width:calc(100% - 24px);
+  padding:5px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
+  background:rgba(255,255,255,.86);
+  box-shadow:0 6px 24px rgba(15,23,42,.10);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:.34;
+  transition:opacity 180ms cubic-bezier(.2,.8,.2,1),box-shadow 180ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-dock:hover,
+.wb-dock:focus-within{opacity:1;box-shadow:0 10px 32px rgba(15,23,42,.16)}
+/* 按钮用圆角方形：跟浮层、设置面板同一套方圆，激活态是一块实心的浅色块，
+   不再是"圈住图标"的圆环（Figma / Excalidraw / PS 的工具栏都是这个做法） */
+.wb-dock__btn{
+  position:relative;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;padding:0;
+  border:1px solid transparent;border-radius:var(--math-radius-md);
+  background:none;color:var(--math-ink-2);cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-dock__btn svg{width:16px;height:16px}
+.wb-dock__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-dock__btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.wb-dock__btn.is-on{border-color:transparent;background:var(--math-primary-tint);color:var(--math-primary)}
+.wb-dock__btn.is-on:hover{background:var(--math-primary-200)}
+.wb-dock__btn:disabled{color:var(--math-ink-4);cursor:default;background:none}
+.wb-dock__sep{width:1px;height:20px;margin:0 3px;background:var(--math-border)}
+.wb-dock__dot{
+  position:absolute;right:4px;bottom:4px;
+  width:7px;height:7px;border-radius:999px;
+  border:1px solid #fff;background:var(--math-foreground);
+}
+.wb-dock__level{
+  min-width:44px;height:34px;padding:0 6px;
+  border:0;border-radius:var(--math-radius-md);background:none;cursor:pointer;
+  font:inherit;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-dock__level:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-dock__level:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+
+/* ---------- 悬浮提示：自绘小气泡，替掉系统那层灰框气泡 ---------- */
+[data-wb-tip]{position:relative}
+[data-wb-tip]::after{
+  content:attr(data-wb-tip);
+  position:absolute;left:50%;bottom:calc(100% + 8px);z-index:9;
+  transform:translateX(-50%) translateY(2px);
+  padding:4px 8px;
+  border-radius:var(--math-radius-sm);
+  background:rgba(15,23,42,.92);color:#fff;
+  font-size:11.5px;font-weight:400;line-height:1.45;white-space:nowrap;
+  pointer-events:none;
+  box-shadow:0 8px 22px rgba(15,23,42,.22);
+  opacity:0;visibility:hidden;
+  transition:opacity 120ms cubic-bezier(.2,.8,.2,1),transform 120ms cubic-bezier(.2,.8,.2,1),visibility 120ms;
+}
+[data-wb-tip]:hover::after,
+[data-wb-tip]:focus-visible::after{
+  opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);
+}
+/* 工具组浮层已经展开时不再弹提示，免得两块叠在一起 */
+[data-wb-tip][aria-expanded="true"]::after{display:none}
+
+/* ---------- 工具组（仿 PS：同类工具合成一个格子，点开再选） ---------- */
+.wb-dock__group{position:relative;display:inline-flex;align-items:center}
+/* 格子里同时放着这一组的图标，只有当前那个露出来 */
+.wb-dock__slot{display:none}
+.wb-dock__btn--group .wb-dock__slot svg{width:16px;height:16px}
+.wb-dock__btn--group[data-active="pen"] [data-wb-ico="pen"],
+.wb-dock__btn--group[data-active="highlighter"] [data-wb-ico="highlighter"],
+.wb-dock__btn--group[data-active="eraser"] [data-wb-ico="eraser"],
+.wb-dock__btn--group[data-active="line"] [data-wb-ico="line"],
+.wb-dock__btn--group[data-active="arrow"] [data-wb-ico="arrow"],
+.wb-dock__btn--group[data-active="rect"] [data-wb-ico="rect"],
+.wb-dock__btn--group[data-active="ellipse"] [data-wb-ico="ellipse"]{display:inline-flex}
+/* 右下角小三角：PS 的用户一眼就知道"里面还有东西" */
+.wb-dock__caret{
+  position:absolute;right:3px;bottom:3px;width:0;height:0;
+  border-left:3.5px solid transparent;border-bottom:3.5px solid currentColor;
+  opacity:.45;
+  transition:opacity 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-dock__btn--group[aria-expanded="true"]{background:var(--math-surface);color:var(--math-foreground)}
+.wb-dock__btn--group[aria-expanded="true"] .wb-dock__caret{opacity:.9}
+
+/* ---------- 工具组浮层：贴在该格子上方（紧凑排布，一行一个工具） ---------- */
+.wb-flyout{
+  position:absolute;left:50%;bottom:calc(100% + 6px);z-index:8;
+  transform:translateX(-50%);
+  display:flex;flex-direction:column;gap:1px;
+  min-width:146px;padding:4px;
+  border:1px solid var(--math-border);border-radius:12px;
+  background:var(--math-background);
+  box-shadow:0 14px 36px rgba(15,23,42,.16);
+}
+.wb-flyout[hidden]{display:none}
+.wb-flyout__item{
+  display:flex;align-items:center;gap:7px;width:100%;
+  height:26px;padding:0 7px;
+  border:0;border-radius:6px;background:none;cursor:pointer;
+  font:inherit;font-size:12.5px;line-height:1;color:var(--math-ink-2);text-align:left;
+  transition:background-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-flyout__item svg{flex:none;width:14px;height:14px}
+.wb-flyout__item:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-flyout__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:-2px}
+.wb-flyout__item.is-on{background:var(--math-primary-tint);color:var(--math-primary)}
+.wb-flyout__label{flex:1 1 auto;min-width:0}
+.wb-flyout__item kbd{
+  flex:none;min-width:16px;padding:1px 4px;
+  border:1px solid var(--math-border);border-radius:4px;
+  background:var(--math-surface);
+  font-family:var(--math-font-mono);font-size:10px;line-height:1.4;text-align:center;color:var(--math-ink-3);
+}
+
+/* ---------- 悬浮设置面板（同样收紧一档） ---------- */
+.wb-pop{
+  position:absolute;left:50%;bottom:74px;z-index:6;
+  transform:translateX(-50%);
+  width:min(320px,calc(100% - 24px));
+  padding:12px 14px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-lg,16px);
+  background:var(--math-background);
+  box-shadow:0 14px 36px rgba(15,23,42,.16);
+}
+.wb-pop[hidden]{display:none}
+.wb-pop__row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.wb-pop__row:last-of-type{margin-bottom:0}
+.wb-pop__label{flex:0 0 30px;font-size:11.5px;letter-spacing:.06em;color:var(--math-ink-3)}
+.wb-colors{display:flex;flex-wrap:wrap;gap:6px}
+.wb-swatch{
+  width:22px;height:22px;padding:2px;cursor:pointer;
+  border:1px solid var(--math-border);border-radius:999px;background:none;
+  transition:border-color 140ms cubic-bezier(.2,.8,.2,1),box-shadow 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-swatch span{display:block;width:100%;height:100%;border-radius:999px;background:var(--wb-swatch)}
+.wb-swatch:hover{border-color:var(--math-line-strong)}
+.wb-swatch:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.wb-swatch.is-on{border-color:var(--math-primary);box-shadow:0 0 0 2px var(--math-primary-soft)}
+.wb-sizes{display:flex;gap:5px}
+.wb-size{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:26px;cursor:pointer;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
+  background:var(--math-background);
+  transition:border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-size:hover{border-color:var(--math-line-strong)}
+.wb-size:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+.wb-size.is-on{border-color:var(--math-primary);background:var(--math-primary-soft)}
+.wb-size__dot{display:block;border-radius:999px;background:var(--math-foreground)}
+.wb-size__ring{display:block;border-radius:999px;border:1.5px dashed var(--math-ink-3)}
+.wb-pop__foot{
+  display:flex;align-items:center;gap:8px;
+  margin-top:10px;padding-top:9px;border-top:1px solid var(--math-border);
+  font-size:11px;line-height:1.55;color:var(--math-ink-4);
+}
+.wb-pop__keys{display:flex;flex-wrap:wrap;gap:3px 8px}
+.wb-pop__keys kbd{
+  padding:1px 4px;margin-right:2px;
+  border:1px solid var(--math-border);border-radius:4px;
+  background:var(--math-surface);
+  font-family:var(--math-font-mono);font-size:10px;color:var(--math-ink-2);
+}
+.wb-pop__stat{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wb-view-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 8px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
+  background:var(--math-background);color:var(--math-ink-2);
+  font:inherit;font-size:12px;cursor:pointer;
+  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.wb-view-btn svg{width:13px;height:13px}
+.wb-view-btn:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}
+.wb-view-btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
+
+/* 画布内容对读屏不可见，这里留一份文字镜像 */
+.wb-sr{
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* ---------- 窄屏：画布依旧独占整屏，题库面板只在宽度上收一点 ---------- */
+@media (max-width:1023px){
+  .reader-shell.wb-shell{grid-template-columns:minmax(0,1fr)}
+  .wb-dock{bottom:12px;opacity:.9;border-radius:12px}
+  .wb-pop{bottom:66px}
+  .wb-bank{left:12px;right:12px;bottom:66px;width:auto;max-height:56vh}
+}
+@media (max-width:640px){
+  .wb-dock__btn{width:30px;height:30px}
+  .wb-dock__btn svg{width:14px;height:14px}
+  .wb-dock__level{min-width:40px;height:30px}
+  .wb-flyout__item{height:24px;font-size:12px}
+}
+  </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" data-active="true" aria-current="page" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式（Esc 退出）">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点（⌘K）">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+          <kbd class="ide-rail__kbd">⌘K</kbd>
+        </a>
+        <a class="ide-rail__account" href="login.html" title="登录 / 注册">
+          <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
+          <span class="ide-rail__label">登录</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+    <main class="reader-shell wb-shell" id="wb-shell">
+
+      <section class="wb-stage" aria-label="白板">
+        <div class="wb-canvas-wrap" id="wb-canvas-wrap">
+          <canvas id="wb-canvas" aria-label="白板画布"></canvas>
+
+          <div class="wb-dock" role="toolbar" aria-label="白板工具">
+            <div class="wb-dock__group">
+              <button type="button" class="wb-dock__btn wb-dock__btn--group" id="wb-group-draw" data-active="pen" aria-haspopup="true" aria-expanded="false" aria-controls="wb-flyout-draw" data-wb-tip="画笔 · 荧光笔 · 橡皮" aria-label="画笔组：画笔 / 荧光笔 / 橡皮">
+                <span class="wb-dock__slot" data-wb-ico="pen"><i data-lucide="pen-line"></i></span>
+                <span class="wb-dock__slot" data-wb-ico="highlighter"><i data-lucide="highlighter"></i></span>
+                <span class="wb-dock__slot" data-wb-ico="eraser"><i data-lucide="eraser"></i></span>
+                <span class="wb-dock__caret" aria-hidden="true"></span>
+              </button>
+              <div class="wb-flyout" id="wb-flyout-draw" role="group" aria-label="画笔工具" hidden>
+                <button type="button" class="wb-flyout__item" id="wb-pen" data-wb-tool="pen" aria-pressed="true">
+                  <i data-lucide="pen-line"></i><span class="wb-flyout__label">画笔</span><kbd>B</kbd>
+                </button>
+                <button type="button" class="wb-flyout__item" id="wb-highlighter" data-wb-tool="highlighter" aria-pressed="false">
+                  <i data-lucide="highlighter"></i><span class="wb-flyout__label">荧光笔</span><kbd>H</kbd>
+                </button>
+                <button type="button" class="wb-flyout__item" id="wb-eraser" data-wb-tool="eraser" aria-pressed="false">
+                  <i data-lucide="eraser"></i><span class="wb-flyout__label">橡皮</span><kbd>E</kbd>
+                </button>
+              </div>
+            </div>
+
+            <div class="wb-dock__group">
+              <button type="button" class="wb-dock__btn wb-dock__btn--group" id="wb-group-shape" data-active="line" aria-haspopup="true" aria-expanded="false" aria-controls="wb-flyout-shape" data-wb-tip="直线 · 箭头 · 矩形 · 椭圆" aria-label="图形组：直线 / 箭头 / 矩形 / 椭圆">
+                <span class="wb-dock__slot" data-wb-ico="line"><i data-lucide="minus"></i></span>
+                <span class="wb-dock__slot" data-wb-ico="arrow"><i data-lucide="move-up-right"></i></span>
+                <span class="wb-dock__slot" data-wb-ico="rect"><i data-lucide="square"></i></span>
+                <span class="wb-dock__slot" data-wb-ico="ellipse"><i data-lucide="circle"></i></span>
+                <span class="wb-dock__caret" aria-hidden="true"></span>
+              </button>
+              <div class="wb-flyout" id="wb-flyout-shape" role="group" aria-label="图形工具" hidden>
+                <button type="button" class="wb-flyout__item" id="wb-line" data-wb-tool="line" aria-pressed="false">
+                  <i data-lucide="minus"></i><span class="wb-flyout__label">直线</span><kbd>L</kbd>
+                </button>
+                <button type="button" class="wb-flyout__item" id="wb-arrow" data-wb-tool="arrow" aria-pressed="false">
+                  <i data-lucide="move-up-right"></i><span class="wb-flyout__label">箭头</span><kbd>A</kbd>
+                </button>
+                <button type="button" class="wb-flyout__item" id="wb-rect" data-wb-tool="rect" aria-pressed="false">
+                  <i data-lucide="square"></i><span class="wb-flyout__label">矩形</span><kbd>R</kbd>
+                </button>
+                <button type="button" class="wb-flyout__item" id="wb-ellipse" data-wb-tool="ellipse" aria-pressed="false">
+                  <i data-lucide="circle"></i><span class="wb-flyout__label">椭圆</span><kbd>O</kbd>
+                </button>
+              </div>
+            </div>
+            <span class="wb-dock__sep" aria-hidden="true"></span>
+            <button type="button" class="wb-dock__btn" id="wb-undo" data-wb-tip="撤销 ⌘Z" aria-label="撤销">
+              <i data-lucide="undo-2"></i>
+            </button>
+            <button type="button" class="wb-dock__btn" id="wb-redo" data-wb-tip="重做 ⇧⌘Z" aria-label="重做">
+              <i data-lucide="redo-2"></i>
+            </button>
+            <button type="button" class="wb-dock__btn" id="wb-clear" data-wb-tip="清空画布" aria-label="清空">
+              <i data-lucide="trash-2"></i>
+            </button>
+            <span class="wb-dock__sep" aria-hidden="true"></span>
+            <button type="button" class="wb-dock__btn" id="wb-grid" aria-pressed="false" data-wb-tip="网格 G" aria-label="网格">
+              <i data-lucide="grid-3x3"></i>
+            </button>
+            <button type="button" class="wb-dock__btn" id="wb-problem-toggle" aria-pressed="true" data-wb-tip="显示题面" aria-label="题面">
+              <i data-lucide="file-text"></i>
+            </button>
+            <button type="button" class="wb-dock__btn" id="wb-bank-toggle" aria-pressed="false" aria-controls="wb-bank" data-wb-tip="题库 ⌘B" aria-label="题库">
+              <i data-lucide="library-big"></i>
+            </button>
+            <button type="button" class="wb-dock__btn" id="wb-jump-kp" data-wb-tip="回到知识点" aria-label="回到知识点">
+              <i data-lucide="git-fork"></i>
+            </button>
+            <button type="button" class="wb-dock__btn" id="wb-settings" aria-expanded="false" aria-controls="wb-pop" data-wb-tip="画笔设置" aria-label="画笔设置">
+              <i data-lucide="palette"></i>
+              <span class="wb-dock__dot" id="wb-current-color" aria-hidden="true"></span>
+            </button>
+            <span class="wb-dock__sep" aria-hidden="true"></span>
+            <button type="button" class="wb-dock__btn" id="wb-zoom-out" data-wb-tip="缩小" aria-label="缩小">
+              <i data-lucide="zoom-out"></i>
+            </button>
+            <button type="button" class="wb-dock__level" id="wb-zoom-level" data-wb-tip="回到 100%">100%</button>
+            <button type="button" class="wb-dock__btn" id="wb-zoom-in" data-wb-tip="放大" aria-label="放大">
+              <i data-lucide="zoom-in"></i>
+            </button>
+          </div>
+
+          <div class="wb-pop" id="wb-pop" hidden>
+            <div class="wb-pop__row">
+              <span class="wb-pop__label">颜色</span>
+              <div class="wb-colors" id="wb-colors" role="group" aria-label="画笔颜色"></div>
+            </div>
+            <div class="wb-pop__row">
+              <span class="wb-pop__label">笔粗</span>
+              <div class="wb-sizes" id="wb-widths" role="group" aria-label="画笔粗细"></div>
+            </div>
+            <div class="wb-pop__row">
+              <span class="wb-pop__label">橡皮</span>
+              <div class="wb-sizes" id="wb-erasers" role="group" aria-label="橡皮大小"></div>
+            </div>
+            <div class="wb-pop__row">
+              <span class="wb-pop__label">视图</span>
+              <button type="button" class="wb-view-btn" id="wb-zoom-fit" data-wb-tip="适应内容 ⇧1">
+                <i data-lucide="scan"></i><span>适应内容</span>
+              </button>
+            </div>
+            <div class="wb-pop__foot">
+              <div class="wb-pop__keys">
+                <span><kbd>B</kbd>画笔</span>
+                <span><kbd>E</kbd>橡皮</span>
+                <span><kbd>G</kbd>网格</span>
+                <span><kbd>1</kbd>–<kbd>6</kbd>颜色</span>
+                <span><kbd>⌘Z</kbd>撤销</span>
+                <span><kbd>⇧⌘Z</kbd>重做</span>
+              </div>
+              <span class="wb-pop__stat" id="wb-stat" aria-live="polite"></span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="wb-bank" id="wb-bank" aria-label="题库" hidden>
+          <div class="wb-bank__head" id="wb-bank-head">
+            <i data-lucide="grip-vertical" class="wb-bank__grip" aria-hidden="true"></i>
+            <span class="wb-bank__title">题库</span>
+            <span class="wb-bank__count" id="wb-bank-count"></span>
+            <button type="button" class="wb-bank__close" id="wb-bank-close" title="关闭题库" aria-label="关闭题库">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="wb-filters" id="wb-books" role="group" aria-label="按册筛选">
+            <button type="button" class="is-on" data-wb-book="全部" aria-pressed="true">全部</button>
+            <button type="button" data-wb-book="七上" aria-pressed="false">七上</button>
+            <button type="button" data-wb-book="七下" aria-pressed="false">七下</button>
+            <button type="button" data-wb-book="八上" aria-pressed="false">八上</button>
+            <button type="button" data-wb-book="八下" aria-pressed="false">八下</button>
+            <button type="button" data-wb-book="九上" aria-pressed="false">九上</button>
+            <button type="button" data-wb-book="九下" aria-pressed="false">九下</button>
+          </div>
+          <label class="wb-search">
+            <i data-lucide="search"></i>
+            <input id="wb-search" type="search" placeholder="搜索题目或章节" aria-label="搜索题目">
+          </label>
+          <div class="wb-list" id="wb-bank-list"></div>
+        </aside>
+
+        <p class="wb-sr" id="wb-problem-meta"></p>
+        <p class="wb-sr" id="wb-problem-text"></p>
+        <p class="wb-sr" id="wb-problem-extra"></p>
+      </section>
+
+    </main>
+
+    <style id="shell-styles">
+body{padding-top:0}
+</style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/whiteboard-problems.js"></script>
+    <script src="assets/js/whiteboard.js"></script>
+  </body>
+</html>
