@@ -536,6 +536,14 @@ body{padding-top:0}
     <script>lucide.createIcons();</script>
     <link rel="stylesheet" href="assets/css/shell.css">
     <link rel="stylesheet" href="assets/css/ide.css">
+    <!-- 白板页专属覆盖：白板底部有工具条，而全站 toast 的 bottom:28px 会正好压在工具栏上。
+         位置必须在样式表 <link> **之后** —— 同权重下靠文档顺序取胜，放前面会被 shell.css 盖掉。
+         选择器写 body .toast-stack 而不是 .wb-shell .toast-stack：toast 挂在 document.body 上，
+         根本不在页面外壳（main.wb-shell）里面。 -->
+    <style id="wb-page-styles">
+/* 18(工具条离底) + 46(工具条高) + 12(间隙) = 76 */
+body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
+    </style>
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/ide-shell.js"></script>
     <script src="assets/js/board-link.js"></script>

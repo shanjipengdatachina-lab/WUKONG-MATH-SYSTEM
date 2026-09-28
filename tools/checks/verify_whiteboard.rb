@@ -149,6 +149,24 @@ dock_pad = html[/\.wb-dock\{[^}]*?padding:(\d+)px/m, 1].to_i
 dock_bw  = html[/\.wb-dock\{[^}]*?border:(\d+)px/m, 1].to_i
 clearance = tip_gap - dock_pad - dock_bw
 issues << "提示气泡离工具条上沿只有 #{clearance}px，会压住工具栏（至少要 8px）" if clearance < 8
+
+# 操作反馈（全站 toast）也不能压住工具条。它挂在 document.body 上、定位是全站统一的
+# bottom:28px，而白板工具条底边在 18px、顶边在 64px —— 必然重叠。
+# 覆盖规则必须写在样式表 <link> 之后（同权重靠文档顺序取胜），选择器要盖住 body 那一层。
+toast_bottom = html[/body \.toast-stack\{[^}]*?bottom:calc\((\d+)px/m, 1].to_i
+if toast_bottom.zero?
+  issues << '白板页没有把操作反馈抬到工具条上方（body .toast-stack 覆盖缺失或选择器选不中）'
+else
+  dock_bottom = html[/\.wb-dock\{[^}]*?bottom:(\d+)px/m, 1].to_i
+  dock_h      = html[/\.wb-dock__btn\{[^}]*?width:(\d+)px;height:(\d+)px/m, 1].to_i +
+                2 * html[/\.wb-dock\{[^}]*?padding:(\d+)px/m, 1].to_i +
+                2 * html[/\.wb-dock\{[^}]*?border:(\d+)px/m, 1].to_i
+  gap = toast_bottom - (dock_bottom + dock_h)
+  issues << "操作反馈离工具条上沿只有 #{gap}px，会压住工具栏（至少要 8px）" if gap < 8
+end
+link_i  = html.index('assets/css/shell.css')
+style_i = html.index('<style id="wb-page-styles">')
+issues << 'toast 覆盖写在了样式表之前，会被 shell.css 盖掉' if link_i && style_i && style_i < link_i
 wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 issues << '笔粗 / 橡皮按钮仍用系统 title' if wbjs.include?('title="笔粗') || wbjs.include?('title="橡皮')
 
