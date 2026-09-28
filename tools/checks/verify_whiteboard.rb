@@ -141,6 +141,14 @@ issues << '工具条又挂回了系统 title 气泡' if dock_html.include?('titl
 issues << '自绘提示样式缺失' unless html.include?('content:attr(data-wb-tip)')
 issues << '浮层展开时没有抑制提示' unless html.include?('[data-wb-tip][aria-expanded="true"]::after{display:none}')
 issues << '自绘提示数量异常（' + html.scan('data-wb-tip="').length.to_s + '）' unless html.scan('data-wb-tip="').length == 14
+
+# 提示气泡要真的浮在工具条**之上**：气泡锚在按钮上，而工具条自己还有 padding + border，
+# 差值太小就会压住工具栏的边框，看着像"挡在工具栏上"。
+tip_gap  = html[/\[data-wb-tip\]::after\{[^}]*?bottom:calc\(100% \+ (\d+)px\)/m, 1].to_i
+dock_pad = html[/\.wb-dock\{[^}]*?padding:(\d+)px/m, 1].to_i
+dock_bw  = html[/\.wb-dock\{[^}]*?border:(\d+)px/m, 1].to_i
+clearance = tip_gap - dock_pad - dock_bw
+issues << "提示气泡离工具条上沿只有 #{clearance}px，会压住工具栏（至少要 8px）" if clearance < 8
 wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
 issues << '笔粗 / 橡皮按钮仍用系统 title' if wbjs.include?('title="笔粗') || wbjs.include?('title="橡皮')
 
