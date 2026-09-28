@@ -72,4 +72,47 @@ eq(__html.getAttribute('data-wk-theme'), 'mid', '点「中色」→ <html> 上�
 eq(themeChips[1]._pressed, 'true', '「中色」亮起');
 eq(themeChips[2]._pressed, 'false', '「暗色」松开');
 
+/* 8. 高亮色（用户要的"后台设置可以选择高亮颜色；给几个配色"）：
+   默认是松绿（Trae 品牌绿那一族）—— 与字号"标准档"同一套规矩，默认不写属性。
+   换色要同时做三件事：写 <html>、记本机、广播；坏值一律回落默认。 */
+eq(window.WK_DISPLAY.get().accent, 'green', '默认高亮色是松绿');
+eq(__html.hasAttribute('data-wk-accent'), false, '默认那一档不写属性（"没设过"与"设成默认"在 DOM 上一样）');
+eq(window.WK_DISPLAY.accents.length, 6, '给了六个可选高亮色');
+eq(window.WK_DISPLAY.accents[0], 'green', '第一个就是默认那档');
+eq(window.WK_DISPLAY.accentLabel.amber, '琥珀', '每个色都有中文名（按钮上要写）');
+
+var beforeAccent = __events.length;
+var afterAccent = window.WK_DISPLAY.set({ accent: 'violet' });
+eq(__html.getAttribute('data-wk-accent'), 'violet', '选了紫罗兰 → <html> 上挂着 data-wk-accent="violet"');
+eq(__store['wkmath.display.accent'], 'violet', '选了紫罗兰 → 记在本机');
+eq(afterAccent.accent, 'violet', 'set 返回最新状态（调用方不用自己再读一次）');
+eq(__events.length, beforeAccent + 1, '改一次高亮色广播一次');
+eq(__events[__events.length - 1].detail.accent, 'violet', '事件里带的是最新高亮色');
+
+/* 只改一项不许把别的碰掉 —— 三组设置各自独立 */
+window.WK_DISPLAY.set({ fs: 'lg' });
+eq(window.WK_DISPLAY.get().accent, 'violet', '只改字号，高亮色保持不变');
+eq(__html.getAttribute('data-wk-accent'), 'violet', '而且 <html> 上还挂着');
+
+/* 认不出来的值一律忽略 / 回落 */
+window.WK_DISPLAY.set({ accent: 'gold' });
+eq(window.WK_DISPLAY.get().accent, 'violet', '不认识的高亮色被忽略（当次不生效）');
+__store['wkmath.display.accent'] = 'gold';
+var fallenAccent = window.WK_DISPLAY.read();
+eq(fallenAccent.accent, 'green', '盘里存了坏高亮色 → 回落松绿');
+eq(__html.hasAttribute('data-wk-accent'), false, '回落之后属性也是干净的');
+
+/* 设置页那一行：按下态跟着状态走，同一组只亮一个 */
+window.WK_DISPLAY.set({ accent: 'green' });
+document.handlers.DOMContentLoaded();
+eq(accentChips[0]._pressed, 'true', '进页面时「松绿」是按下态（与当前高亮色一致）');
+eq(accentChips[3]._pressed, 'false', '其余几个是松开的');
+accentChips[3].click();
+eq(window.WK_DISPLAY.get().accent, 'amber', '点「琥珀」→ 高亮色真的切了');
+eq(__html.getAttribute('data-wk-accent'), 'amber', '点「琥珀」→ <html> 上跟着变');
+eq(accentChips[3]._pressed, 'true', '「琥珀」自己亮起');
+eq(accentChips[0]._pressed, 'false', '同时「松绿」被松开（同一组里只许亮一个）');
+accentChips[0].click();
+eq(__html.hasAttribute('data-wk-accent'), false, '点回「松绿」→ 属性被摘掉（不是写成 green）');
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

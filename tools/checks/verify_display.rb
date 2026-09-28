@@ -64,7 +64,12 @@ end
 
 root_tokens = tokens_in(block_of(tokens, ':root'))
 # 只比"颜色"令牌：尺寸、圆角、字体栈、间距与主题无关，不该被要求重定义
+# 另外：**引用了别的令牌的值不算"写死的颜色"** —— 它跟着被引用的那个走。
+# 例如 `--math-primary-soft: color-mix(… var(--math-primary) …, var(--math-background))`：
+# 换高亮色换主色、换配色换底色，它自己就跟着变了，不必每个配色再重定义一遍
+# （要求它重定义，反而会把混色规则用写死值盖掉）。见 tokens.css「高亮色」一节。
 def color_token?(value)
+  return false if value.include?('var(--math-')
   value =~ /\A#[0-9a-fA-F]{3,8}\z/ || value =~ /\Argba?\(/ || value =~ /color-mix/ ? true : false
 end
 color_names = root_tokens.select { |_k, v| color_token?(v) }.keys.sort
@@ -162,7 +167,71 @@ issues << '设置页的字号/配色按钮没有 aria-pressed（读屏看不出�
   set.scan(/data-wk-fs="\w+" aria-pressed=/).size == 3
 issues << '设置页缺「阅读与显示」这一节' unless set.include?('阅读与显示')
 issues << '配色按钮缺预览色块（用户看不到那一档长什么样）' unless
-  set.scan(/disp-dot disp-dot--\w+/).size == 3
+  set.scan(/disp-dot disp-dot--(light|mid|dark)"/).size == 3
+issues << "高亮色按钮缺色块（应有 6 个，实际 #{set.scan(/disp-dot disp-dot--(green|blue|violet|amber|cyan|rose)"/).size} 个）" unless
+  set.scan(/disp-dot disp-dot--(green|blue|violet|amber|cyan|rose)"/).size == 6
+
+# ---------- 6b. 高亮色：默认 Trae 绿，另外五色可选，每色 × 每配色都要过对比度 ----------
+# 用户原话："我的按钮的颜色是淡蓝色带一点紫色，我希望默认是 trae 的绿色；
+#           后台设置可以选择高亮颜色；给几个配色。"
+ACCENTS = %w[green blue violet amber cyan rose].freeze
+issues << "默认主色不是松绿（应 #0e7a4f，实际 #{root_tokens['--math-primary']}）" unless
+  root_tokens['--math-primary'].to_s.downcase == '#0e7a4f'
+# Trae 品牌绿本色 #32F08C 只压得住**深底**（压纯黑 14:1，压白只有 1.5:1），
+# 所以它出现在暗色那一包里 —— 这不是漏了，是它唯一站得住的地方。
+issues << '暗色里没用 Trae 品牌绿本色 #32f08c（默认那套得真的是 Trae 绿）' unless
+  tokens_in(block_of(tokens, 'html[data-wk-theme="dark"]'))['--math-primary'].to_s.downcase == '#32f08c'
+%w[green blue violet amber cyan rose].each do |a|
+  issues << "tokens.css 里缺高亮色「#{a}」" unless
+    a == 'green' || tokens.include?(%(html[data-wk-accent="#{a}"]))
+  # 每个色都要有**暗底那一套**：只有一个亮底值的话，暗色下会拿深色主色去压黑底，
+  # 对比度看着还够（4:1 左右），但"看着够"不等于"这就是设计好的那一档"。
+  issues << "高亮色「#{a}」缺暗底那一套（暗色下会退回深色主色）" unless
+    a == 'green' || tokens.include?(%(html[data-wk-theme="dark"][data-wk-accent="#{a}"]))
+end
+
+# 逐个高亮色 × 逐个配色算对比度。**每个色都要算三遍**（亮 / 中 / 暗）——
+# 暗底那套的主色与亮底那套完全是两回事，只算一遍等于没算。
+ACCENT_PALETTES = {}
+ACCENTS.each do |a|
+  next if a == 'green' # 默认那套就在 :root / 中色 / 暗色三个块里，上面已经算过
+  accent_light = tokens_in(block_of(tokens, %(html[data-wk-accent="#{a}"])))
+  accent_dark  = tokens_in(block_of(tokens, %(html[data-wk-theme="dark"][data-wk-accent="#{a}"])))
+  ACCENT_PALETTES["#{a} · 亮"] = root_tokens.merge(accent_light)
+  ACCENT_PALETTES["#{a} · 中"] = root_tokens.merge(tokens_in(block_of(tokens, 'html[data-wk-theme="mid"]'))).merge(accent_light)
+  ACCENT_PALETTES["#{a} · 暗"] = root_tokens.merge(tokens_in(block_of(tokens, 'html[data-wk-theme="dark"]'))).merge(accent_dark)
+end
+ACCENT_PALETTES.each do |cn, pal|
+  r = contrast(pal['--math-primary'], pal['--math-background'])
+  issues << format('%s：主色(%s)压在底(%s)上只有 %.2f:1，低于 3.0:1',
+                   cn, pal['--math-primary'], pal['--math-background'], r) if r && r < 3.0
+  r2 = contrast(pal['--math-primary-foreground'], pal['--math-primary'])
+  issues << format('%s：主色底上的字(%s on %s)只有 %.2f:1，低于 4.5:1',
+                   cn, pal['--math-primary-foreground'], pal['--math-primary'], r2) if r2 && r2 < 4.5
+end
+
+# 设置页那一行 + 启动器
+issues << '设置页缺「高亮色」那一行（#set-accent）' unless set.include?('id="set-accent"')
+ACCENTS.each do |a|
+  issues << "设置页缺高亮色选项「#{a}」" unless set.include?(%(data-wk-accent="#{a}"))
+end
+issues << "设置页的高亮色按钮没有 aria-pressed（读屏看不出当前是哪个色，实际 #{set.scan(/data-wk-accent="\w+" aria-pressed=/).size} 个）" unless
+  set.scan(/data-wk-accent="\w+" aria-pressed=/).size == ACCENTS.size
+%w[ACCENT_KEY ACCENT_ATTR ACCENTS ACCENT_DEFAULT].each do |needle|
+  issues << "display.js 缺 #{needle}（高亮色没接上）" unless disp.include?(needle)
+end
+issues << 'display.js 的高亮色没用自己的名字空间属性' unless disp.include?("ACCENT_ATTR = 'data-wk-accent'")
+# 默认那一档不写属性（与字号"标准档"同一套规矩）：这样"从没设过"与"设成松绿"在 DOM 上一样
+issues << '默认高亮色会往 <html> 上写属性（"没设过"与"设成默认"就区分不开了）' unless
+  disp.include?('if (state.accent === ACCENT_DEFAULT) el.removeAttribute(ACCENT_ATTR)')
+# 三组按钮共用同一套"按下"样式：漏掉一组，那一组点了看不出选中（按钮自己知道，眼睛不知道）。
+# 选择器后面必须是 `,` 或 `{` —— `:hover` 那条也以同样的选择器开头，
+# 只匹配前缀的话把主规则删掉这条守护照样是绿的（第一版两次都栽在这：先被 `:hover` 骗过，
+# 改成连 `{` 又漏了"三条挤在一行、后面跟逗号"的前两组）。
+%w[fs theme accent].each do |g|
+  rule = /#set-#{g} \.seg__item\[aria-pressed="true"\][,{]/
+  issues << "设置页「#{g}」那一组没有按下样式（选中了也看不出来）" unless set =~ rule
+end
 
 # ---------- 7. 白板与图谱跟随 ----------
 %w[DISPLAY_TO_BOARD BOARD_TO_DISPLAY function reconcileTheme function pushThemeToDisplay].each do |needle|

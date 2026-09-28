@@ -52,6 +52,7 @@ function chipSet(attr, values) {
 /* 按钮上的属性与 <html> 上的属性同名（都是 data-wk-*），页面里就是这么写的 */
 var fsChips = chipSet('data-wk-fs', ['std', 'lg', 'xl']);
 var themeChips = chipSet('data-wk-theme', ['light', 'mid', 'dark']);
+var accentChips = chipSet('data-wk-accent', ['green', 'blue', 'violet', 'amber', 'cyan', 'rose']);
 
 var __html = {
   _attrs: {},
@@ -69,6 +70,7 @@ var document = {
   querySelectorAll: function (sel) {
     if (sel === '#set-fs [data-wk-fs]') return fsChips;
     if (sel === '#set-theme [data-wk-theme]') return themeChips;
+    if (sel === '#set-accent [data-wk-accent]') return accentChips;
     return [];
   }
 };

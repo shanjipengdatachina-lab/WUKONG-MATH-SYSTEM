@@ -42,23 +42,34 @@
      深色下就成了画布上的一块白板（真机截图里一眼就看出来了）。 */
   --math-dock: rgba(255, 255, 255, 0.86);
 
-  /* ---------- Brand: exactly one hue ---------- */
-  --math-primary: #1a3a8f;
+  /* ---------- Brand: exactly one hue ----------
+     默认是**松绿** —— Trae 品牌绿 `#32F08C` 的可读档。为什么不用那个亮绿本身当主色：
+     它压在纯白上只有 1.5:1，做"字与图标"的颜色根本看不清（这个项目里"看不清"是红线，
+     见 ink-3 / ink-4 那两级的注释）；`#0e7a4f` 是同一色相往下压到 5.4:1 的那一档，
+     这样"字 / 图标 / 实心按钮底 / 按钮上的白字"四个角色一起成立。
+     暗色那一包里用的就是品牌绿本色 `#32F08C`（压纯黑 14:1）—— 所以黑板上就是 Trae 绿。
+     换高亮色**不改这里**：由 html[data-wk-accent="…"] 整族覆盖（见文件下半「高亮色」一节）。 */
+  --math-primary: #0e7a4f;
   --math-primary-foreground: #ffffff;
-  --math-primary-strong: #142e72;
-  --math-primary-soft: #eef1f9;
-  --math-primary-tint: #dfe5f5;
-  --math-primary-200: #c2cde9;
-  --math-primary-400: #6c86cc;
-  --math-primary-300: #93a6d6;
+  --math-primary-strong: #0b6141;
+  /* 浅色那几档**由主色与当前底色混出来**，不逐色调、不逐配色写死：
+     6 个高亮色 × 3 套配色 × 5 档 = 90 个数，手写必然错几个，以后加一个色还要再算 15 个。
+     混色的另一个好处是"跟着底色走"：亮色下混出浅绿、暗色下混出深绿，一条规则管全部。
+     这几档只用在底 / 描边 / 填充上（没有一处当字色用），所以万一环境不支持 color-mix、
+     整条声明失效，退化的也只是"底色没了"，字仍然清清楚楚。 */
+  --math-primary-soft: color-mix(in srgb, var(--math-primary) 7%, var(--math-background));
+  --math-primary-tint: color-mix(in srgb, var(--math-primary) 18%, var(--math-background));
+  --math-primary-200: color-mix(in srgb, var(--math-primary) 34%, var(--math-background));
+  --math-primary-300: color-mix(in srgb, var(--math-primary) 54%, var(--math-background));
+  --math-primary-400: color-mix(in srgb, var(--math-primary) 72%, var(--math-background));
 
   /* ---------- State (status only, never identity) ---------- */
   --math-state-success: #1f7a4d;
   --math-state-warning: #a8690b;
   --math-state-error: #b3402f;
-  --math-state-info: #1a3a8f;
+  --math-state-info: var(--math-primary);
 
-  --math-ring: #1a3a8f;
+  --math-ring: var(--math-primary);
 
   /* ---------- Radius (2 / 4 / 8 / 16) ---------- */
   --math-radius-xs: 2px;
@@ -159,21 +170,15 @@ html[data-wk-theme="mid"] {
 
   --math-dock: rgba(247, 248, 250, 0.88);
 
-  --math-primary: #1a3a8f;
+  /* 高亮色与亮色同族（中色底也是浅的，深绿照样读得清）；
+     浅色那几档与焦点圈 / 信息态不再逐主题写 —— 它们由主色与底色混出来，见 :root。 */
+  --math-primary: #0e7a4f;
   --math-primary-foreground: #ffffff;
-  --math-primary-strong: #142e72;
-  --math-primary-soft: #e3e8f3;
-  --math-primary-tint: #d5dced;
-  --math-primary-200: #b8c3de;
-  --math-primary-400: #6379bd;
-  --math-primary-300: #8b9dc8;
+  --math-primary-strong: #0b6141;
 
   --math-state-success: #1c6f46;
   --math-state-warning: #96600b;
   --math-state-error: #a63a2b;
-  --math-state-info: #1a3a8f;
-
-  --math-ring: #1a3a8f;
 
   --math-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
   --math-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.22);
@@ -216,24 +221,87 @@ html[data-wk-theme="dark"] {
 
   --math-dock: rgba(17, 17, 17, 0.88);
 
-  --math-primary: #93b4ff;
+  /* 暗色里用的就是 **Trae 品牌绿本色** `#32F08C`（压在纯黑上 14:1，正好是它该出现的地方；
+     Trae 自己的说法是"在深色界面上像命令行一样利落"）。主色底上的字一律纯黑 —— 与上面「暗色是纯粹的黑白」同一条规矩；这几个亮主色的相对亮度都在 0.52 以上，纯黑压上去 11:1 起步。
+     浅色那几档仍由主色与底色混出来（这里底色是纯黑，混出来就是深绿微光）。 */
+  --math-primary: #32f08c;
   --math-primary-foreground: #000000;
-  --math-primary-strong: #b9cdff;
-  --math-primary-soft: rgba(147, 180, 255, 0.14);
-  --math-primary-tint: rgba(147, 180, 255, 0.20);
-  --math-primary-200: rgba(147, 180, 255, 0.34);
-  --math-primary-400: #4a6cc0;
-  --math-primary-300: #6b8ede;
+  --math-primary-strong: #7df7b5;
 
   --math-state-success: #4ade80;
   --math-state-warning: #fbbf24;
   --math-state-error: #f87171;
-  --math-state-info: #93b4ff;
-
-  --math-ring: #93b4ff;
 
   --math-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 1px rgba(0, 0, 0, 0.30);
   --math-shadow-2: 0 10px 30px -10px rgba(0, 0, 0, 0.60);
+}
+
+/* ==========================================================================
+   高亮色（用户要的"后台设置可以选择高亮颜色"）
+   --------------------------------------------------------------------------
+   一个高亮色 = 三个数：主色、深一档（悬停）、主色底上的字。
+   其余几档（soft / tint / 200 / 300 / 400）与焦点圈、信息态都由这三档推出来（见 :root）。
+
+   为什么只写三个数就够：那几档全是"主色与底色的混色"，两边都跟着走 ——
+   换高亮色换主色，换配色换底色，不用再算一遍。
+   每个色两套：浅底（亮色 / 中色共用）一套、暗底一套。暗底那套的主色是**亮色版**
+   （深色底上深色主色等于隐形），所以"主色底上的字"要压深 —— 一组色里最容易被忘的就是它。
+
+   全部数值都过了对比度门槛（verify_display.rb 逐个色 × 逐个配色算）：
+     · 主色压在自己的底色上 ≥ 3:1（浅底那六个都在 5:1 以上）
+     · 主色底上的那行字 ≥ 4.5:1（浅底压白、暗底压深，都在 8:1 以上）
+   默认（松绿）不写属性，就在 :root 里 —— 所以"从没设过"与"设成松绿"在 DOM 上一样。
+   ========================================================================== */
+html[data-wk-accent="blue"] {
+  --math-primary: #1a3a8f;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #142e72;
+}
+html[data-wk-accent="violet"] {
+  --math-primary: #6d28d9;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #5b21b6;
+}
+html[data-wk-accent="amber"] {
+  --math-primary: #b45309;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #92400e;
+}
+html[data-wk-accent="cyan"] {
+  --math-primary: #0e7490;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #155e75;
+}
+html[data-wk-accent="rose"] {
+  --math-primary: #be185d;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #9d174d;
+}
+
+html[data-wk-theme="dark"][data-wk-accent="blue"] {
+  --math-primary: #93b4ff;
+  --math-primary-foreground: #000000;
+  --math-primary-strong: #b9cdff;
+}
+html[data-wk-theme="dark"][data-wk-accent="violet"] {
+  --math-primary: #c4b5fd;
+  --math-primary-foreground: #000000;
+  --math-primary-strong: #ddd6fe;
+}
+html[data-wk-theme="dark"][data-wk-accent="amber"] {
+  --math-primary: #fdba74;
+  --math-primary-foreground: #000000;
+  --math-primary-strong: #fed7aa;
+}
+html[data-wk-theme="dark"][data-wk-accent="cyan"] {
+  --math-primary: #67e8f9;
+  --math-primary-foreground: #000000;
+  --math-primary-strong: #a5f3fc;
+}
+html[data-wk-theme="dark"][data-wk-accent="rose"] {
+  --math-primary: #fda4d4;
+  --math-primary-foreground: #000000;
+  --math-primary-strong: #fbcfe8;
 }
 
 /* ==========================================================================
