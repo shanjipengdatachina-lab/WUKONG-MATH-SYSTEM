@@ -2215,12 +2215,49 @@
      笔色按**序号**平移 —— 唯一不会让人意外的映射（否则"我选的红色怎么变绿了"）。
      板上**已有的每一笔也一起平移**：不平移的话，切到黑板时原来的深色墨迹直接看不见，
      那不叫"换了块板"，那叫"把我的推导弄没了"。只动颜色，点坐标 / 笔粗 / 图形类型一律不动。 */
+  /* 板面主题与「阅读与显示」里的配色是**同一个真值**（见阅读与显示设计 §2 #9）：
+     在板里切板面 = 整站跟着切；在设置里选配色 = 板面跟着换。
+     两个开关各写各的状态迟早会打架，所以只留一份。
+     老数据照顾：本机从没在设置里选过配色时，以白板这份旧记录为准，并把它写回设置。 */
+  var DISPLAY_TO_BOARD = { light: 'white', mid: 'mid', dark: 'dark' };
+  var BOARD_TO_DISPLAY = { white: 'light', mid: 'mid', dark: 'dark' };
+
+  function displayApi() {
+    return (typeof window !== 'undefined' && window.WK_DISPLAY) ? window.WK_DISPLAY : null;
+  }
+  function storedDisplayTheme() {
+    var api = displayApi();
+    if (!api) return null;
+    var v = null;
+    try { v = window.localStorage.getItem(api.keys.theme); } catch (err) { v = null; }
+    return api.themes.indexOf(v) >= 0 ? v : null;
+  }
+  function pushThemeToDisplay(boardKey) {
+    var api = displayApi();
+    if (!api) return;
+    /* 只写主题，不碰字号 —— 白板管不着字号 */
+    api.set({ theme: BOARD_TO_DISPLAY[boardKey] || 'light' });
+  }
+  function reconcileTheme() {
+    var api = displayApi();
+    if (!api) return;
+    var chosen = storedDisplayTheme();
+    if (chosen) {
+      var mapped = DISPLAY_TO_BOARD[chosen];
+      if (mapped && mapped !== state.theme) setTheme(mapped);
+    } else {
+      pushThemeToDisplay(state.theme);
+    }
+  }
+
   function setTheme(key) {
     if (THEME_KEYS.indexOf(key) < 0) return false;
     if (key === state.theme) return true;
     var from = theme().colors;
     var to = THEMES[key].colors;
     state.theme = key;
+    /* 板面就是整站的配色：切一次，设置页那一栏也跟着亮（§2 #9） */
+    pushThemeToDisplay(key);
 
     var ci = indexOfColor(from, state.color);
     if (ci >= 0 && to[ci]) state.color = to[ci].value;
@@ -2317,6 +2354,15 @@
         var t = e.target;
         var btn = t && t.closest ? t.closest('[data-wb-theme]') : null;
         if (btn) setTheme(btn.getAttribute('data-wb-theme'));
+      });
+    }
+    /* 设置页改了配色（同一个真值）时板面跟着换。自己这边切板面也会走到这里，
+       但那时 key 已经等于 state.theme，setTheme 会直接返回，不会转圈。 */
+    if (document.addEventListener) {
+      document.addEventListener('wk:display', function (e) {
+        var t = e && e.detail && e.detail.theme;
+        var boardKey = t ? DISPLAY_TO_BOARD[t] : null;
+        if (boardKey && boardKey !== state.theme) setTheme(boardKey);
       });
     }
     var colorBox = byId('wb-colors');
@@ -2498,6 +2544,8 @@
 
   /* ---------- 启动 ---------- */
   restore();
+  /* 板面主题与整站配色对齐（同一份真值，见 reconcileTheme） */
+  reconcileTheme();
   /* 主题是从存储恢复出来的，所以调色板要跟着对齐一次 ——
      否则刷新回来是黑板、调色板却还是浅色那六支。 */
   syncPalette();

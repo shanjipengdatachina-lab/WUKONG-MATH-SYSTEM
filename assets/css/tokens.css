@@ -25,14 +25,22 @@
   --math-muted-foreground: #6b7280;
 
   --math-ink-2: #5b6069;
-  --math-ink-3: #9ba1a9;
-  --math-ink-4: #c4c8ce;
+  /* ink-3 / ink-4 加深过：原来 #9ba1a9 / #c4c8ce 在纯白底上只有约 2.6:1 与 1.7:1，
+     低于 4.5:1 的可读标准 —— 用户原话"文字有点细，怕孩子会看不清"，主因就是这两级灰。
+     加深之后四级灰仍然分得开（17:1 / 4.9:1 / 4.8:1 / 3.5:1）。 */
+  --math-ink-3: #6b7280;
+  --math-ink-4: #8d939c;
 
   /* ---------- Lines / dividers (< 6% contrast) ---------- */
   --math-border: #e8e9ec;
   --math-line: #e8e9ec;
   --math-line-strong: #d7d9de;
   --math-input: #e8e9ec;
+
+  /* 悬浮工具条的底：半透明、压在画布上，所以要比底浅一档。
+     单独做成令牌是因为它**必须**跟着主题换 —— 原来写死 rgba(255,255,255,.86)，
+     深色下就成了画布上的一块白板（真机截图里一眼就看出来了）。 */
+  --math-dock: rgba(255, 255, 255, 0.86);
 
   /* ---------- Brand: exactly one hue ---------- */
   --math-primary: #1a3a8f;
@@ -64,6 +72,12 @@
   --math-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.18);
 
   /* ---------- Typography ---------- */
+  /* 字号乘数：显示设置里选「大 / 特大」时改的就是这一个数（见 §3.2）。
+     为什么在"声明处"相乘而不改根字号：改根字号会连 rem 的间距一起放大 = 整页重排；
+     只乘 font-size 的改动面清楚、能机械核对。 */
+  --math-fs: 1;
+  /* 正文字重提一档：中文小字号在 400 下笔画偏细，500 是"看得出更实、但不像加粗"的那一档 */
+  --math-weight-body: 500;
   --math-font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC",
     "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
   --math-font-display: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC",
@@ -72,13 +86,13 @@
   --math-font-math: "Times New Roman", "Songti SC", "Source Han Serif SC", serif;
 
   /* ---------- Type scale ---------- */
-  --math-text-display: clamp(2.5rem, 5.2vw, 4.5rem);
-  --math-text-h1: clamp(1.75rem, 3vw, 2.75rem);
-  --math-text-h2: clamp(1.375rem, 2.1vw, 2rem);
-  --math-text-h3: 1.25rem;
-  --math-text-body-lg: 1.125rem;
-  --math-text-body: 0.9375rem;
-  --math-text-caption: 0.8125rem;
+  --math-text-display: calc(clamp(2.5rem, 5.2vw, 4.5rem) * var(--math-fs));
+  --math-text-h1: calc(clamp(1.75rem, 3vw, 2.75rem) * var(--math-fs));
+  --math-text-h2: calc(clamp(1.375rem, 2.1vw, 2rem) * var(--math-fs));
+  --math-text-h3: calc(1.25rem * var(--math-fs));
+  --math-text-body-lg: calc(1.125rem * var(--math-fs));
+  --math-text-body: calc(0.9375rem * var(--math-fs));
+  --math-text-caption: calc(0.8125rem * var(--math-fs));
 
   /* ---------- Spacing (8pt grid) ---------- */
   --math-space-1: 4px;
@@ -92,6 +106,123 @@
 
   /* ---------- Shell metrics ---------- */
   --math-shell-height: 56px;
+}
+
+/* ==========================================================================
+   显示设置 · 字号三档
+   --------------------------------------------------------------------------
+   一个乘数管全站（页面样式里的 font-size 都在声明处乘了它）。
+   标准档不写属性，所以"从没设过"和"设成标准"长得一模一样。
+   ========================================================================== */
+
+html[data-wk-fs="lg"] { --math-fs: 1.12; }
+html[data-wk-fs="xl"] { --math-fs: 1.25; }
+
+/* ==========================================================================
+   显示设置 · 亮 / 中 / 暗三包配色
+   --------------------------------------------------------------------------
+   纪律（白板那一课）：**一个主题是一整包配色**，不是只换底色。
+   只换 background 不换 ink，深色板上深色字会直接消失 —— 所以每个主题把
+   :root 里的**每一个颜色令牌**全部重定义一遍（`verify_display.rb` 逐令牌比对，缺一个就报错）。
+   亮色就是 :root 那一套，因此不设 `data-theme` 或设成 light 时行为与从前一致。
+   ========================================================================== */
+
+/* 中色：比白纸暗一档的中性灰蓝，白天长时间阅读用（取白板「中板」的那一系） */
+html[data-wk-theme="mid"] {
+  --math-background: #eceff3;
+  --math-foreground: #12161c;
+
+  --math-surface: #f4f6f8;
+  --math-surface-2: #e6eaef;
+
+  --math-card: #f7f8fa;
+  --math-card-foreground: #12161c;
+
+  --math-popover: #f7f8fa;
+  --math-popover-foreground: #12161c;
+
+  --math-muted: #e6eaef;
+  --math-muted-foreground: #5a6270;
+
+  --math-ink-2: #4a515c;
+  --math-ink-3: #5f6875;
+  --math-ink-4: #7d8695;
+
+  --math-border: #d9dee5;
+  --math-line: #d9dee5;
+  --math-line-strong: #c6ccd5;
+  --math-input: #d9dee5;
+
+  --math-dock: rgba(247, 248, 250, 0.88);
+
+  --math-primary: #1a3a8f;
+  --math-primary-foreground: #ffffff;
+  --math-primary-strong: #142e72;
+  --math-primary-soft: #e3e8f3;
+  --math-primary-tint: #d5dced;
+  --math-primary-200: #b8c3de;
+  --math-primary-400: #6379bd;
+  --math-primary-300: #8b9dc8;
+
+  --math-state-success: #1c6f46;
+  --math-state-warning: #96600b;
+  --math-state-error: #a63a2b;
+  --math-state-info: #1a3a8f;
+
+  --math-ring: #1a3a8f;
+
+  --math-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --math-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.22);
+}
+
+/* 暗色：深蓝黑而不是纯黑 —— 纯黑配白字对比过强、久看累（与白板「黑板」同一判断）。
+   主色在这里必须反过来：原来那个深蓝在深底上等于隐形，改用亮蓝，并把
+   primary-foreground 换成深色（"主色底上的字"变成深字压亮蓝）。 */
+html[data-wk-theme="dark"] {
+  --math-background: #0f172a;
+  --math-foreground: #f1f5f9;
+
+  --math-surface: #16203a;
+  --math-surface-2: #1c2846;
+
+  --math-card: #16203a;
+  --math-card-foreground: #f1f5f9;
+
+  --math-popover: #172142;
+  --math-popover-foreground: #f1f5f9;
+
+  --math-muted: #1c2846;
+  --math-muted-foreground: #a9b6ca;
+
+  --math-ink-2: #cbd5e1;
+  --math-ink-3: #a4b1c6;
+  --math-ink-4: #8492a8;
+
+  --math-border: #263352;
+  --math-line: #263352;
+  --math-line-strong: #33436a;
+  --math-input: #263352;
+
+  --math-dock: rgba(22, 32, 58, 0.88);
+
+  --math-primary: #93b4ff;
+  --math-primary-foreground: #0f172a;
+  --math-primary-strong: #b9cdff;
+  --math-primary-soft: rgba(147, 180, 255, 0.14);
+  --math-primary-tint: rgba(147, 180, 255, 0.20);
+  --math-primary-200: rgba(147, 180, 255, 0.34);
+  --math-primary-400: #4a6cc0;
+  --math-primary-300: #6b8ede;
+
+  --math-state-success: #4ade80;
+  --math-state-warning: #fbbf24;
+  --math-state-error: #f87171;
+  --math-state-info: #93b4ff;
+
+  --math-ring: #93b4ff;
+
+  --math-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 1px rgba(0, 0, 0, 0.30);
+  --math-shadow-2: 0 10px 30px -10px rgba(0, 0, 0, 0.60);
 }
 
 /* ==========================================================================

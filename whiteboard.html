@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>数字白板 · 悟空数学</title>
+  <!-- 阅读与显示设置：首屏前应用（字号方案 / 亮中暗配色）-->
+  <script src="assets/js/display.js"></script>
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <script src="assets/js/lucide.min.js"></script>
@@ -36,8 +38,8 @@
 }
 .wb-bank__head:active{cursor:grabbing}
 .wb-bank__grip{flex:none;width:15px;height:15px;color:var(--math-ink-4)}
-.wb-bank__title{font-size:13px;font-weight:600;color:var(--math-foreground)}
-.wb-bank__count{margin-left:auto;font-size:11.5px;color:var(--math-ink-4);font-variant-numeric:tabular-nums}
+.wb-bank__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
+.wb-bank__count{margin-left:auto;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-4);font-variant-numeric:tabular-nums}
 .wb-bank__close{
   flex:none;display:inline-flex;align-items:center;justify-content:center;
   width:24px;height:24px;padding:0;
@@ -55,7 +57,7 @@
   height:24px;padding:0 9px;
   border:1px solid var(--math-border);border-radius:999px;
   background:var(--math-background);color:var(--math-ink-3);
-  font:inherit;font-size:12px;line-height:1;cursor:pointer;
+  font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;cursor:pointer;
   transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
 }
 .wb-filters button:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}
@@ -73,7 +75,7 @@
 .wb-search input{
   flex:1 1 auto;min-width:0;height:100%;
   border:0;background:none;outline:none;
-  font:inherit;font-size:13px;color:var(--math-foreground);
+  font:inherit;font-size:calc(13px * var(--math-fs));color:var(--math-foreground);
 }
 .wb-search input::placeholder{color:var(--math-ink-4)}
 .wb-list{
@@ -90,13 +92,13 @@
 }
 .wb-item:hover{background:var(--math-surface)}
 .wb-item:focus-visible{outline:2px solid var(--math-primary);outline-offset:-2px}
-.wb-item__tag{font-size:11px;color:var(--math-ink-4)}
-.wb-item__text{font-size:13.5px;line-height:1.55;color:var(--math-foreground);overflow-wrap:break-word}
-.wb-item__cue{font-size:11px;color:var(--math-ink-4);opacity:0;transition:opacity 140ms cubic-bezier(.2,.8,.2,1)}
+.wb-item__tag{font-size:calc(11px * var(--math-fs));color:var(--math-ink-4)}
+.wb-item__text{font-size:calc(13.5px * var(--math-fs));line-height:1.55;color:var(--math-foreground);overflow-wrap:break-word}
+.wb-item__cue{font-size:calc(11px * var(--math-fs));color:var(--math-ink-4);opacity:0;transition:opacity 140ms cubic-bezier(.2,.8,.2,1)}
 .wb-item:hover .wb-item__cue{opacity:1}
 .wb-item.is-active{border-color:var(--math-primary-200);background:var(--math-primary-soft)}
 .wb-item.is-active .wb-item__cue{opacity:1;color:var(--math-primary)}
-.wb-empty{margin:16px 6px;font-size:13px;color:var(--math-ink-4)}
+.wb-empty{margin:16px 6px;font-size:calc(13px * var(--math-fs));color:var(--math-ink-4)}
 .wb-list::-webkit-scrollbar{width:8px}
 .wb-list::-webkit-scrollbar-thumb{background:var(--math-surface-2);border-radius:8px}
 
@@ -104,7 +106,7 @@
 .wb-stage{position:relative;height:100vh;min-width:0}
 .wb-canvas-wrap{
   position:absolute;inset:0;overflow:hidden;
-  background:var(--wb-board,#fff);touch-action:none;
+  background:var(--wb-board,var(--math-background));touch-action:none;
 }
 #wb-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;overscroll-behavior:contain}
 
@@ -116,7 +118,7 @@
   max-width:calc(100% - 24px);
   padding:5px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:rgba(255,255,255,.86);
+  background:var(--math-dock);
   box-shadow:0 6px 24px rgba(15,23,42,.10);
   backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   opacity:.34;
@@ -144,12 +146,12 @@
 .wb-dock__dot{
   position:absolute;right:4px;bottom:4px;
   width:7px;height:7px;border-radius:999px;
-  border:1px solid #fff;background:var(--math-foreground);
+  border:1px solid var(--math-background);background:var(--math-foreground);
 }
 .wb-dock__level{
   min-width:44px;height:34px;padding:0 6px;
   border:0;border-radius:var(--math-radius-md);background:none;cursor:pointer;
-  font:inherit;font-size:11.5px;color:var(--math-ink-2);font-variant-numeric:tabular-nums;
+  font:inherit;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-2);font-variant-numeric:tabular-nums;
   transition:color 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms cubic-bezier(.2,.8,.2,1);
 }
 .wb-dock__level:hover{background:var(--math-surface);color:var(--math-foreground)}
@@ -163,8 +165,8 @@
   transform:translateX(-50%) translateY(2px);
   padding:4px 8px;
   border-radius:var(--math-radius-sm);
-  background:rgba(15,23,42,.92);color:#fff;
-  font-size:11.5px;font-weight:400;line-height:1.45;white-space:nowrap;
+  background:var(--math-foreground);color:var(--math-background);
+  font-size:calc(11.5px * var(--math-fs));font-weight:400;line-height:1.45;white-space:nowrap;
   pointer-events:none;
   box-shadow:0 8px 22px rgba(15,23,42,.22);
   opacity:0;visibility:hidden;
@@ -214,7 +216,7 @@
   display:flex;align-items:center;gap:7px;width:100%;
   height:26px;padding:0 7px;
   border:0;border-radius:6px;background:none;cursor:pointer;
-  font:inherit;font-size:12.5px;line-height:1;color:var(--math-ink-2);text-align:left;
+  font:inherit;font-size:calc(12.5px * var(--math-fs));line-height:1;color:var(--math-ink-2);text-align:left;
   transition:background-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1);
 }
 .wb-flyout__item svg{flex:none;width:14px;height:14px}
@@ -226,7 +228,7 @@
   flex:none;min-width:16px;padding:1px 4px;
   border:1px solid var(--math-border);border-radius:4px;
   background:var(--math-surface);
-  font-family:var(--math-font-mono);font-size:10px;line-height:1.4;text-align:center;color:var(--math-ink-3);
+  font-family:var(--math-font-mono);font-size:calc(10px * var(--math-fs));line-height:1.4;text-align:center;color:var(--math-ink-3);
 }
 
 /* ---------- 悬浮设置面板（同样收紧一档） ---------- */
@@ -242,7 +244,7 @@
 .wb-pop[hidden]{display:none}
 .wb-pop__row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .wb-pop__row:last-of-type{margin-bottom:0}
-.wb-pop__label{flex:0 0 30px;font-size:11.5px;letter-spacing:.06em;color:var(--math-ink-3)}
+.wb-pop__label{flex:0 0 30px;font-size:calc(11.5px * var(--math-fs));letter-spacing:.06em;color:var(--math-ink-3)}
 .wb-colors{display:flex;flex-wrap:wrap;gap:6px}
 .wb-swatch{
   width:22px;height:22px;padding:2px;cursor:pointer;
@@ -269,14 +271,14 @@
 .wb-pop__foot{
   display:flex;align-items:center;gap:8px;
   margin-top:10px;padding-top:9px;border-top:1px solid var(--math-border);
-  font-size:11px;line-height:1.55;color:var(--math-ink-4);
+  font-size:calc(11px * var(--math-fs));line-height:1.55;color:var(--math-ink-4);
 }
 .wb-pop__keys{display:flex;flex-wrap:wrap;gap:3px 8px}
 .wb-pop__keys kbd{
   padding:1px 4px;margin-right:2px;
   border:1px solid var(--math-border);border-radius:4px;
   background:var(--math-surface);
-  font-family:var(--math-font-mono);font-size:10px;color:var(--math-ink-2);
+  font-family:var(--math-font-mono);font-size:calc(10px * var(--math-fs));color:var(--math-ink-2);
 }
 .wb-pop__stat{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
 .wb-view-btn{
@@ -284,7 +286,7 @@
   height:26px;padding:0 8px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-sm);
   background:var(--math-background);color:var(--math-ink-2);
-  font:inherit;font-size:12px;cursor:pointer;
+  font:inherit;font-size:calc(12px * var(--math-fs));cursor:pointer;
   transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
 }
 .wb-view-btn svg{width:13px;height:13px}
@@ -308,7 +310,7 @@
   .wb-dock__btn{width:30px;height:30px}
   .wb-dock__btn svg{width:14px;height:14px}
   .wb-dock__level{min-width:40px;height:30px}
-  .wb-flyout__item{height:24px;font-size:12px}
+  .wb-flyout__item{height:24px;font-size:calc(12px * var(--math-fs))}
 }
   </style>
   <!-- 本块只属于白板：wb-styles 那个块是图谱共享样式的母版，
@@ -323,7 +325,7 @@
 .wb-acts[hidden]{display:none}
 .wb-act{
   border:0;border-radius:6px;background:none;cursor:pointer;
-  font:inherit;font-size:12px;line-height:1;padding:5px 8px;
+  font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;padding:5px 8px;
   color:var(--math-ink-3);
 }
 .wb-act:hover{background:var(--math-surface);color:var(--math-foreground)}
@@ -337,7 +339,7 @@
 .wb-step{
   position:absolute;left:0;top:0;z-index:4;
   width:232px;border:1px solid var(--math-border);border-radius:10px;
-  background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.10);
+  background:var(--math-popover);box-shadow:var(--math-shadow-2);
   animation:wb-step-in .16s ease-out both;
   animation-delay:calc(var(--i,0) * 60ms);
 }
@@ -363,17 +365,17 @@
 .wb-step__no{
   flex:none;width:18px;height:18px;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:600;
+  font-size:calc(11px * var(--math-fs));font-weight:600;
   background:var(--math-primary-tint);color:var(--math-primary);
 }
 .wb-step__grip{flex:none;margin-left:auto;width:14px;height:14px;color:var(--math-ink-4)}
 .wb-step__guide{
-  padding:8px 10px 0;font-size:12.5px;line-height:1.55;color:var(--math-ink-2);
+  padding:8px 10px 0;font-size:calc(12.5px * var(--math-fs));line-height:1.55;color:var(--math-ink-2);
 }
 .wb-step__pad{
   min-height:40px;margin:8px 10px 10px;padding:6px 8px;
   border:1px dashed var(--math-border);border-radius:8px;
-  font-size:13px;line-height:1.5;color:var(--math-foreground);
+  font-size:calc(13px * var(--math-fs));line-height:1.5;color:var(--math-foreground);
   outline:none;
 }
 .wb-step__pad:focus{border-style:solid;border-color:var(--math-primary)}
@@ -698,7 +700,7 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 .wb-theme{
   display:inline-flex;align-items:center;gap:5px;
   border:1px solid var(--math-border);border-radius:6px;
-  background:none;cursor:pointer;font:inherit;font-size:12px;line-height:1;
+  background:none;cursor:pointer;font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;
   padding:4px 7px;color:var(--math-ink-3);
 }
 .wb-theme:hover{background:var(--math-surface);color:var(--math-foreground)}
@@ -715,7 +717,7 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 .wb-grid{
   display:inline-flex;align-items:center;gap:5px;
   border:1px solid var(--math-border);border-radius:6px;
-  background:none;cursor:pointer;font:inherit;font-size:12px;line-height:1;
+  background:none;cursor:pointer;font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;
   padding:4px 7px;color:var(--math-ink-3);
 }
 .wb-grid:hover{background:var(--math-surface);color:var(--math-foreground)}
@@ -742,36 +744,36 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 }
 .wb-ink[hidden]{display:none}
 .wb-ink__head{display:flex;align-items:center;gap:7px}
-.wb-ink__title{font-size:12.5px;font-weight:600;color:var(--math-foreground)}
+.wb-ink__title{font-size:calc(12.5px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .wb-ink__badge{
   padding:1px 6px;border-radius:999px;background:var(--math-surface);
-  font-size:10.5px;letter-spacing:.06em;color:var(--math-ink-3);
+  font-size:calc(10.5px * var(--math-fs));letter-spacing:.06em;color:var(--math-ink-3);
 }
 .wb-ink__badge[hidden]{display:none}
 .wb-ink__close{
   margin-left:auto;width:22px;height:22px;display:grid;place-items:center;
   border:0;border-radius:var(--math-radius-sm);background:none;color:var(--math-ink-3);
-  font-size:15px;line-height:1;cursor:pointer;
+  font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
 .wb-ink__close:hover{background:var(--math-surface);color:var(--math-foreground)}
-.wb-ink__note{margin:7px 0 0;font-size:11.5px;line-height:1.65;color:var(--math-ink-3)}
+.wb-ink__note{margin:7px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.65;color:var(--math-ink-3)}
 .wb-ink__steps{margin:8px 0 0;padding:0;list-style:none}
 .wb-ink__step{padding:7px 0;border-top:1px solid var(--math-border)}
 .wb-ink__step:first-child{border-top:0;padding-top:2px}
 .wb-ink__no{
-  display:block;font-family:var(--math-font-mono);font-size:10.5px;
+  display:block;font-family:var(--math-font-mono);font-size:calc(10.5px * var(--math-fs));
   letter-spacing:.06em;color:var(--math-ink-4);
 }
 .wb-ink__text{
   margin-top:3px;padding:3px 5px;border-radius:var(--math-radius-sm);
-  font-size:13.5px;line-height:1.7;color:var(--math-foreground);
+  font-size:calc(13.5px * var(--math-fs));line-height:1.7;color:var(--math-foreground);
   background:var(--math-surface);outline:none;white-space:pre-wrap;
 }
 .wb-ink__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint)}
-.wb-ink__cmt{margin:5px 0 0;font-size:11.5px;line-height:1.7;color:var(--math-ink-2)}
+.wb-ink__cmt{margin:5px 0 0;font-size:calc(11.5px * var(--math-fs));line-height:1.7;color:var(--math-ink-2)}
 .wb-ink__tone{
   display:inline-block;margin-right:5px;padding:0 5px;border-radius:999px;
-  font-size:10.5px;line-height:1.6;background:var(--math-surface);color:var(--math-ink-3);
+  font-size:calc(10.5px * var(--math-fs));line-height:1.6;background:var(--math-surface);color:var(--math-ink-3);
 }
 /* 语气标只有三种，颜色跟着走 —— 扫一眼就知道哪一步要留意 */
 .wb-ink__step[data-tone="ok"] .wb-ink__tone{color:var(--math-state-success)}
@@ -781,7 +783,7 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 .wb-ink__acts[hidden]{display:none}
 .wb-ink__btn{
   height:26px;padding:0 10px;border:1px solid var(--math-border);border-radius:6px;
-  background:none;font:inherit;font-size:12px;line-height:1;color:var(--math-ink-3);cursor:pointer;
+  background:none;font:inherit;font-size:calc(12px * var(--math-fs));line-height:1;color:var(--math-ink-3);cursor:pointer;
 }
 .wb-ink__btn:hover{background:var(--math-surface);color:var(--math-foreground)}
 .wb-ink__btn:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}

@@ -63,7 +63,7 @@ need = {
   '板面选择器样式' => '.wb-theme{',
   '网格疏密区' => 'id="wb-grids"',
   '网格疏密选择器样式' => '.wb-grid{',
-  '画布底色跟着主题' => 'background:var(--wb-board,#fff)',
+  '画布底色跟着主题' => 'background:var(--wb-board,var(--math-background))',
   '题库脚本' => 'whiteboard-problems.js',
   '分析按钮' => 'id="wb-act-analysis"',
   '答案按钮' => 'id="wb-act-answer"',

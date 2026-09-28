@@ -238,6 +238,9 @@ input:where([type="button"], [type="reset"], [type="submit"]),
 body {
   background: var(--math-background);
   color: var(--math-foreground);
+  /* 字重走令牌：中文小字号在 400 下笔画偏细（用户提的"文字有点细"）。
+     想在显示设置里再调，改 tokens.css 里那一个数即可。 */
+  font-weight: var(--math-weight-body, 400);
 }
 
 td,

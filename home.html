@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>首页</title>
+    <!-- 阅读与显示设置：首屏前应用（字号方案 / 亮中暗配色）-->
+    <script src="assets/js/display.js"></script>
     <link rel="stylesheet" href="assets/css/tokens.css">
     <link rel="stylesheet" href="assets/css/base.css">
     <script src="assets/js/lucide.min.js"></script>
@@ -277,7 +279,7 @@
     </footer>
 
     <style id="shell-styles">
-.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:12px;color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:13px;color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}body{padding-top:0}
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:calc(13px * var(--math-fs));color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}body{padding-top:0}
 </style>
 
     <style id="page-styles">
@@ -374,12 +376,12 @@
       }.axis-origin{ fill: var(--math-primary); }.axis-origin-label{
         fill: var(--math-primary);
         font-family: var(--math-font-mono);
-        font-size: 13px;
+        font-size:calc(13px * var(--math-fs));
         font-weight: 600;
       }.axis-num{
         fill: var(--math-ink-2);
         font-family: var(--math-font-mono);
-        font-size: 13px;
+        font-size:calc(13px * var(--math-fs));
       }.formula-block{
         display: flex;
         align-items: baseline;
@@ -389,7 +391,7 @@
       }.formula{
         font-family: var(--math-font-math);
         font-style: italic;
-        font-size: 1.5rem;
+        font-size:calc(1.5rem * var(--math-fs));
         line-height: 1.3;
         color: var(--math-foreground);
         font-variant-numeric: tabular-nums;

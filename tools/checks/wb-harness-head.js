@@ -179,6 +179,25 @@ var window = {
   addEventListener: function () {}
 };
 
+/* 「阅读与显示」的桩：白板板面与整站配色共用同一个真值，这里就是那个真值。
+   （display.js 在真实页面里干的也是这几件事：写 localStorage、派一个事件。） */
+var __displayState = { theme: 'light', fs: 'std' };
+window.WK_DISPLAY = {
+  themes: ['light', 'mid', 'dark'],
+  sizes: ['std', 'lg', 'xl'],
+  keys: { theme: 'wkmath.display.theme', fs: 'wkmath.display.fs' },
+  get: function () { return { theme: __displayState.theme, fs: __displayState.fs }; },
+  set: function (patch) {
+    if (patch && this.themes.indexOf(patch.theme) >= 0) __displayState.theme = patch.theme;
+    if (patch && this.sizes.indexOf(patch.fs) >= 0) __displayState.fs = patch.fs;
+    window.localStorage.setItem(this.keys.theme, __displayState.theme);
+    window.localStorage.setItem(this.keys.fs, __displayState.fs);
+    var h = __capture.docHandlers && __capture.docHandlers['wk:display'];
+    if (h) h({ type: 'wk:display', detail: { theme: __displayState.theme, fs: __displayState.fs } });
+    return __displayState;
+  }
+};
+
 /* 造一个指针事件 */
 function pe(x, y, opts) {
   opts = opts || {};

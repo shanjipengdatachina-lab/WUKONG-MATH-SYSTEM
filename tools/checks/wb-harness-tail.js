@@ -1405,6 +1405,25 @@ WB.setShowProblem(true);
 WB.redraw();
 assert(document.getElementById('wb-step-0').hidden === false, '题面恢复后台阶框回来');
 
+/* ============================================================
+   16. 板面主题与「阅读与显示」的配色是同一个真值
+   ------------------------------------------------------------
+   两个开关各写各的状态迟早会打架（在板里选黑板、设置页却还写着亮色）。
+   所以只留一份：在板里切 = 整站跟着切；设置里切 = 板面跟着换。
+   ============================================================ */
+WB.setTheme('dark');
+eq(window.localStorage.getItem('wkmath.display.theme'), 'dark', '在白板里切「黑板」＝整站配色切到暗色');
+eq(__displayState.theme, 'dark', '写进的是那一份真值，不是白板自己另存一份');
+eq(__displayState.fs, 'std', '切板面不碰字号（白板管不着字号）');
+eq(WB.theme().key, 'dark', '板面确实是黑板');
+WB.setTheme('white');
+eq(window.localStorage.getItem('wkmath.display.theme'), 'light', '切回「白板」＝整站配色回到亮色');
+
+/* 设置页那边改了配色（真实页面里 display.js 会派一个 wk:display）→ 板面当场跟着换 */
+window.WK_DISPLAY.set({ theme: 'mid' });
+eq(WB.theme().key, 'mid', '设置里选「中色」→ 板面当场换成中板');
+eq(WB.state.strokes.length, 0, '换板面只是换配色，不该产生笔迹');
+
 /* ---- 收尾 ---- */
 WB.clearAll();
 WB.applyProblem(null);

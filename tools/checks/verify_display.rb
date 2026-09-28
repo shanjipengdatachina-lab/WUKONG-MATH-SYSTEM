@@ -1,0 +1,209 @@
+# encoding: UTF-8
+# 阅读与显示设置体检：三包配色齐不齐、字号是不是真的全站可缩放、对比度够不够、开关接没接上
+#
+# 为什么要有这份体检：
+#   · "深色下某个东西还是白的"这种毛病，肉眼要翻完整站才可能发现，而且换个人就漏 —— 逐令牌比对才守得住。
+#   · 724 处字号是脚本改的，脚本改完必须能证明"没有漏乘"，不能靠抽查。
+#   · "文字太浅看不清"是用户最早提的问题，所以把对比度算出来钉在这里，退回去就报错。
+ROOT = (ENV['WKMATH_ROOT'] || File.expand_path('../..', __dir__)).dup.force_encoding('UTF-8')
+
+def read(rel)
+  File.read(File.join(ROOT, rel), encoding: 'UTF-8')
+end
+
+tokens = read('assets/css/tokens.css')
+base   = read('assets/css/base.css')
+disp   = read('assets/js/display.js')
+wb     = read('assets/js/whiteboard.js')
+pages  = Dir[File.join(ROOT, '*.html')].sort
+
+issues = []
+
+# ---------- 1. 每个页面都要在首屏前挂上启动器 ----------
+missing = pages.reject { |p| read(File.basename(p)).include?('assets/js/display.js') }
+issues << "有 #{missing.size} 个页面没挂 display.js：#{missing.map { |p| File.basename(p) }.join('、')}" unless missing.empty?
+early = pages.reject do |p|
+  html = read(File.basename(p))
+  i_disp = html.index('assets/js/display.js')
+  i_css  = html.index('assets/css/tokens.css')
+  i_disp && i_css && i_disp < i_css
+end
+issues << "有 #{early.size} 个页面把 display.js 放在了样式表之后（首屏会先白后暗）" unless early.empty?
+issues << '启动器没在 tokens.css 之前解析（会闪）' if pages.empty?
+
+# ---------- 2. 字号：全站可缩放，且只乘一次 ----------
+naked = 0
+double = 0
+pages.each do |p|
+  html = read(File.basename(p))
+  naked += html.scan(/font-size:\s*\d*\.?\d+(px|rem)/).size
+  naked += html.scan(/font-size:\s*clamp\(/).size
+  double += html.scan(/font-size:calc\(var\(--math-text/).size
+end
+issues << "还有 #{naked} 处 font-size 没乘 --math-fs（选了字号也不会变）" if naked.positive?
+issues << "有 #{double} 处双重放大（引用处又乘了一次）" if double.positive?
+%w[--math-fs --math-weight-body].each do |t|
+  issues << "tokens.css 里缺 #{t}" unless tokens.include?("#{t}:")
+end
+issues << '两档字号乘数没定义（lg / xl）' unless
+  tokens.include?('html[data-wk-fs="lg"]') && tokens.include?('html[data-wk-fs="xl"]')
+issues << '正文字重没走令牌（base.css 的 body 没用 --math-weight-body）' unless
+  base.include?('font-weight: var(--math-weight-body')
+
+# ---------- 3. 三包配色：逐个颜色令牌比对 ----------
+def block_of(css, selector)
+  m = css.match(/#{Regexp.escape(selector)}\s*\{(.*?)\n\}/m)
+  m ? m[1] : ''
+end
+
+def tokens_in(block)
+  out = {}
+  block.scan(/(--math-[a-z0-9-]+)\s*:\s*([^;]+);/).each { |k, v| out[k] = v.strip }
+  out
+end
+
+root_tokens = tokens_in(block_of(tokens, ':root'))
+# 只比"颜色"令牌：尺寸、圆角、字体栈、间距与主题无关，不该被要求重定义
+def color_token?(value)
+  value =~ /\A#[0-9a-fA-F]{3,8}\z/ || value =~ /\Argba?\(/ || value =~ /color-mix/ ? true : false
+end
+color_names = root_tokens.select { |_k, v| color_token?(v) }.keys.sort
+issues << '在 tokens.css 里没找到颜色令牌（解析失败）' if color_names.empty?
+
+{ 'mid' => '中色', 'dark' => '暗色' }.each do |theme, cn|
+  block = block_of(tokens, %(html[data-wk-theme="#{theme}"]))
+  issues << "tokens.css 里没有 #{cn} 那一包（html[data-wk-theme=\"#{theme}\"]）" if block.empty?
+  have = tokens_in(block)
+  miss = color_names.reject { |k| have.key?(k) }
+  issues << "#{cn}缺 #{miss.size} 个颜色令牌：#{miss.join('、')}（深色下会留着亮色，可能白底白字）" unless miss.empty?
+  extra = have.keys.reject { |k| root_tokens.key?(k) }
+  issues << "#{cn}里出现了 :root 没有的令牌：#{extra.join('、')}（大概是写错了名字）" unless extra.empty?
+end
+
+# ---------- 4. 对比度：用户提的"看不清"要有可核对的线 ----------
+def rgb_of(hex)
+  return nil unless hex =~ /\A#([0-9a-fA-F]{6})\z/
+  m = Regexp.last_match(1)
+  [m[0, 2].to_i(16), m[2, 2].to_i(16), m[4, 2].to_i(16)]
+end
+
+def lum(hex)
+  c = rgb_of(hex)
+  return nil if c.nil?
+  parts = c.map do |v|
+    x = v / 255.0
+    x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055)**2.4
+  end
+  parts[0] * 0.2126 + parts[1] * 0.7152 + parts[2] * 0.0722
+end
+
+def contrast(a, b)
+  la = lum(a)
+  lb = lum(b)
+  return nil if la.nil? || lb.nil?
+  hi, lo = [la, lb].max, [la, lb].min
+  (hi + 0.05) / (lo + 0.05)
+end
+
+# 亮色就是 :root；中/暗各取自己那一包，缺的键回落到 :root（回落也要算出来，才能暴露"没覆盖"）
+PALETTES = { '亮色' => root_tokens.merge({}) }
+{ '中色' => 'mid', '暗色' => 'dark' }.each do |cn, theme|
+  PALETTES[cn] = root_tokens.merge(tokens_in(block_of(tokens, %(html[data-wk-theme="#{theme}"]))))
+end
+
+# 正文/次级正文/说明文字的下限；ink-4 是"最次要信息 + 占位符"，给 3:1
+LIMITS = {
+  '--math-foreground' => 4.5,
+  '--math-ink-2'      => 4.5,
+  '--math-ink-3'      => 4.5,
+  '--math-ink-4'      => 3.0,
+  '--math-primary'    => 3.0
+}
+PALETTES.each do |cn, pal|
+  bg = pal['--math-background']
+  LIMITS.each do |tok, min|
+    fg = pal[tok]
+    r = contrast(fg, bg)
+    next if r.nil? # 非十六进制（如 rgba 的半透明色）不参与计算
+    issues << format('%s：%s(%s) 压在背景(%s)上只有 %.2f:1，低于 %.1f:1',
+                     cn, tok, fg, bg, r, min) if r < min
+  end
+  # 主色底上的字：按钮那种"亮蓝底压深字 / 深蓝底压白字"
+  r = contrast(pal['--math-primary-foreground'], pal['--math-primary'])
+  issues << format('%s：主色底上的字(%s on %s)只有 %.2f:1，低于 4.5:1',
+                   cn, pal['--math-primary-foreground'], pal['--math-primary'], r) if r && r < 4.5
+end
+
+# ---------- 5. 启动器本身：键名、默认值、坏值回落 ----------
+%w[wkmath.display.theme wkmath.display.fs].each do |k|
+  issues << "display.js 里没有 #{k}" unless disp.include?(k)
+end
+issues << 'display.js 没有"认不出来的值回落默认"' unless disp.include?("allowed.indexOf(v) >= 0 ? v : dflt")
+issues << 'display.js 没有用 THEME_ATTR 写配色（或名字空间写错了）' unless disp.include?("THEME_ATTR = 'data-wk-theme'")
+issues << 'display.js 没有用 FS_ATTR 写字号属性' unless disp.include?("FS_ATTR = 'data-wk-fs'")
+# 通用的 data-theme 会被环境/扩展抢走（踩过：选了暗色却还是亮色，内存与存储却都是暗的）。
+# 我们的读写必须待在自己的名字空间里。
+issues << 'display.js 又用回通用的 data-theme 了（会被运行环境抢走）' if disp.include?("setAttribute('data-theme'")
+issues << 'display.js 没有广播 wk:display（白板要靠它换板面）' unless disp.include?("'wk:display'")
+issues << 'display.js 没有对外接口 window.WK_DISPLAY' unless disp.include?('window.WK_DISPLAY =')
+
+# ---------- 6. 设置页那两行 ----------
+set = read('settings.html')
+%w[set-fs set-theme].each do |id|
+  issues << "设置页缺 ##{id}" unless set.include?("id=\"#{id}\"")
+end
+%w[std lg xl].each do |v|
+  issues << "设置页字号缺「#{v}」这一档" unless set.include?("data-wk-fs=\"#{v}\"")
+end
+%w[light mid dark].each do |v|
+  issues << "设置页配色缺「#{v}」这一档" unless set.include?("data-wk-theme=\"#{v}\"")
+end
+issues << '设置页的字号/配色按钮没有 aria-pressed（读屏看不出当前是哪档）' unless
+  set.scan(/data-wk-fs="\w+" aria-pressed=/).size == 3
+issues << '设置页缺「阅读与显示」这一节' unless set.include?('阅读与显示')
+issues << '配色按钮缺预览色块（用户看不到那一档长什么样）' unless
+  set.scan(/disp-dot disp-dot--\w+/).size == 3
+
+# ---------- 7. 白板与图谱跟随 ----------
+%w[DISPLAY_TO_BOARD BOARD_TO_DISPLAY function reconcileTheme function pushThemeToDisplay].each do |needle|
+  issues << "whiteboard.js 缺 #{needle}（板面与整站配色没接成同一份真值）" unless wb.include?(needle)
+end
+issues << 'whiteboard.js 没有监听 wk:display（设置里改了配色，板面不跟着换）' unless wb.include?("addEventListener('wk:display'")
+issues << 'whiteboard.js 的 setTheme 没把配色写回设置' unless wb.include?('pushThemeToDisplay(key)')
+# 画布/浮层不许再有写死的白底白字（深色下就是一块白斑）。
+# 按"规则"而不是按"行"看：多行规则里那一行不一定带着选择器，按行判会漏也会误报。
+# 认过的例外只有两处，写在这儿、说清理由 —— 加新的必须同时写理由：
+#   · forum.html 的 .bn-*：轮播图控件压在图片与压暗层上，白字白点在任何配色下都对（同播放器控件）
+#   · settings.html 的 .disp-dot--light：那是"亮色那一档长什么样"的实物样本，
+#     它**必须**是写死的白，跟着当前配色变就没意义了
+WHITE_OK = { 'forum.html' => /^\.bn-/, 'settings.html' => /^\.disp-dot--light$/ }.freeze
+
+def white_rules(html)
+  out = []
+  html.scan(/([^{}]*)\{([^{}]*)\}/).each do |sel, body|
+    # 白底白字有两种写法：#fff 和 rgba(255,255,255,…)。
+    # 后者踩过一次：悬浮工具条写死 rgba(255,255,255,.86)，深色下成了一大块白板。
+    next unless body =~ /(?:background|color):\s*(#fff|rgba\(\s*255\s*,\s*255\s*,\s*255)/i
+    out << sel.strip.split(/\s+/).last.to_s
+  end
+  out
+end
+
+pages.each do |p|
+  name = File.basename(p)
+  found = white_rules(read(name))
+  next if found.empty?
+  allow = WHITE_OK[name]
+  stray = allow ? found.reject { |s| s =~ allow } : found
+  issues << "#{name} 里还有写死的 #fff：#{stray.uniq.join('、')}（深色下会突兀）" unless stray.empty?
+end
+
+puts "页面：#{pages.size} 个，全部挂了启动器；字号可缩放 #{pages.size} 页"
+puts "配色令牌：:root 里 #{color_names.size} 个颜色令牌，中色 / 暗色逐一对齐"
+puts '对比度：亮 / 中 / 暗三套的正文、次级、说明、次要、主色均已计算'
+unless issues.empty?
+  puts
+  issues.each { |i| puts "  ✗ #{i}" }
+  exit 1
+end
+puts '阅读与显示体检全部通过 ✓'

@@ -101,7 +101,7 @@ body[data-scroll-locked="true"] {
 .shell-cmdk__esc {
   flex: 0 0 auto;
   font-family: var(--math-font-mono);
-  font-size: 11px;
+  font-size:calc(11px * var(--math-fs));
   color: var(--math-ink-4);
   border: 1px solid var(--math-border);
   border-radius: var(--math-radius-xs);
@@ -117,7 +117,7 @@ body[data-scroll-locked="true"] {
 .shell-cmdk__group {
   padding: 10px 10px 6px;
   font-family: var(--math-font-mono);
-  font-size: 11px;
+  font-size:calc(11px * var(--math-fs));
   letter-spacing: 0.08em;
   color: var(--math-ink-4);
 }
@@ -157,7 +157,7 @@ body[data-scroll-locked="true"] {
 .shell-cmdk__item-meta {
   flex: 0 0 auto;
   font-family: var(--math-font-mono);
-  font-size: 11px;
+  font-size:calc(11px * var(--math-fs));
   color: var(--math-ink-3);
 }
 .shell-cmdk__empty {
@@ -172,7 +172,7 @@ body[data-scroll-locked="true"] {
   gap: 14px;
   padding: 10px 16px;
   border-top: 1px solid var(--math-border);
-  font-size: 11px;
+  font-size:calc(11px * var(--math-fs));
   color: var(--math-ink-4);
 }
 .shell-cmdk__key {
@@ -401,7 +401,7 @@ body .editor-media {
   border: 1px dashed var(--math-line-strong);
   border-radius: var(--math-radius-sm);
   color: var(--math-ink-3);
-  font-size: 12px;
+  font-size:calc(12px * var(--math-fs));
 }
 body .editor-preview {
   min-height: 280px;
@@ -425,7 +425,7 @@ body .tag--editing input {
   border: 0;
   background: transparent;
   font-family: var(--math-font-sans);
-  font-size: 12px;
+  font-size:calc(12px * var(--math-fs));
   color: var(--math-foreground);
   outline: none;
 }
