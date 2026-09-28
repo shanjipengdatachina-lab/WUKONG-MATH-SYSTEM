@@ -8,18 +8,100 @@
    两条硬规矩（设计 §2 #3 / #6）：
    1. 「分析」只给"该往哪儿看"，**不许出现答案** —— 给了答案，前面几级台阶就没人走了。
    2. 「答案」分干净与带注释两态：注释解释"为什么这么想、哪里易错"。
+
+   关于「分析要针对当前这道题」（用户原话："分析是针对当前的题目做的分析；
+   所以当用户切换题目的时候，分析窗口是自动更新的"）：
+   台阶的**骨架**是通用的（看问什么 → 抄条件 → 找那一步 → 算一遍），这是解题的次序，
+   与哪道题无关；但台阶里**必须带上这道题自己的东西**，否则换了题看起来一模一样 ——
+   用户就是因为这个判的"没更新"。所以下面从题面里**复述**两件事填进台阶：
+   题面上写着的数、题面上出现的运算。**只复述，不推断**：
+   圈出来的数就是题面上印着的字，认出来的运算就是题面上印着的符号，复述不可能算错；
+   一道题里一个数都没有（或没有符号）时，自动退回通用说法，不留空话。
    ========================================================================== */
 window.WK_ANALYSIS = (function () {
   'use strict';
 
   /* 通用台阶：与具体题目无关，所以**任何题都有得推**。
-     刻意一个数字都不写 —— 一写数字就变成答案了。 */
+     刻意一个数字都不写 —— 一写数字就变成答案了。
+     第 2 / 3 步是"兜底说法"：题面里抠不出数或符号时用它。 */
   var SCAFFOLD = [
     '先只看题目在问什么：要求的到底是哪一个量？把它写进下面的框里。',
     '把题目给出的条件逐条抄下来，一条一行，先不管怎么算。',
     '想一想：这些条件和要求的东西之间，隔着哪一步运算？把那一步写下来。',
     '按你写的那一步算一遍，中间结果留在框里。先别急着对答案。'
   ];
+
+  var MAX_SLOTS = 6;   /* 台阶里最多列几个数 —— 列一长串就成抄题了 */
+
+  /* 题面上写着的数。**跳过紧跟在字母 / 角标后面的数字**：
+     「∠1」「⊙O」「第 3 章」里的那个数是**名字**，不是题给的量，列进"圈出这些数"会误导。 */
+  function numbersIn(text) {
+    var s = String(text || '');
+    var out = [], seen = {};
+    var re = /\d+(?:\.\d+)?/g, m;
+    while ((m = re.exec(s)) !== null) {
+      var before = m.index > 0 ? s.charAt(m.index - 1) : '';
+      if (/[A-Za-z∠⊙°√∛²³]/.test(before)) continue;
+      var v = m[0];
+      if (seen[v]) continue;
+      seen[v] = 1;
+      out.push(v);
+      if (out.length >= MAX_SLOTS) break;
+    }
+    return out;
+  }
+
+  /* 题面上出现的运算 —— **只认符号**，不判断"这道题该先算哪一步"（那是学生要想的）。
+     顺序就是下面的顺序，与题面里出现的先后无关：读起来更整齐。 */
+  var OPS = [
+    [/[√∛]/, '开方'],
+    [/[²³]|\^/, '乘方'],
+    [/[×*]/, '乘法'],
+    [/[÷\/]/, '除法'],
+    [/[+＋]/, '加法'],
+    [/[−\-]/, '减法'],
+    [/[≥≤]|[><]/, '不等号'],
+    [/=/, '等号'],
+    [/∥/, '平行'],
+    [/≌/, '全等'],
+    [/[△]/, '三角形'],
+    [/∠/, '角'],
+    [/⊙/, '圆']
+  ];
+
+  function opsIn(text) {
+    var s = String(text || '');
+    var out = [];
+    for (var i = 0; i < OPS.length; i++) {
+      if (OPS[i][0].test(s)) out.push(OPS[i][1]);
+    }
+    return out.slice(0, 3);   /* 最多三种：再多就不是"看一眼"了 */
+  }
+
+  function joinList(list) {
+    return list.join('、');
+  }
+
+  /* 台阶：按**当前这道题**生成。
+     data = cardData()，形如 { text, tag, extra }；拿不到就退回通用骨架。 */
+  function steps(data) {
+    var text = data && data.text ? String(data.text) : '';
+    var nums = numbersIn(text);
+    var ops = opsIn(text);
+    var out = SCAFFOLD.slice();
+
+    if (nums.length) {
+      out[1] = '把题面上写着的数先圈出来：' + joinList(nums) +
+        '。剩下的条件一条一行抄下来，先不管怎么算。';
+    }
+    if (ops.length) {
+      /* 写"记号与运算"、不写"运算"：这张表里既有加减乘除，也有角 / 平行 / 全等这类**记号** ——
+         对着一个「平行」说"这是运算"，读起来就不像人写的了。 */
+      out[2] = '先认一认题面上的记号与运算：' + joinList(ops) +
+        '。再想：它们和要求的量之间，隔着哪一步？把那一步写下来。';
+    }
+    return out;
+  }
 
   /* 预置答案：只给演示题库里几道最简单的题，其余走 NO_ANSWER。
      result 是"这道题的答案长什么样"，断言用它守住"分析里不许出现答案"这条规矩。 */
@@ -64,12 +146,6 @@ window.WK_ANALYSIS = (function () {
   /* 没预置答案时怎么说 —— 要老实，不要编 */
   var NO_ANSWER = '本版的分析与答案是预置演示数据，这道题还没预置标准答案。接入真服务后，这里会由 AI 给出。';
 
-  /* 台阶：本版对所有题给同一套通用台阶。
-     接真服务时这里接收题面文字（data.text），返回该题专属的 1~5 级台阶。 */
-  function steps(data) {
-    return SCAFFOLD.slice();
-  }
-
   /* 答案：没有预置就返回 null，由界面层给出 NO_ANSWER 的说明 */
   function answer(problemId) {
     return PRESET[problemId] || null;
@@ -80,6 +156,8 @@ window.WK_ANALYSIS = (function () {
     answer: answer,
     NO_ANSWER: NO_ANSWER,
     SCAFFOLD: SCAFFOLD,
-    PRESET: PRESET
+    PRESET: PRESET,
+    numbersIn: numbersIn,
+    opsIn: opsIn
   };
 })();

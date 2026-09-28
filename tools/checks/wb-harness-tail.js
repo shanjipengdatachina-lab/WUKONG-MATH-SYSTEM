@@ -1661,6 +1661,149 @@ window.WK_DISPLAY.set({ theme: 'mid' });
 eq(WB.theme().key, 'mid', '设置里选「中色」→ 板面当场换成中板');
 eq(WB.state.strokes.length, 0, '换板面只是换配色，不该产生笔迹');
 
+/* ============================================================
+   17. 分析跟着题走 + 题面自己的两颗控件
+   ------------------------------------------------------------
+   · "分析是针对当前的题目做的分析；所以当用户切换题目的时候，分析窗口是自动更新的"
+   · "当前题目也应该有个和分析面板一样的关闭按钮和拖动，当鼠标hover的时候出现"
+   外观那一半（四颗 ✕ 同长相同、题库外壳跟分析面板同一套、字号档位）由 verify_whiteboard.rb
+   逐条比；这里只验**行为**：切题后内容真的换、控件什么时候出现、指纹能不能拖。
+   ============================================================ */
+
+/* ---- 17a 台阶按当前这道题生成 ---- */
+var sA17 = AN.steps({ text: '−7 + 3', tag: '七上 · 有理数' });
+var sB17 = AN.steps({ text: '3x + 5 = 11', tag: '七上 · 一元一次方程' });
+assert(sA17.length === sB17.length && sA17.length >= 1, '两种题都给得出台阶');
+assert(sA17.join(' ') !== sB17.join(' '),
+  '换一道题，分析就不再是同一段话（用户当初就是这么判"没更新"的）');
+assert(sA17.join(' ').indexOf('7、3') >= 0,
+  '台阶里写上了这道题自己的数（实际「' + sA17[1] + '」）');
+
+/* 「只复述、不推断」的可检形式：台阶里出现的每个数，都得能在题面上找到。
+   编出来的数是这条底线的反面 —— 一旦出现，立刻红。 */
+var nums17 = sA17.join(' ').match(/\d+(?:\.\d+)?/g) || [];
+var stray17 = nums17.filter(function (n) { return '−7 + 3'.indexOf(n) < 0; });
+eq(stray17.length, 0, '台阶里出现的数都在题面上（凭空编出来的是 ' + JSON.stringify(stray17) + '）');
+
+/* 角标里的数字是**名字**不是量：「∠1」的那个 1 不该进"圈出这些数" */
+eq(AN.numbersIn('∠1 = 65°').join(','), '65', '∠1 里的 1 不算题给的量（那是角的名字）');
+eq(AN.numbersIn('点 A(−3, 4) 到 x 轴').join(','), '3,4', '只挑题面上印着的数');
+eq(AN.numbersIn('这道题一个数都没有').length, 0, '一个数都没有时返回空');
+eq(AN.opsIn('3x + 5 = 11').join(','), '加法,等号', '认得出题面上的记号（顺序固定，没出现的不认）');
+assert(AN.opsIn('√12 × √27 − √8 + x ÷ 2 = 7 > 3').length <= 3, '记号最多列三种（再多就不是"看一眼"了）');
+
+/* 抠不出东西时退回通用骨架：不留空话，也不硬编 */
+eq(AN.steps({ text: '' }).join('|'), AN.SCAFFOLD.join('|'), '题面为空 → 退回通用台阶');
+eq(AN.steps(null).join('|'), AN.SCAFFOLD.join('|'), '拿不到题面 → 退回通用台阶（不抛错）');
+
+/* ---- 17b 面板里那行「正对」：切题时它先变 ---- */
+WB.clearAll();
+WB.applyProblem('7a-01');
+WB.openAnalysis();
+WB.redraw();
+var subj17 = elById('wb-panel-subject');
+eq(subj17.hidden, false, '板上有题时，「正对」那一行露出');
+eq(subj17.textContent.indexOf('正对：'), 0, '它写的是"正对：…"（实际「' + subj17.textContent + '」）');
+assert(subj17.textContent.indexOf('−7 + 3') >= 0, '写的是当前这道题的题面');
+var subjectOnA17 = subj17.textContent;
+var thinkOnA17 = elById('wb-think-list').innerHTML;
+
+WB.applyProblem('7a-13');
+WB.redraw();
+assert(subj17.textContent !== subjectOnA17, '换一道题 → 「正对」跟着换（' + subjectOnA17 + ' → ' + subj17.textContent + '）');
+assert(subj17.textContent.indexOf('3x + 5 = 11') >= 0, '落款换成了新那道题');
+assert(elById('wb-think-list').innerHTML !== thinkOnA17, '台阶也跟着换了（不是只换了个落款）');
+assert(elById('wb-think-list').innerHTML.indexOf('3、5、11') >= 0,
+  '新题的台阶里是它自己的数（实际「' + elById('wb-think-list').textContent.slice(0, 80) + '」）');
+assert(elById('wb-think-list').innerHTML.indexOf('contenteditable') < 0, '换题之后台阶仍然是只读的');
+
+/* 板上没题时不留一行"正对："
+   （题面收起时面板整个收起，这里直接看渲染结果） */
+WB.setShowProblem(false);
+WB.redraw();
+eq(elById('wb-panel').hidden, true, '题面收起 → 面板收起，「正对」不会孤零零留在板上');
+WB.setShowProblem(true);
+WB.redraw();
+
+/* ---- 17c 题面那两颗控件：什么时候出现 ---- */
+var ctl17 = elById('wb-problem-ctl');
+WB.setProblemHover(false);
+WB.setProblemCtlHot(false);
+WB.redraw();
+eq(ctl17.hidden, true, '鼠标没压到题面上 → 控件藏着');
+
+WB.setProblemHover(true);
+WB.redraw();
+eq(ctl17.hidden, false, '鼠标压到题面上 → 控件露出来');
+assert(ctl17.style.left && ctl17.style.top, '控件的位置是算出来写上去的（不是靠 CSS 摆的）');
+
+/* 贴在题面框**上沿的外面**、右端对齐题面右缘 —— 不占演算区，这是这块设计的硬要求 */
+var v17 = WB.view();
+var box17 = WB.problemLayout();
+var ctlW17 = 50, ctlH17 = 24;   /* 桩里量不到 offsetWidth/Height，取代码里的兜底值 */
+var expL17 = Math.min(Math.max(4, v17.x + (box17.x + box17.w) * v17.scale - ctlW17),
+                      Math.max(4, 1200 - ctlW17 - 4));
+var expT17 = Math.min(Math.max(4, v17.y + box17.y * v17.scale - ctlH17 - 6),
+                      Math.max(4, 700 - ctlH17 - 4));
+eq(Math.round(parseFloat(ctl17.style.left)), Math.round(expL17), '控件右端对齐题面右缘');
+eq(Math.round(parseFloat(ctl17.style.top)), Math.round(expT17), '控件落在题面上沿之上（不压正文）');
+var boxTop17 = v17.y + box17.y * v17.scale;
+assert(parseFloat(ctl17.style.top) + ctlH17 <= boxTop17 + 0.01 || parseFloat(ctl17.style.top) === 4,
+  '控件整个在题面框外面（题面贴到板顶时才允许压回 4px）');
+
+/* 跟着板面平移缩放走：题面搬了，控件跟着搬（它不是"屏幕像素的工具窗口"） */
+var ctlL17 = parseFloat(ctl17.style.left);
+var ctlT17 = parseFloat(ctl17.style.top);
+WB.state.problemAt.x = WB.state.problemAt.x + 120;
+WB.redraw();
+assert(Math.round(parseFloat(ctl17.style.left)) === Math.round(ctlL17 + 120),
+  '题面右移 120 → 控件也右移 120（跟着板面走）');
+eq(Math.round(parseFloat(ctl17.style.top)), Math.round(ctlT17), '横向移动不改变纵向位置');
+WB.state.problemAt.x = WB.state.problemAt.x - 120;
+WB.redraw();
+
+/* 指针停在控件上时不许自己消失：不然会出现"鼠标正压着它、它却没了"，点不着还一闪一闪 */
+WB.setProblemHover(false);
+WB.setProblemCtlHot(true);
+WB.redraw();
+eq(ctl17.hidden, false, '指针停在控件上 → 控件留着（画布的 pointerleave 不算"离开题面"）');
+WB.setProblemCtlHot(false);
+WB.redraw();
+eq(ctl17.hidden, true, '指针离开控件、也没压着题面 → 收回去');
+
+/* ---- 17d ⠿ 指纹是真的能拖（不是只做了个样子） ---- */
+WB.setProblemHover(true);
+WB.redraw();
+var dragFrom17 = WB.state.problemAt.x;
+var grip17 = elById('wb-problem-grip');
+assert(!!grip17._h.pointerdown, '指纹上挂着 pointerdown（按上去有反应）');
+__ctxCalls.captured = null;
+grip17._h.pointerdown(pe(400, 300));
+eq(WB.state.active && WB.state.active.mode, 'problem', '按指纹 → 进入"搬题面"模式（不是落笔）');
+eq(__ctxCalls.captured, 1, '指纹那边把指针捕获设回画布 —— 后续 pointermove 才回得到画布的 onMove');
+assert(ctl17.classList.contains('is-dragging'), '拖的时候控件挂上 is-dragging（光标跟着变"正抓着"）');
+canvasEl._h.pointermove(pe(460, 300));
+assert(WB.state.problemAt.x > dragFrom17, '拖指纹 → 题面跟着往右走（原来 ' + dragFrom17 + '，现在 ' + WB.state.problemAt.x + '）');
+canvasEl._h.pointerup(pe(460, 300));
+eq(WB.state.active, null, '松手 → 拖动结束');
+eq(ctl17.classList.contains('is-dragging'), false, '松手后 is-dragging 摘掉（光标变回"可抓"）');
+
+/* ---- 17e 题面那颗 ✕ 收起题面（可逆，跟工具条上那颗同一个动作） ---- */
+WB.setShowProblem(true);
+WB.setProblemHover(true);
+WB.redraw();
+var close17 = elById('wb-problem-close');
+assert(!!close17._h.click, '题面的 ✕ 上挂着 click');
+close17._h.click();
+eq(WB.state.showProblem, false, '点题面的 ✕ → 题面收起');
+eq(elById('wb-problem-toggle').getAttribute('aria-pressed'), 'false', '工具条上那颗「题面」跟着灭掉（同一个动作一个状态）');
+WB.redraw();
+eq(ctl17.hidden, true, '题面收起后控件自己也没了（不留一个飘在空板上的按钮）');
+WB.setShowProblem(true);
+WB.redraw();
+eq(ctl17.hidden, false, '题面回来 → 控件也回来（收起是可逆的，不是把题删了）');
+eq(WB.state.problemId, '7a-13', '✕ 只是收起题面，没有把题从板上删掉');
+
 /* ---- 收尾 ---- */
 WB.clearAll();
 WB.applyProblem(null);

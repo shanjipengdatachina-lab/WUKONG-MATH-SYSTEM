@@ -391,7 +391,12 @@ issues << '面板的长内容不能自己滚（超出画布的部分就够不着
 # 浮层的"尺寸规矩"（用户原话：「面板有点丑，圆角需要统一起来；标题字号也有问题」）：
 #   容器圆角 = --math-radius-lg（16px，跟底部工具条 / 题库面板 .wb-bank 的 16px 同档）
 #   里面的按钮与条目 = --math-radius-md（8px，跟 .wb-item / .wb-dock__btn 同档）
-#   标题 13px（跟 .wb-bank__title 同档，比正文大一档）· 正文 13.5px
+#   标题 13px（跟 .wb-bank__title 同档）· 正文 12.5px · 注释 12px · 微标 11px
+#
+# 正文那一档原来写的是 13.5 —— **比标题 13 还大**，而这个面板自己的规矩写的就是
+# "标题比正文大一档"，抬标题那一次把正文一起抬上去了。用户报过：
+# 「解析面板的正文字号是不是不规范，有点大」。守线现在要求两件事：
+# 正文必须是 12.5，且**必须比标题小**（13 > 12.5 > 12 > 11 一档一档往下走）。
 { '.wb-panel' => '分析答案面板', '.wb-menu' => '保存菜单', '.wb-ink' => '转译窗口',
   '.wb-bank' => '题库面板', '.wb-pop' => '画笔设置浮层' }.each do |sel, name|
   issues << "#{name} #{sel} 的圆角没统一（容器应为 16px = --math-radius-lg）" unless
@@ -403,12 +408,93 @@ end
   issues << "#{name} #{sel} 的圆角没统一（里面的东西应为 8px = --math-radius-md）" unless
     html[/#{Regexp.escape(sel)}\{[^}]*border-radius:var\(--math-radius-md\)/m]
 end
-issues << '面板标题（tab）字号跟正文一般大 —— 层次是平的（标题 13px / 正文 13.5px）' unless
+issues << '面板标题（tab）字号不是 13px（层次靠它压住正文）' unless
   html[/\.wb-tab\{[^}]*font-size:calc\(13px \* var\(--math-fs\)\)/m]
 issues << '转译窗口标题字号不是 13px（跟其它面板标题不齐）' unless
   html[/\.wb-ink__title\{[^}]*font-size:calc\(13px \* var\(--math-fs\)\)/m]
-issues << '条目正文没跟题库条目同一档（应 13.5px）' unless
-  html[/\.wb-tile__text\{[^}]*font-size:calc\(13.5px \* var\(--math-fs\)\)/m]
+issues << '条目正文不是 12.5px —— 正文必须比标题（13px）小一档（用户报过"正文有点大"）' unless
+  html[/[}\n]\s*\.wb-tile__text\{[^}]*font-size:calc\(12\.5px \* var\(--math-fs\)\)/m]
+issues << '转译面板里的条目正文没跟台阶正文同档（应 12.5px，两块同屏并排）' unless
+  html[/[}\n]\s*\.wb-ink \.wb-tile__text\{[^}]*font-size:calc\(12\.5px \* var\(--math-fs\)\)/m]
+
+# 四颗 ✕ 必须长得一模一样（用户原话："题库的关闭按钮和样式应该和分析面板一致"）。
+# 分析面板 / 题库 / 转译 / 题面各有一颗，四个是同一个动作 —— 以前各写各的：
+# 分析面板 22×22 无边框文字 ×、题库 24×24 带边框的 svg x、转译 22×22、题面压根没有。
+# 这里逐条比对"尺寸与配色"，**margin-left 这类排版项不参与**（转译那颗要多一个 margin-left:auto
+# 把自己顶到标题栏右端，那是排版不是长相）。
+CLOSE_PROPS = %w[width height display place-items border border-radius background color
+                 font-size line-height cursor].freeze
+CLOSE_SELECTORS = { '.wb-panel__close' => '分析面板', '.wb-bank__close' => '题库面板',
+                    '.wb-ink__close' => '转译窗口', '.wb-pctl__close' => '题面控件' }.freeze
+
+def close_face(css, sel)
+  body = css[/#{Regexp.escape(sel)}\{([^}]*)\}/m, 1]
+  return nil unless body
+  CLOSE_PROPS.map do |prop|
+    m = body.match(/(?:\A|;)\s*#{Regexp.escape(prop)}:([^;}]+)/)
+    "#{prop}:#{m ? m[1].strip : '(缺)'}"
+  end.join('; ')
+end
+
+close_faces = CLOSE_SELECTORS.map { |sel, name| [name, sel, close_face(html, sel)] }
+close_faces.each do |name, sel, face|
+  issues << "#{name}里找不到 #{sel} 那颗 ✕（四个 ✕ 应共用同一套长相）" if face.nil?
+end
+close_ref = close_faces.find { |_, sel, _| sel == '.wb-panel__close' }.to_a.last
+close_faces.each do |name, sel, face|
+  next if face.nil? || close_ref.nil? || face == close_ref
+  issues << "#{name}的 ✕（#{sel}）跟分析面板那颗长得不一样：\n      #{face}\n      基准：#{close_ref}"
+end
+issues << '题库那颗 ✕ 还是图标（分析面板是文字 ×，两边得是同一种东西）' if
+  html[/<button type="button" class="wb-bank__close"[\s\S]{0,240}?<i data-lucide="x">/m]
+issues << '题库 ✕ 的 svg 规则还留着（✕ 已经是文字 × 了，这条是死样式）' if
+  html.include?('.wb-bank__close svg')
+
+# 题库那张卡片的外壳要跟分析面板同一套（用户原话："题库的关闭按钮和样式应该和分析面板一致"）。
+# 以前是白底 + 24px 投影 + 铺底又拉分隔线的标题栏 + 15px 抓手，并排一开就不像一个系统里的东西。
+issues << '题库面板还是白底（没跟分析面板一样走 --math-popover）' unless
+  html[/\.wb-bank\{[^}]*background:var\(--math-popover\)/m]
+issues << '题库面板的投影没跟分析面板同一档（应 var(--math-shadow-1)）' unless
+  html[/\.wb-bank\{[^}]*box-shadow:var\(--math-shadow-1\)/m]
+bank_head = html[/\.wb-bank__head\{([^}]*)\}/m, 1].to_s
+issues << '题库的标题栏还铺着底色（分析面板的标题栏不铺底）' if bank_head.include?('background:')
+issues << '题库的标题栏还拉着一条分隔线（分析面板的标题栏没有）' if bank_head.include?('border-bottom')
+issues << '题库的抓手不是 14px（分析面板是 14px）' unless
+  html[/\.wb-bank__grip\{[^}]*width:14px/m]
+issues << '题库拖动时的投影没跟分析面板同一档（应 var(--math-shadow-2)）' unless
+  html[/\.wb-bank\.is-dragging\{[^}]*box-shadow:var\(--math-shadow-2\)/m]
+
+# 题面自己那两颗控件（用户原话："当前题目也应该有个和分析面板一样的关闭按钮和拖动，
+# 当鼠标hover的时候出现"）。守四件事：标签齐、默认藏着、hover 才露、指纹真能拖。
+issues << '题面控件没挂上（找不到 #wb-problem-ctl）' unless html.include?('id="wb-problem-ctl"')
+issues << '题面控件缺收起按钮（#wb-problem-close）' unless html.include?('id="wb-problem-close"')
+issues << '题面控件缺拖动指纹（#wb-problem-grip）' unless html.include?('id="wb-problem-grip"')
+issues << '题面控件默认没藏起来（应带 hidden，鼠标压到题面上才出现）' unless
+  html[/<div class="wb-pctl" id="wb-problem-ctl" hidden>/]
+issues << '题面控件的显隐没跟 hover 挂钩（应 problemCtlVisible）' unless
+  wbjs[/function problemCtlVisible\(\)[\s\S]{0,400}?state\.problemHover/m]
+issues << '指针停在控件上时控件会自己消失（缺 problemCtlHot 这一路）' unless
+  wbjs.include?('problemCtlHot') && wbjs.include?("to.closest('#wb-problem-ctl')")
+issues << '题面控件没跟着板面平移缩放走（应走 boardToScreen，它不是"屏幕像素的工具窗口"）' unless
+  wbjs[/function layoutProblemCtl\([\s\S]{0,900}?boardToScreen\(/m]
+issues << '题面的拖动指纹是假的（没走 beginProblemDrag，按上去拖不动）' unless
+  wbjs[/pctlGrip[\s\S]{0,400}?beginProblemDrag\(e\)/m]
+issues << '画布上那条把手没走 beginProblemDrag（两个入口必须同一条路）' unless
+  wbjs[/hitProblemHandle\(pt\.x, pt\.y\)\)\s*\{\s*beginProblemDrag\(e\);/m]
+
+# 分析必须跟着题走（用户原话："分析是针对当前的题目做的分析；所以当用户切换题目的时候，
+# 分析窗口是自动更新的"）。两处一起守：
+#   ① 面板里有一行写清"正对着哪道题" —— 切题时它先变，眼睛立刻能确认；
+#   ② 台阶本身按这道题生成（只复述题面上的数与记号，不推断）。
+issues << '分析面板没写"正对"哪道题（切了题看不出来分析跟没跟过去）' unless
+  html.include?('id="wb-panel-subject"')
+issues << '「正对」那一行只写了个空标签，渲染时没往上填东西' unless
+  wbjs[/byId\('wb-panel-subject'\)[\s\S]{0,400}?'正对：'/m]
+anjs = File.read(File.join(ROOT, 'assets/js/whiteboard-analysis.js'), encoding: 'UTF-8')
+issues << '分析台阶还是与题目无关的一段死文案（切题后一个字都不变）' unless
+  anjs[/function steps\(data\)[\s\S]{0,900}?numbersIn\(text\)/m]
+issues << '台阶里抠的"题面上的数"没有实现（找不到 numbersIn）' unless anjs.include?('function numbersIn(')
+issues << '台阶里认的"题面上的记号"没有实现（找不到 opsIn）' unless anjs.include?('function opsIn(')
 
 # 浮窗宽度只有一个数（用户问："面板宽度是不是应该一致"）。
 # 四个浮窗原来各写各的：分析答案 280 / 题库 300 / 画笔设置 320 / 转写 360 —— 并排一开就不齐。

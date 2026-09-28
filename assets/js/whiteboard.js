@@ -163,6 +163,7 @@
     problemAt: { x: 16, y: 16 },  // 题面在板上的位置（世界坐标）
     problemHover: false,          // 鼠标是否正压在题面上（决定那层很浅的底要不要浮现）
     problemGripHot: false,        // 鼠标是否正压在题面的把手上（决定光标是不是"可抓"）
+    problemCtlHot: false,         // 鼠标是否正压在题面那两颗控件上（✕ / 指纹）
     tipAt: null,                  // 笔尖 / 橡皮圆圈的位置（画布内 CSS 像素）；null = 不画
     external: null,              // 其它页面送来的内容 { text, tag, extra }
     /* 「分析 / 答案」面板（DOM 浮层，一个框、两个 tab）。
@@ -545,6 +546,24 @@
     syncCursor();
   }
 
+  /* ---------- 题面自己的两颗控件（✕ 收起 / ⠿ 拖动） ----------
+     什么时候露出来：**鼠标压到题面上、或压在控件自己身上**。
+     为什么要带上第二条：指针从题面挪到控件上时，画布会先收到 pointerleave（题面那层底本来要收），
+     只看 problemHover 的话，控件会在指针正压着它的时候消失 —— 点不着，还会一明一灭地闪。
+     控件是 DOM 浮层，所以这两件事要各自记一份（problemHover / problemCtlHot），合成一个判据。 */
+  function problemCtlEl() { return byId('wb-problem-ctl'); }
+
+  function problemCtlVisible() {
+    return !!state.showProblem && (!!state.problemHover || !!state.problemCtlHot);
+  }
+
+  function setProblemCtlHot(on) {
+    on = !!on;
+    if (state.problemCtlHot === on) return;
+    state.problemCtlHot = on;
+    redraw();
+  }
+
   /* 画布上的光标由两件事决定，集中在一处免得互相覆盖。
      **题面把手优先于笔尖**：题面在任何工具下都能拖，压在把手上时必须让人看出"可抓"，
      否则用着笔的时候路过把手，光标被藏掉、圈又画在那里，"能抓"这件事就完全看不出来了。
@@ -792,9 +811,30 @@
   function layoutOverlays(ctx) {
     ctx = ctx || overlayCtx();
     syncSide(ctx);
+    layoutProblemCtl(ctx);
     layoutPanel(ctx);
     layoutInkPanel(ctx);
     layoutSaveMenu();
+  }
+
+  /* 题面控件的位置：贴在题面框**上沿的外面**、右端与题面右缘对齐。
+     跟着板面的平移缩放走（它是题面的一部分，跟题面一起搬），所以用 boardToScreen 换算 ——
+     分析面板那一类"工具窗口"用的是屏幕像素，两者不是一回事。
+     贴到板顶放不下时压回可视区（题面拖到最上面的时候），不让它出界；
+     left / top 各夹一道，窗口变窄、缩放变化都不会把它甩出去。 */
+  function layoutProblemCtl(ctx) {
+    var el = problemCtlEl();
+    if (!el || !el.style) return;
+    toggleHidden(el, !(problemCtlVisible() && !!ctx.has));
+    if (el.hidden) return;
+    var wrapW = wrap.clientWidth || state.view.w;
+    var wrapH = wrap.clientHeight || state.view.h;
+    var w = el.offsetWidth || 50;
+    var h = el.offsetHeight || 24;
+    var x = boardToScreen(ctx.box.x + ctx.box.w, ctx.box.y).x - w;
+    var y = boardToScreen(ctx.box.x, ctx.box.y).y - h - 6;
+    el.style.left = Math.min(Math.max(4, x), Math.max(4, wrapW - w - 4)) + 'px';
+    el.style.top = Math.min(Math.max(4, y), Math.max(4, wrapH - h - 4)) + 'px';
   }
 
   function layoutPanel(ctx) {
@@ -1041,6 +1081,18 @@
     if (tThink && tThink.setAttribute) {
       tThink.setAttribute('aria-selected', thinkOn ? 'true' : 'false');
       if (tAnswer) tAnswer.setAttribute('aria-selected', thinkOn ? 'false' : 'true');
+    }
+
+    /* ---- 「正对」那一行：这道分析是对着哪道题做的 ----
+       它是"分析跟着题走"最直接的证据：切题时这一行先变，眼睛立刻能确认
+       （用户原话："分析是针对当前的题目做的分析；所以当用户切换题目的时候，分析窗口是自动更新的"）。
+       台阶本身也已经按这道题生成（见 whiteboard-analysis.js 的 steps），两处一起换。 */
+    var subject = byId('wb-panel-subject');
+    if (subject) {
+      var cur = cardData();
+      var line = (cur && cur.text) ? ('正对：' + (cur.tag ? cur.tag + '　' : '') + cur.text) : '';
+      setText(subject, line);
+      toggleHidden(subject, !line);
     }
 
     /* ---- tab 1：思路（只读） ---- */
@@ -1715,6 +1767,31 @@
     redraw();
   }
 
+  /* 起拖题面。**两个入口共用这一条**：
+     ① 画布上按在把手（左侧那条竖条 / 题面的标题行）里；② 按在题面控件那颗指纹上。
+     收在一个函数里，"题面能不能拖"才只有一个判据 —— 不会出现"按标题行能拖、按指纹拖不动"。
+
+     指纹是 DOM 浮层（不在画布上，画布收不到那一下 pointerdown），所以这里要自己调
+     canvas.setPointerCapture：之后的 pointermove / pointerup 才会照旧回到画布上的 onMove / onUp。 */
+  function beginProblemDrag(e) {
+    if (!state.showProblem) return false;
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    var cp = canvasPoint(e);
+    state.active = {
+      mode: 'problem', id: e.pointerId,
+      sx: cp.sx, sy: cp.sy,
+      ax: state.problemAt.x, ay: state.problemAt.y
+    };
+    if (canvas && typeof canvas.setPointerCapture === 'function') {
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+    }
+    var el = problemCtlEl();
+    if (el && el.classList) el.classList.add('is-dragging');
+    setProblemHover(true);   /* 拖的时候那层底保持浮现：看得见自己搬的是哪一块 */
+    syncUI();
+    return true;
+  }
+
   function onDown(e) {
     if (state.active) return;
     /* 在板上落笔就算"离开那个小菜单了"—— 保存菜单跟着收起（跟系统的下拉一个脾气） */
@@ -1733,17 +1810,11 @@
     var pt = pointFrom(e);
     if (!pt) return;   /* 坐标不可用：宁可不落笔，也不画出鬼线 */
 
-    /* 抓住题面左侧的把手 → 拖动题面，不落笔。
+    /* 抓住题面的把手 → 拖动题面，不落笔。
        为什么不整块都能拖：题面是演算区，正文上还要能圈已知条件（见 hitProblemHandle 注释）。
        判据用世界坐标：缩放 / 平移之后，把手跟着题面一起变。 */
     if (state.showProblem && hitProblemHandle(pt.x, pt.y)) {
-      var cp = canvasPoint(e);
-      state.active = {
-        mode: 'problem', id: e.pointerId,
-        sx: cp.sx, sy: cp.sy,
-        ax: state.problemAt.x, ay: state.problemAt.y
-      };
-      syncUI();
+      beginProblemDrag(e);
       return;
     }
 
@@ -1905,6 +1976,8 @@
     if (act.mode === 'problem') {
       /* 挪位置不算一次编辑：不进撤销栈（撤销是给笔画和擦除用的）。
          位置也不写 localStorage —— 用户没要求记住它，多一个持久化字段就多一处迁移。 */
+      var pc = problemCtlEl();
+      if (pc && pc.classList) pc.classList.remove('is-dragging');
       redraw();
       syncUI();
       return;
@@ -2005,10 +2078,16 @@
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onUp);
-    /* 鼠标离开画布时把题面那层底收掉，别留在板上 */
-    canvas.addEventListener('pointerleave', function () {
-      setProblemGripHot(false);
-      setProblemHover(false);
+    /* 鼠标离开画布时把题面那层底收掉，别留在板上。
+       **但指针挪到题面控件上时不算"离开题面"**：控件正露着、人正要点它，
+       这时候把底收掉、控件跟着藏掉，就成了"鼠标压着它它却没了"。 */
+    canvas.addEventListener('pointerleave', function (e) {
+      var to = e && e.relatedTarget;
+      var ontoCtl = !!(to && to.closest && to.closest('#wb-problem-ctl'));
+      if (!ontoCtl) {
+        setProblemGripHot(false);
+        setProblemHover(false);
+      }
       /* 鼠标离开画布，笔尖那个圈也要收掉，别留在板边上 */
       if (state.tipAt) { state.tipAt = null; scheduleRedraw(); }
     });
@@ -2046,6 +2125,29 @@
     var panelClose = byId('wb-panel-close');
     if (panelClose && panelClose.addEventListener) {
       panelClose.addEventListener('click', function () { closeAnalysis(); });
+    }
+
+    /* 题面自己那两颗控件（鼠标压到题面上才出现）：
+       · ✕ → 收起题面（跟工具条上那颗「题面」是同一个动作，可逆：再点一下就回来）
+       · ⠿ → 拖动题面，走 beginProblemDrag（跟按在标题行上同一条路） */
+    var pctl = problemCtlEl();
+    if (pctl && pctl.addEventListener) {
+      pctl.addEventListener('pointerenter', function () { setProblemCtlHot(true); });
+      pctl.addEventListener('pointerleave', function () { setProblemCtlHot(false); });
+    }
+    var pctlClose = byId('wb-problem-close');
+    if (pctlClose && pctlClose.addEventListener) {
+      pctlClose.addEventListener('click', function () { setShowProblem(false); });
+    }
+    var pctlGrip = byId('wb-problem-grip');
+    if (pctlGrip && pctlGrip.addEventListener) {
+      pctlGrip.addEventListener('pointerdown', function (e) {
+        if (state.active) return;
+        if (e.pointerType === 'mouse' && typeof e.button === 'number' && e.button !== 0) return;
+        beginProblemDrag(e);
+        /* 按住那一刻指针已经在指纹上，控件要留着自己 —— 不然手一松就没了 */
+        setProblemCtlHot(true);
+      });
     }
 
     /* 注释开关：只切答案里那些注释的显隐 */
@@ -3126,6 +3228,10 @@
     badPoints: function () { return badPoints; },
     setProblemHover: setProblemHover,
     setProblemGripHot: setProblemGripHot,
+    setProblemCtlHot: setProblemCtlHot,
+    problemCtlVisible: problemCtlVisible,
+    layoutProblemCtl: layoutProblemCtl,
+    beginProblemDrag: beginProblemDrag,
     problemGrip: problemGrip,
     hitProblem: hitProblem,
     hitProblemHandle: hitProblemHandle,

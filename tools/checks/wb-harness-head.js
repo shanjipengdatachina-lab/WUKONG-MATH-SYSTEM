@@ -87,8 +87,8 @@ function elById(id) {
 var canvasEl = elById('wb-canvas');
 canvasEl.getContext = function () { return ctx; };
 canvasEl.getBoundingClientRect = function () { return { left: 0, top: 0 }; };
-canvasEl.setPointerCapture = function () {};
-canvasEl.releasePointerCapture = function () {};
+canvasEl.setPointerCapture = function (id) { __ctxCalls.captured = id; };
+canvasEl.releasePointerCapture = function () { __ctxCalls.released = true; };
 canvasEl.width = 0;
 canvasEl.height = 0;
 canvasEl.clientWidth = 1200;
@@ -172,6 +172,12 @@ elById('wb-ink-text').hidden = true;
 elById('wb-ink-text').setAttribute('hidden', 'hidden');
 elById('wb-ink-badge').hidden = true;
 elById('wb-ink-acts').hidden = true;
+
+/* 题面自己那两颗控件（✕ 收起 / ⠿ 拖动）：真实 HTML 里带 hidden，鼠标压到题面上才出现 */
+elById('wb-problem-ctl').hidden = true;
+elById('wb-problem-ctl').setAttribute('hidden', 'hidden');
+elById('wb-problem-close').setAttribute('aria-label', '收起题面');
+elById('wb-problem-grip').setAttribute('aria-hidden', 'true');
 
 var window = {
   devicePixelRatio: 2,

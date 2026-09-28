@@ -16,7 +16,13 @@
 .reader-shell.wb-shell{display:grid;grid-template-columns:minmax(0,1fr);min-height:100vh}
 .wb-stage{grid-column:1;grid-row:1}
 
-/* ---------- 悬浮题库面板（可拖动） ---------- */
+/* ---------- 悬浮题库面板（可拖动） ----------
+   这一张与分析答案面板是**同一个东西的两种内容**（都是"浮在板上的一个框"），
+   所以外壳取同一套令牌：同一个底色（--math-popover）、同一个投影（--math-shadow-1）、
+   标题栏不铺底也不拉分隔线、抓手 14px、✕ 是一条 22×22 的实心条 ——
+   用户原话："题库的关闭按钮和样式应该和分析面板一致"。
+   以前这两张各写各的：题库是白底 + 24px 投影 + 带边框的 svg ✕，并排一开就不像一个系统里的东西。
+   注意：这段样式会被 tools/build_graph_css.rb 抄成图谱页的 .mm-card__*，改这里要重跑那个脚本。 */
 .wb-bank{
   position:absolute;left:20px;bottom:80px;z-index:7;
   width:var(--math-float-w);max-width:calc(100% - 24px);
@@ -24,33 +30,30 @@
   display:flex;flex-direction:column;
   overflow:hidden;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-background);
-  box-shadow:0 16px 44px rgba(15,23,42,.16);
+  background:var(--math-popover);
+  box-shadow:var(--math-shadow-1);
 }
 .wb-bank[hidden]{display:none}
 .wb-bank__head{
-  display:flex;align-items:center;gap:8px;flex:none;
+  display:flex;align-items:center;gap:7px;flex:none;
   padding:9px 10px 9px 9px;
-  border-bottom:1px solid var(--math-border);
-  background:var(--math-surface);
   cursor:grab;touch-action:none;
   -webkit-user-select:none;user-select:none;
 }
 .wb-bank__head:active{cursor:grabbing}
-.wb-bank__grip{flex:none;width:15px;height:15px;color:var(--math-ink-4)}
+.wb-bank__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
 .wb-bank__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .wb-bank__count{margin-left:auto;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-4);font-variant-numeric:tabular-nums}
+/* ✕：声明体跟 .wb-panel__close / .wb-ink__close / .wb-pctl__close **逐字节一样**（守线逐条比过）。
+   四个 ✕ 是同一个动作，就得是同一个东西 —— 改一处要改四处，别各写各的。 */
 .wb-bank__close{
-  flex:none;display:inline-flex;align-items:center;justify-content:center;
-  width:24px;height:24px;padding:0;
-  border:1px solid transparent;border-radius:var(--math-radius-sm);
-  background:none;color:var(--math-ink-3);cursor:pointer;
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);
+  flex:none;width:22px;height:22px;display:grid;place-items:center;
+  border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
+  font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
-.wb-bank__close svg{width:14px;height:14px}
-.wb-bank__close:hover{border-color:var(--math-border);color:var(--math-foreground)}
-.wb-bank__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
-.wb-bank.is-dragging{box-shadow:0 22px 60px rgba(15,23,42,.22)}
+.wb-bank__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-bank__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-bank.is-dragging{box-shadow:var(--math-shadow-2)}
 .wb-bank.is-dragging .wb-bank__head{cursor:grabbing}
 .wb-filters{display:flex;flex-wrap:wrap;gap:6px;flex:none;padding:10px 12px 4px}
 .wb-filters button{
@@ -112,6 +115,34 @@
   background:var(--wb-board,var(--math-background));touch-action:none;
 }
 #wb-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;overscroll-behavior:contain}
+
+/* ---------- 题面自己的两个控件（鼠标压到题面上才出现） ----------
+   ✕ 收起题面、⠿ 拖动把手 —— 跟分析面板标题栏上那一套是同一个样子、同一个动作。
+   用户原话："当前题目也应该有个和分析面板一样的关闭按钮和拖动，当鼠标hover的时候出现"。
+
+   两条设计约束：
+   1. **落在题面框的外面**（上沿之上一线）。题面是给学生圈已知条件、划关键词的演算区，
+      控件压进正文就等于把那一小块地吃了；浮在框外，平时又不出现，正文一整块都还是学生的。
+   2. 把手是**真的能拖**：按在指纹上就能搬题面（处理函数走 beginProblemDrag，跟按在
+      标题行上同一条路），不是只做了个样子。 */
+.wb-pctl{
+  position:absolute;left:0;top:0;z-index:3;
+  display:inline-flex;align-items:center;gap:2px;
+  padding:2px;
+  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
+  background:var(--math-popover);box-shadow:var(--math-shadow-1);
+}
+.wb-pctl[hidden]{display:none}
+/* 收起题面那颗 ✕：声明体跟三个面板的 ✕ 逐字节一样（守线逐条比过） */
+.wb-pctl__close{
+  flex:none;width:22px;height:22px;display:grid;place-items:center;
+  border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
+  font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
+}
+.wb-pctl__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-pctl__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.wb-pctl__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4);cursor:grab;touch-action:none}
+.wb-pctl.is-dragging .wb-pctl__grip{cursor:grabbing}
 
 /* ---------- 悬浮工具条（底部居中，平时半透明，用时全亮） ---------- */
 .wb-dock{
@@ -383,9 +414,13 @@
 
    **浮层的尺寸规矩**（跟底部工具条 / 题库面板那一套对齐，别再各写各的）：
      容器圆角 = --math-radius-lg（16px）· 里面的按钮与条目 = --math-radius-md（8px）
-     标题 13px / 600 · 正文 13.5px · 注释 12px · 计数与微标 11px
+     标题 13px / 600 · 正文 12.5px · 注释 12px · 计数与微标 11px
    用户原话：「面板有点丑，圆角需要统一起来；标题字号也有问题」—— 之前容器是 8px、
-   里面的 tab 是 4px，比别的面板小一圈；标题又跟正文一样大（12.5），层次是平的。 */
+   里面的 tab 是 4px，比别的面板小一圈；标题又跟正文一样大（12.5），层次是平的。
+   用户又说：「解析面板的正文字号是不是不规范，有点大」—— 查下来是**正文压过了标题**：
+   标题 13、正文 13.5，而这个面板自己的规矩写的就是"标题比正文大一档"，抬标题那一次把正文
+   一起抬上去了。正文落回 **12.5px**（站里已有的那一档），于是 13 > 12.5 > 12 > 11
+   一档一档往下走，框里最大的字是标题 —— 用户说的"正文有点大"就是它。 */
 .wb-panel{
   position:absolute;left:0;top:0;z-index:4;
   width:var(--math-float-w);max-width:calc(100% - 24px);padding:8px 10px 9px;
@@ -413,6 +448,14 @@
 .wb-panel__close:hover{background:var(--math-surface);color:var(--math-foreground)}
 .wb-panel__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
 .wb-panel__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
+/* 「正对」那一行：比正文小一档、灰一档 —— 它是"这道分析对着哪道题"的落款，不是正文。
+   单行省略号：题干可以很长（"点 C 在线段 AB 上，AB = 10……"），这一行不许把面板撑高。 */
+.wb-panel__subject{
+  flex:none;margin:5px 0 0;
+  font-size:calc(11.5px * var(--math-fs));line-height:1.45;color:var(--math-ink-3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.wb-panel__subject[hidden]{display:none}
 .wb-panel__body{padding-top:7px;overflow-y:auto;min-height:0}
 .wb-panel__body[hidden]{display:none}
 .wb-think__list{margin:0;padding:0;list-style:none}
@@ -459,7 +502,9 @@
 
 
 /* ---------- 编号条目：思路 / 答案 / 转文字三处共用这一套 ----------
-   正文 13.5px 跟题库条目的正文同一档（这是要读的字）；注释 12px；编号圆点里的数字 11px。 */
+   正文 12.5px（比面板标题 13px 小一档 —— 见上面 .wb-panel 那段）；注释 12px；编号圆点里的数字 11px。
+   **跟题库条目（.wb-item__text 13.5px）故意不同档**：那是"一行一道题"的挑选列表，跟左侧导航条同一档；
+   这里是成句要读的台阶，面板里最大的字必须是标题。 */
 .wb-tile{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:6px 0;border-top:1px solid var(--math-border)}
 .wb-tile:first-child{border-top:0;padding-top:2px}
 .wb-tile__no{
@@ -469,7 +514,7 @@
   font-size:calc(11px * var(--math-fs));font-weight:600;
 }
 .wb-tile__text{
-  flex:1;min-width:0;font-size:calc(13.5px * var(--math-fs));line-height:1.6;color:var(--math-foreground);
+  flex:1;min-width:0;font-size:calc(12.5px * var(--math-fs));line-height:1.6;color:var(--math-foreground);
   outline:none;
 }
 .wb-tile__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint);border-radius:var(--math-radius-xs)}
@@ -738,6 +783,10 @@
               <button type="button" class="wb-panel__close" id="wb-panel-close" aria-label="收起分析与答案">×</button>
               <i data-lucide="grip-vertical" class="wb-panel__grip" aria-hidden="true"></i>
             </div>
+            <!-- 「正对」那一行：这道分析是对着**哪道题**做的。切题时它先变，
+                 一眼就能确认"分析跟着题走了"（用户原话："分析是针对当前的题目做的分析"）。
+                 单行省略号 —— 题干可能很长，这一行不许把面板撑高。 -->
+            <p class="wb-panel__subject" id="wb-panel-subject"></p>
             <div class="wb-panel__body" id="wb-pane-think" role="tabpanel" aria-labelledby="wb-tab-think">
               <ol class="wb-think__list" id="wb-think-list"></ol>
             </div>
@@ -766,6 +815,13 @@
               <button type="button" class="wb-ink__btn" id="wb-ink-clear">移除</button>
             </div>
           </div>
+
+          <!-- 题面自己的两个控件：鼠标压到题面上才出现（详见 wb-styles 里 .wb-pctl 那段注释）。
+               顺序与面板标题栏一致：先 ✕ 后指纹。 -->
+          <div class="wb-pctl" id="wb-problem-ctl" hidden>
+            <button type="button" class="wb-pctl__close" id="wb-problem-close" title="收起题面" aria-label="收起题面">×</button>
+            <i data-lucide="grip-vertical" class="wb-pctl__grip" id="wb-problem-grip" aria-hidden="true"></i>
+          </div>
         </div>
 
         <aside class="wb-bank" id="wb-bank" aria-label="题库" hidden>
@@ -773,9 +829,7 @@
             <i data-lucide="grip-vertical" class="wb-bank__grip" aria-hidden="true"></i>
             <span class="wb-bank__title">题库</span>
             <span class="wb-bank__count" id="wb-bank-count"></span>
-            <button type="button" class="wb-bank__close" id="wb-bank-close" title="关闭题库" aria-label="关闭题库">
-              <i data-lucide="x"></i>
-            </button>
+            <button type="button" class="wb-bank__close" id="wb-bank-close" title="关闭题库" aria-label="关闭题库">×</button>
           </div>
           <div class="wb-filters" id="wb-books" role="group" aria-label="按册筛选">
             <button type="button" class="is-on" data-wb-book="全部" aria-pressed="true">全部</button>
@@ -875,12 +929,15 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
   font-size:calc(11px * var(--math-fs));letter-spacing:.06em;color:var(--math-ink-3);
 }
 .wb-ink__badge[hidden]{display:none}
+/* ✕：外观跟 .wb-panel__close / .wb-bank__close / .wb-pctl__close 一致（这一条自己多一个 margin-left:auto
+   把按钮顶到标题栏最右端，那是排版、不算"长相"）。守线逐条比对四个 ✕ 的尺寸与配色声明。 */
 .wb-ink__close{
   margin-left:auto;width:22px;height:22px;display:grid;place-items:center;
   border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
   font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
 }
 .wb-ink__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+.wb-ink__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
 /* 抓手指纹：分析答案面板的标题栏上有，转译窗口原来漏了 ——
    这两块是**同屏并排**的（都在右侧、都能拖），长得就该一样：指纹挂在标题栏最右端、收起按钮的右边。
    题库那张卡片（以及图谱页那两张同源的卡片）是更早的一版，指纹在左端 —— 那一栏没有 tab 抢地方，
@@ -898,7 +955,7 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
 }
 .wb-ink .wb-tile__text{
   margin-top:3px;padding:3px 5px;border-radius:var(--math-radius-md);
-  font-size:calc(13.5px * var(--math-fs));line-height:1.7;color:var(--math-foreground);
+  font-size:calc(12.5px * var(--math-fs));line-height:1.7;color:var(--math-foreground);
   background:var(--math-surface);outline:none;white-space:pre-wrap;
 }
 .wb-ink .wb-tile__text:focus{background:var(--math-background);box-shadow:0 0 0 2px var(--math-primary-tint)}

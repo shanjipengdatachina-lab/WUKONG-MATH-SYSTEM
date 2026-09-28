@@ -92,9 +92,7 @@
           <span class="mm-panel__kind" id="mm-panel-kind"></span>
           <span class="mm-card__title" id="mm-panel-title">节点信息</span>
           <span class="mm-card__count" id="mm-panel-no"></span>
-          <button type="button" class="mm-card__close" id="mm-panel-close" aria-label="关闭节点信息">
-            <i data-lucide="x"></i>
-          </button>
+          <button type="button" class="mm-card__close" id="mm-panel-close" aria-label="关闭节点信息">×</button>
         </div>
         <div class="mm-card__body" id="mm-panel-body"></div>
       </aside>
@@ -104,9 +102,7 @@
         <div class="mm-card__head" id="mm-search-head">
           <i data-lucide="grip-vertical" class="mm-card__grip"></i>
           <span class="mm-card__title">定位知识点</span>
-          <button type="button" class="mm-card__close" id="mm-search-close" aria-label="关闭搜索">
-            <i data-lucide="x"></i>
-          </button>
+          <button type="button" class="mm-card__close" id="mm-search-close" aria-label="关闭搜索">×</button>
         </div>
         <div class="mm-card__body">
           <div class="mm-search">
@@ -279,35 +275,38 @@ body{padding-top:0}
 
 /* ==== 与白板同源的悬浮面板 / 工具条 / 浮层 ==== */
 /* MM-SHARED-BEGIN */
-/* ---------- 悬浮题库面板（可拖动） ---------- */
+/* ---------- 悬浮题库面板（可拖动） ----------
+   这一张与分析答案面板是**同一个东西的两种内容**（都是"浮在板上的一个框"），
+   所以外壳取同一套令牌：同一个底色（--math-popover）、同一个投影（--math-shadow-1）、
+   标题栏不铺底也不拉分隔线、抓手 14px、✕ 是一条 22×22 的实心条 ——
+   用户原话："题库的关闭按钮和样式应该和分析面板一致"。
+   以前这两张各写各的：题库是白底 + 24px 投影 + 带边框的 svg ✕，并排一开就不像一个系统里的东西。
+   注意：这段样式会被 tools/build_graph_css.rb 抄成图谱页的 .mm-card__*，改这里要重跑那个脚本。 */
 .mm-card{position:absolute;left:20px;bottom:80px;z-index:7;
   width:var(--math-float-w);max-width:calc(100% - 24px);
   max-height:min(560px,72vh);
   display:flex;flex-direction:column;
   overflow:hidden;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-background);
-  box-shadow:0 16px 44px rgba(15,23,42,.16);}
+  background:var(--math-popover);
+  box-shadow:var(--math-shadow-1);}
 .mm-card[hidden]{display:none}
-.mm-card__head{display:flex;align-items:center;gap:8px;flex:none;
+.mm-card__head{display:flex;align-items:center;gap:7px;flex:none;
   padding:9px 10px 9px 9px;
-  border-bottom:1px solid var(--math-border);
-  background:var(--math-surface);
   cursor:grab;touch-action:none;
   -webkit-user-select:none;user-select:none;}
 .mm-card__head:active{cursor:grabbing}
-.mm-card__grip{flex:none;width:15px;height:15px;color:var(--math-ink-4)}
+.mm-card__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
 .mm-card__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .mm-card__count{margin-left:auto;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-4);font-variant-numeric:tabular-nums}
-.mm-card__close{flex:none;display:inline-flex;align-items:center;justify-content:center;
-  width:24px;height:24px;padding:0;
-  border:1px solid transparent;border-radius:var(--math-radius-sm);
-  background:none;color:var(--math-ink-3);cursor:pointer;
-  transition:color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1);}
-.mm-card__close svg{width:14px;height:14px}
-.mm-card__close:hover{border-color:var(--math-border);color:var(--math-foreground)}
-.mm-card__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:2px}
-.mm-card.is-dragging{box-shadow:0 22px 60px rgba(15,23,42,.22)}
+/* ✕：声明体跟 .wb-panel__close / .wb-ink__close / .wb-pctl__close **逐字节一样**（守线逐条比过）。
+   四个 ✕ 是同一个动作，就得是同一个东西 —— 改一处要改四处，别各写各的。 */
+.mm-card__close{flex:none;width:22px;height:22px;display:grid;place-items:center;
+  border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
+  font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;}
+.mm-card__close:hover{background:var(--math-surface);color:var(--math-foreground)}
+.mm-card__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+.mm-card.is-dragging{box-shadow:var(--math-shadow-2)}
 .mm-card.is-dragging .mm-card__head{cursor:grabbing}
 /* ---------- 悬浮工具条（底部居中，平时半透明，用时全亮） ---------- */
 .mm-dock{position:absolute;left:50%;bottom:18px;z-index:5;
@@ -364,6 +363,13 @@ body{padding-top:0}
 [data-mm-tip]:focus-visible::after{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0);}
 /* 工具组浮层已经展开时不再弹提示，免得两块叠在一起 */
 [data-mm-tip][aria-expanded="true"]::after{display:none}
+/* 右侧竖工具条上的提示改到**按钮左边**：默认那条是"上方居中"，
+   在一条竖排按钮里它正好盖住上面那颗 —— 用户看提示的时候，下一个要点的按钮被挡着。
+   只改这一个容器里的提示；底部那条横排工具条仍是"上方居中"（横排上方不挡东西）。 */
+.wb-side [data-mm-tip]::after{left:auto;right:calc(100% + 8px);bottom:auto;top:50%;
+  transform:translateY(-50%) translateX(2px);}
+.wb-side [data-mm-tip]:hover::after,
+.wb-side [data-mm-tip]:focus-visible::after{transform:translateY(-50%) translateX(0)}
 /* ---------- 工具组（仿 PS：同类工具合成一个格子，点开再选） ---------- */
 .mm-dock__group{position:relative;display:inline-flex;align-items:center}
 /* 格子里同时放着这一组的图标，只有当前那个露出来 */
