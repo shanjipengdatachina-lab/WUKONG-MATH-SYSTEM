@@ -682,4 +682,64 @@ canvasEl._h.pointermove(pe(onBody.x, onBody.y));
 assert(WB.state.problemGripHot === false, '压到正文上 → 把手不再亮');
 assert(canvasEl.style.cursor === '', '压到正文上 → 光标恢复十字（实际 ' + canvasEl.style.cursor + '）');
 
+/* ============================================================
+   9. 增量绘制必须自己带世界变换
+   ------------------------------------------------------------
+   用户报的"我在 A 点落笔，画笔却从别处画起、还多一条长线"。
+   真因：redraw() 结尾的 restore() 把变换退回设备像素空间，
+   而拖动途中的增量墨迹（drawTail）没有自己重设 —— 于是画的时候
+   墨按"世界坐标当 CSS 像素"画出来，一松手 redraw() 重画又对了。
+   所以只测"落定后的数据"永远看不见它，必须测绘制时用的变换。
+   ============================================================ */
+WB.clearAll();
+var dpr9 = WB.state.view.dpr || 1;
+WB.state.view.scale = 0.5;
+WB.state.view.x = 30;
+WB.state.view.y = 40;
+WB.redraw();
+
+var wantTf = { a: dpr9 * 0.5, d: dpr9 * 0.5, e: dpr9 * 30, f: dpr9 * 40 };
+var deviceTf = { a: dpr9, d: dpr9, e: 0, f: 0 };
+
+assert(!tfEq(wantTf, deviceTf),
+  '前提：世界变换与设备变换确实不同（否则这条断言是空的）');
+
+/* 单独画一笔：drawStroke 必须自己带上世界变换 */
+var solo9 = { color: '#111', width: 3, points: [{ x: 10, y: 10, p: 0.5 }, { x: 60, y: 40, p: 0.5 }] };
+WB.state.strokes.push(solo9);
+__ctxCalls.strokeTfs = [];
+WB.drawStroke(solo9);
+assert(__ctxCalls.strokeTfs.length > 0, '前提：drawStroke 确实描了边');
+assert(tfEq(__ctxCalls.strokeTfs[0], wantTf),
+  'drawStroke 自己设了世界变换（实际 ' + JSON.stringify(__ctxCalls.strokeTfs[0]) + '）');
+
+/* 拖动途中的增量墨迹：drawTail 也必须自己设 */
+solo9.points.push({ x: 90, y: 70, p: 0.5 });
+__ctxCalls.strokeTfs = [];
+WB.drawTail(solo9);
+assert(__ctxCalls.strokeTfs.length > 0, '前提：drawTail 确实描了边');
+assert(tfEq(__ctxCalls.strokeTfs[0], wantTf),
+  'drawTail 自己设了世界变换（实际 ' + JSON.stringify(__ctxCalls.strokeTfs[0]) + '）');
+
+/* 端到端：真按一下再拖一下，拖动途中的第一笔也得在世界变换下画。
+   桩里的 requestAnimationFrame 是同步的，所以 onMove 里 drawTail 先执行、
+   redraw 排在它后面 —— strokeTfs 的第 0 条就是那条增量墨迹。 */
+WB.clearAll();
+var v9 = WB.state.view;
+var px9 = v9.x + 100 * v9.scale, py9 = v9.y + 100 * v9.scale;
+canvasEl._h.pointerdown(pe(px9, py9));
+__ctxCalls.strokeTfs = [];
+canvasEl._h.pointermove(pe(px9 + 40, py9 + 25));
+var first9 = __ctxCalls.strokeTfs[0];
+assert(tfEq(first9, wantTf),
+  '拖动中的第一笔墨迹用世界变换（实际 ' + JSON.stringify(first9) + '）');
+canvasEl._h.pointerup(pe(px9 + 40, py9 + 25));
+
+/* 收尾：视图和画布都恢复原状，免得影响后面的用例 */
+WB.clearAll();
+WB.state.view.scale = 1;
+WB.state.view.x = 16;
+WB.state.view.y = 16;
+WB.redraw();
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

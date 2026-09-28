@@ -10,7 +10,7 @@ function assert(ok, label) {
   if (!ok) __fail = true;
 }
 var __fail = false;
-var __ctxCalls = { stroke: 0, fill: 0, clear: 0, fillText: 0, texts: [] };
+var __ctxCalls = { stroke: 0, fill: 0, clear: 0, fillText: 0, texts: [], strokeTfs: [] };
 
 function mkEl(tag) {
   var self = {
@@ -36,13 +36,24 @@ function mkEl(tag) {
   return self;
 }
 
+/* 变换栈：真实的 Canvas2D 里 setTransform 是"替换"、save/restore 是"压/弹"。
+   桩必须照着模拟，否则"增量绘制时用的是哪个变换"这类问题在断言里根本看不见 ——
+   真机上就是这么漏过去的（drawTail 拿设备变换当世界变换用）。 */
+var __tf = { a: 1, d: 1, e: 0, f: 0 };
+var __tfStack = [];
+function tfNow() { return { a: __tf.a, d: __tf.d, e: __tf.e, f: __tf.f }; }
+function tfEq(x, y) { return x && y && x.a === y.a && x.d === y.d && x.e === y.e && x.f === y.f; }
+
 var ctx = {
-  setTransform: function () {}, clearRect: function () { __ctxCalls.clear++; },
-  save: function () {}, restore: function () {},
+  setTransform: function (a, b, c, d, e, f) { __tf = { a: a, d: d, e: e, f: f }; },
+  clearRect: function () { __ctxCalls.clear++; },
+  save: function () { __tfStack.push(tfNow()); },
+  restore: function () { if (__tfStack.length) __tf = __tfStack.pop(); },
   beginPath: function () {}, moveTo: function () {}, lineTo: function () {},
   quadraticCurveTo: function () {}, arc: function () {},
   rect: function () {}, roundRect: function () {}, ellipse: function () {},
-  fill: function () { __ctxCalls.fill++; }, stroke: function () { __ctxCalls.stroke++; },
+  fill: function () { __ctxCalls.fill++; __ctxCalls.fillTf = tfNow(); },
+  stroke: function () { __ctxCalls.stroke++; __ctxCalls.strokeTf = tfNow(); __ctxCalls.strokeTfs.push(tfNow()); },
   measureText: function (t) { return { width: String(t).length * 9 }; },
   fillText: function (t) { __ctxCalls.fillText++; __ctxCalls.texts.push(String(t)); },
   lineWidth: 1, strokeStyle: '', fillStyle: '', lineCap: '', lineJoin: '',

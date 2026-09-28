@@ -522,8 +522,21 @@
 
   function drawStroke(s) {
     if (!s) return;
+    /* 自己设世界变换 —— 这样无论从 redraw() 里批量画，还是从指针事件里单独画一笔，都对 */
+    worldTransform();
     if (isShapeTool(s.type)) drawShape(s);
     else drawFreehand(s);
+  }
+
+  /* 世界坐标 → 位图的变换。**凡是要画世界坐标的地方，都得自己先设一次。**
+     `setTransform` 是"替换"而不是"叠加"，所以重复设是幂等的，多设无害、少设出事。
+     为什么非强调不可：`redraw()` 结尾的 `ctx.restore()` 会把变换退回**设备像素空间**，
+     于是"拖动中的增量墨迹"（drawTail）如果不自己重设，就会把世界坐标当 CSS 像素画出来 ——
+     墨不跟手、位置和粗细都错，直到松手时 `redraw()` 重画才纠正回来。
+     用户报的"落笔在 A，画笔却从别处画起、还多一条长线"就是它：**画的时候**错，一松手又对了。 */
+  function worldTransform() {
+    var v = state.view;
+    if (ctx.setTransform) ctx.setTransform(v.dpr * v.scale, 0, 0, v.dpr * v.scale, v.dpr * v.x, v.dpr * v.y);
   }
 
   function redraw() {
@@ -531,7 +544,7 @@
     if (ctx.setTransform) ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);
     ctx.clearRect(0, 0, v.w, v.h);
     ctx.save();
-    if (ctx.setTransform) ctx.setTransform(v.dpr * v.scale, 0, 0, v.dpr * v.scale, v.dpr * v.x, v.dpr * v.y);
+    worldTransform();
     if (state.grid) drawGrid();
     drawProblemLayer();
     for (var i = 0; i < state.strokes.length; i++) drawStroke(state.strokes[i]);
@@ -746,6 +759,9 @@
     var start = i === 0 ? p1 : { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
     var end = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
     ctx.save();
+    /* 这里是拖动途中的增量绘制，不在 redraw() 的管线里 —— 变换必须自己设。
+       少了这一行，墨就会按设备像素画出来：位置偏、线也变粗，松手后才被纠正。 */
+    worldTransform();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = stroke.color;
@@ -794,7 +810,10 @@
       return;
     }
 
-    var events = (typeof e.getCoalescedEvents === 'function' && e.getCoalescedEvents()) || [e];
+    /* 有的浏览器会返回**空数组**（而不是 null）—— 空数组是真值，会把后面的 `|| [e]` 短路掉，
+       于是这一次的坐标被无声丢掉，笔迹中间缺一段。空数组时退回事件本身。 */
+    var coalesced = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : null;
+    var events = (coalesced && coalesced.length) ? coalesced : [e];
 
     if (act.mode === 'erase') {
       var r = state.eraser / state.view.scale;
@@ -1687,7 +1706,9 @@
     hitProblem: hitProblem,
     hitProblemHandle: hitProblemHandle,
     drawProblemLayer: drawProblemLayer,
+    worldTransform: worldTransform,
     drawStroke: drawStroke,
+    drawTail: drawTail,
     wrapText: wrapText,
     toWorld: toWorld,
     zoomAt: zoomAt,
