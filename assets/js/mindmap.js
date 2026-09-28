@@ -330,6 +330,9 @@
     var isCollapsed = !!collapsed[node.id];
 
     var cls = ['mm-node', 'mm-node--' + node.kind];
+    // 没有底色板的节点（节 / 栏目 / 知识点…）：选中时不能沿用"主色底 + 白字"那套，
+    // 得换成"浅色底块 + 主色文字"，否则白底白字等于消失。
+    if (!BOXED[node.kind]) cls.push('is-text');
     if (node.hasChildren) cls.push('has-children');
     if (isCollapsed) cls.push('is-collapsed');
     if (isSel) cls.push('is-selected');

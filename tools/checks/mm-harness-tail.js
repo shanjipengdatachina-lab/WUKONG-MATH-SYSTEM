@@ -202,5 +202,31 @@ eq(MM.view().k, kBefore, '在面板里滚轮不会缩放图谱');
 fire(canvasEl, 'wheel', ev({ target: worldEl, deltaY: -120, ctrl: true }));
 assert(MM.view().k !== kBefore, '对照：在画布上滚轮确实缩放');
 
+/* ---- 14. 选中的纯文字节点不能"隐身" ----
+   背景：--math-primary-foreground 是 #ffffff，只有 root/book/chapter 有底色板。
+   节 / 栏目 / 知识点是纯文字，若沿用"选中 = 白字"，白底白字就整段看不见了。 */
+function classesOf(id) {
+  var parts = worldEl.innerHTML.split('data-id="' + id + '"');
+  if (parts.length < 2) return null;
+  var at = parts[0].lastIndexOf('class="');
+  if (at < 0) return null;
+  var end = parts[0].indexOf('"', at + 7);
+  return parts[0].slice(at + 7, end);
+}
+
+MM.level.set(99);
+var secNode = MM.visible().filter(function (n) { return n.kind === 'section'; })[0];
+MM.select(secNode.id);
+var secCls = classesOf(secNode.id);
+assert(!!secCls, '选中的节节点确实进了渲染结果');
+assert(secCls.indexOf('is-selected') >= 0, '节节点带着选中态');
+assert(secCls.indexOf('is-text') >= 0, '节节点被标成纯文字节点（选中态要换一种画法）');
+
+var chapNode2 = MM.visible().filter(function (n) { return n.kind === 'chapter'; })[0];
+MM.select(chapNode2.id);
+var chapCls = classesOf(chapNode2.id);
+assert(!!chapCls && chapCls.indexOf('is-text') === -1, '有底色板的章节节点不该被标成纯文字');
+MM.level.set(2);
+
 out('----');
 out(__fail ? '有失败项' : '图谱自检全部通过');

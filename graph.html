@@ -481,6 +481,10 @@ body{padding-top:0}
 .mm-node:focus-visible .mm-label{text-decoration:underline}
 .mm-node.is-selected .mm-node__box{fill:var(--math-primary);stroke:var(--math-primary)}
 .mm-node.is-selected .mm-label{fill:var(--math-primary-foreground);font-weight:600}
+/* 纯文字节点（节 / 栏目 / 知识点…）没有底色板，沿用上面那条等于把字刷成 #ffffff，
+   画在白底上就"消失"了。这类节点改成：浅色底块 + 主色文字，选中一眼能看出来。 */
+.mm-node.is-selected.is-text .mm-node__hit{fill:var(--math-primary-tint)}
+.mm-node.is-selected.is-text .mm-label{fill:var(--math-primary)}
 .mm-node.is-selected .mm-no{fill:var(--math-primary-foreground);opacity:.8}
 .mm-node.has-children.is-collapsed .mm-node__box{stroke:var(--math-line-strong)}
 .mm-node.is-on-path .mm-label{fill:var(--math-primary)}

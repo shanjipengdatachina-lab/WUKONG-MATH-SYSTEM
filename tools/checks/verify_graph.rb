@@ -150,7 +150,20 @@ issues << '层级浮层的快捷键徽标被误删了（⇧2 / ⇧3 / ⇧4 是�
 issues << '浮层项没有被标上 is-on（选中态只有读屏知道，眼睛看不到）' unless
   mini.include?("classList.add('is-on')")
 
-# ---------- 10. 浮层的事件不许泄漏到画布 ----------
+# ---------- 10. 选中的节点不许"隐身" ----------
+# --math-primary-foreground 是 #ffffff（给"主色底上的字"用的）。但只有 root / book /
+# chapter 有底色板，节 / 栏目 / 知识点只有纯文字 —— 若沿用"选中 = 白字"，
+# 白字画在白底上就整段消失（用户报过一次：点「方法速学」后节点没了）。
+tokens = File.read(File.join(ROOT, 'assets/css/tokens.css'), encoding: 'UTF-8')
+issues << 'tokens 里 --math-primary-foreground 不再是浅色，这条断言的前提变了' unless
+  tokens =~ /--math-primary-foreground:\s*#fff/i
+issues << '纯文字节点没被标上 is-text（选中时会沿用"白字"那条规则）' unless
+  mini.include?("if (!BOXED[node.kind]) cls.push('is-text')")
+issues << '选中的纯文字节点仍会把字刷成白色（白底白字 = 看不见）' unless
+  graph.include?('.mm-node.is-selected.is-text .mm-label{fill:var(--math-primary)}')
+issues << '选中的纯文字节点没有可见的底块（选中态看不出来）' unless
+  graph.include?('.mm-node.is-selected.is-text .mm-node__hit{fill:var(--math-primary-tint)}')
+# ---------- 11. 浮层的事件不许泄漏到画布 ----------
 # 浮层（节点面板 / 定位面板 / 工具条）都是 .mm-canvas 的子元素，事件会冒泡到画布。
 # 不拦的话：拖浮窗会把整张图一起平移，在面板里滚轮会变成缩放图谱。
 guard = mini.scan('if (insideOverlay(event.target)) return;').size
