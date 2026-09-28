@@ -65,5 +65,42 @@ issues << '启动时没有调用 applyDeepLink' unless mm =~ /render\(\{ fit: tr
 issues << '点名没命中时没有提示' unless mm.include?("图谱里没有「")
 issues << '自查接口没暴露 deepLink（测试要用）' unless mm.include?('deepLink: applyDeepLink')
 
-puts issues.empty? ? '动线体检通过 ✓（首页三出口 / 练习去论坛 / 白板回知识点 / 图谱接点名）'
+# ---------- 5. 「公式速查 / 易错速析」在正文里真的走得到 ----------
+# 背景：这两个页面不在侧栏导航里，如果正文也不给入口，学生就永远发现不了。
+chapter = read('chapter.html')
+reader  = read('reader.html')
+concept = read('concept.html')
+
+# 章节页：本章配套的四个模块卡片
+issues << '章节页「方法速学」错链到 pitfalls.html（应是 methods.html）' unless
+  chapter =~ /href="methods\.html"\s+data-dom-id="chapter-open-methods"/
+issues << '章节页缺「易错速析」入口' unless
+  chapter =~ /href="pitfalls\.html"\s+data-dom-id="chapter-open-pitfalls"/
+issues << '章节页缺「公式速查」入口' unless
+  chapter =~ /href="formulas\.html"\s+data-dom-id="chapter-open-formulas"/
+issues << '章节页配套区标题仍叫「方法速学」，但里面装了四类东西' if
+  chapter =~ /sec__title">方法速学<\/h2>\s*<span class="sec__note">8 条/
+
+# 阅读器右栏：与「方法速学 / 易错速析」同一套折叠块结构
+issues << '阅读器右栏缺「公式速查」入口' unless reader.include?('data-dom-id="open-formulas"')
+issues << '阅读器的公式块没沿用折叠块结构（应 side-block--fold + side-block__head）' unless
+  reader =~ /<section class="side-block side-block--fold">\s*<div class="side-block__head">\s*<h2 class="side-block__title">公式速查<\/h2>/
+
+# 知识点卡片：「关联」列表
+issues << '知识点卡片的「关联」里缺公式速查' unless
+  concept =~ /<a href="formulas\.html"><span>公式速查<\/span>/
+
+# 练习页：做题帮手
+issues << '练习页缺「做题帮手」块' unless practice.include?('做题帮手')
+%w[practice-formulas practice-pitfalls].each do |dom|
+  issues << "练习页「做题帮手」缺 ##{dom}" unless practice.include?("data-dom-id=\"#{dom}\"")
+end
+issues << '练习页「做题帮手」缺纵向排布样式' unless
+  practice.include?('.side__links{display:flex;flex-direction:column;gap:10px}')
+
+# 反面：谁也不许把公式速查偷偷塞回侧栏导航（它靠正文入口被发现）
+issues << '有人把公式速查加进侧栏导航了（应按设计只从正文进）' if
+  home.include?('data-nav-key="formulas"')
+
+puts issues.empty? ? '动线体检通过 ✓（首页三出口 / 练习去论坛 / 白板回知识点 / 图谱接点名 / 公式与易错在正文可达）'
                    : issues.map { |i| "  ✗ #{i}" }.join("\n")
