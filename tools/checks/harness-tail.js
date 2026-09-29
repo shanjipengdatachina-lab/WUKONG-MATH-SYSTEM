@@ -26,7 +26,7 @@ assert(h1.indexOf('合并同类项') !== -1, '含该节知识点');
 assert(h1.indexOf('本章共 2 节 · 5 个知识点 · 5 个方法 · 3 个易错点 · 2 个考点') !== -1, '统计口径正确');
 assert(h1.indexOf('sec-2-1') !== -1, '节锚点 id 正确');
 assert(h1.indexOf('grp-method') !== -1 && h1.indexOf('grp-error') !== -1, '方法 / 易错分组锚点正确');
-assert(document.title === '整式的加减 · 章节阅读', '文档标题随之更新');
+assert(document.title === '整式的加减 · 悟空数学', '文档标题随之更新');
 
 /* 3. 点「1.2 有理数」下的知识点 2：走手写正文 */
 var sectionUl = { previousElementSibling: mkRow(['ch-row'], { 'data-chapter': '01' }) };
@@ -39,7 +39,7 @@ ptRow.closest = function (sel) { return sel === 'ul.point-list' ? pointUl : null
 __capture.artInner = '';
 clickRow(ptRow);
 assert(__capture.artInner === '__AUTHORED__', '点数轴 → 回到手写正文');
-assert(document.title === '数轴 · 章节阅读', '标题切回数轴');
+assert(document.title === '数轴 · 悟空数学', '标题切回数轴');
 
 /* 4. 点同一章的其它知识点：生成正文 + 精确定位到条目 */
 __capture.artInner = '';
@@ -107,7 +107,7 @@ assert(countIn(treeP, /class="ch-row__warn"/g) === 1, '只剩三下「生活中�
 assert(treeP.indexOf('待核') !== -1, '待核那处写明了原因（鼠标悬停可见）');
 assert(treeMetaEl.textContent === '12 册 · 104 章 · 1 待核', '目录头跟着换成小学的账（册级与章级待核都算）');
 assert(__capture.rebind === 1, '重建之后补绑了一次折叠逻辑（不然册点不开）');
-assert(document.title === '数学游戏 · 章节阅读', '中栏落到小学第一册第一章');
+assert(document.title === '数学游戏 · 悟空数学', '中栏落到小学第一册第一章');
 assert(__capture.artInner.indexOf('在校园里找一找') !== -1, '正文里是那一章的小节');
 
 /* 小学每册都有「第一单元」：点第八册（四年级下册）的第一个单元，
@@ -130,7 +130,7 @@ assert(countIn(treeS, /class="ch-row"/g) === 22, '高中 22 章');
 assert(treeS.indexOf('data-chapter="01"') === -1, '高中必修 / 选必各自从 01 排，章号不能当键');
 assert(countIn(treeS, /data-chapter="b\d+c0"/g) === 5, '五册的第一章键各不相同');
 assert(treeS.indexOf('必修第一册') !== -1 && treeS.indexOf('选择性必修第三册') !== -1, '五册都在（必修到选必）');
-assert(document.title === '集合与常用逻辑用语 · 章节阅读', '中栏落到高中第一册第一章');
+assert(document.title === '集合与常用逻辑用语 · 悟空数学', '中栏落到高中第一册第一章');
 
 pickStage(3);
 var treeO = __capture.treeInner;
@@ -138,7 +138,7 @@ assert(countIn(treeO, /class="tree-volume"/g) === 4, '竞赛四个板块');
 assert(countIn(treeO, /class="ch-row"/g) === 30, '竞赛 30 章');
 assert(countIn(treeO, /class="section-list"/g) === 0, '竞赛只做到章，一层节都没有');
 assert(treeMetaEl.textContent === '4 板块 · 30 章', '目录头说「板块」不说「册」');
-assert(document.title === '集合 · 章节阅读', '中栏落到竞赛第一板块的第一章');
+assert(document.title === '集合 · 悟空数学', '中栏落到竞赛第一板块的第一章');
 assert(__capture.artInner.indexOf('只有章节框架') !== -1, '竞赛的章只有框架，正文如实说，不假装有内容');
 
 pickStage(1);

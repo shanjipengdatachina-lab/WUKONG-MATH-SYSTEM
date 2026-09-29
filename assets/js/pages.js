@@ -152,7 +152,9 @@
       input.value = initial;
       var sumQ = qs('.sum__q');
       if (sumQ) sumQ.textContent = initial;
-      document.title = initial + ' · 搜索结果';
+      /* 标签页标题一律「<当前内容> · 悟空数学」（跟静态页面同一条规则）。
+         关键词是空串（?q=）时不覆盖：那会拼出一个「 · 悟空数学」，不如留着静态的「搜索结果 · 悟空数学」。 */
+      if (initial) document.title = initial + ' · 悟空数学';
     }
 
     function submit() {

@@ -330,7 +330,7 @@
     var info = stageInfo(currentStage) || {};
     art.innerHTML = '<h1 class="kp-title">' + esc(info.name || '这个学段') + '还没上内容</h1>' +
       '<p class="sec-empty">目录由后台上传，这一学段的册与章还在准备中。左边的学段按钮随时可以切回去。</p>';
-    document.title = (info.short || '学段') + ' · 章节阅读';
+    document.title = (info.short || '学段') + ' · 悟空数学';
     buildOutline();
   }
 
@@ -456,7 +456,7 @@
     });
 
     art.innerHTML = html;
-    document.title = chapter.name + ' · 章节阅读';
+    document.title = chapter.name + ' · 悟空数学';
 
     if (focusId) focusAnchor(focusId);
     else window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -466,7 +466,7 @@
 
   function showAuthored() {
     art.innerHTML = authoredHTML;
-    document.title = '数轴 · 章节阅读';
+    document.title = '数轴 · 悟空数学';
     window.scrollTo({ top: 0, behavior: 'smooth' });
     buildOutline();
   }

@@ -59,11 +59,11 @@ function runTop() {
 
   /* 3. 覆盖区里的页面加载完：侧栏高亮、标签页标题跟着走 */
   frame.contentWindow = { location: { pathname: '/practice.html' } };
-  frame.contentDocument = { title: '考点速练' };
+  frame.contentDocument = { title: '考点速练 · 悟空数学' };
   frame.handlers.load();
   assert(railOtherLink.getAttribute('aria-current') === 'page', '侧栏高亮切到覆盖区里的那一页');
   assert(railSelfLink.getAttribute('aria-current') === null, '原来那一项的高亮被清掉');
-  assert(document.title === '考点速练', '标签页标题跟着覆盖区里的页面');
+  assert(document.title === '考点速练 · 悟空数学', '标签页标题跟着覆盖区里的页面（连同品牌后缀一起带过来）');
 
   /* 4. 点已经打开的那一页：原地不动，不重复加载 */
   assert(clickLink(railOtherLink) === true, '点当前页同样拦住顶层跳转');
