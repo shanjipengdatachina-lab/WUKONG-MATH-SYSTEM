@@ -224,6 +224,27 @@ issues << '右栏那颗按钮的提示语里又带上了快捷键（应只是「
   side_title.include?('⌘')
 issues << '右栏那颗按钮在 HTML 里的初始 title 还带着快捷键' if html.include?('title="隐藏右栏（')
 
+#     （d）两颗按钮的图标**随状态换一个**，而不是把同一个箭头转 180°。
+#         用户点名要换的就是左栏那个箭头（原来是 chevron-left 的一撇，跟"面板收放"这件事不像）。
+#         现在：展开态 panel-left-close / panel-right-close（面板 + 朝内的箭头），
+#         收起态 panel-left-open / panel-right-open。**不许再用 rotate(180deg) 糊** ——
+#         面板形状的图标转过来会把"面板"画到另一侧去（左栏那颗一转就成了"面板在右边"）。
+issues << '左栏那颗按钮还是箭头（chevron-left），应换成长相成套的 panel-left-close' if
+  html.include?('data-lucide="chevron-left"')
+issues << '左栏那颗按钮没挂 panel-left-close' unless html.include?('data-lucide="panel-left-close"')
+issues << '右栏那颗按钮没挂 panel-right-close' unless html.include?('data-lucide="panel-right-close"')
+issues << '收起态还在用 rotate(180deg) 转这个图标（面板图标一转就画到另一侧去了）' if
+  (css + html)[/\[data-(left|right)="hidden"\][^{]*\.(tree|side)-collapse__icon[^{]*\{[^}]*rotate\(180deg\)/m]
+#     下面这条必须比对**真正的调用**（setCollapseIcon(...) 的参数字面量），
+#     不能只搜 "panel-left-open" 这串字：ide-shell.js 的注释里就写着它（注释顶绿，踩过好几次）。
+issues << 'ide-shell.js 没把图标与状态对上（展开/收起各一个）' unless
+  shell[/setCollapseIcon\(treeBtn,\s*lh\s*\?\s*'panel-left-open'\s*:\s*'panel-left-close'/] &&
+  shell[/setCollapseIcon\(sideBtn,\s*rh\s*\?\s*'panel-right-open'\s*:\s*'panel-right-close'/]
+#     页面上那份初始 data-collapse-icon 要跟默认态（展开）一致，否则首屏白重画一次图标
+issues << '两颗按钮的初始 data-collapse-icon 跟默认（展开）态对不上' unless
+  html.include?('data-collapse-icon="panel-left-close"') &&
+  html.include?('data-collapse-icon="panel-right-close"')
+
 puts '左栏目录: 手写 %d 行（应为 0）· 学段按钮 %d 个（默认 初中）' % [body.scan(/class="ch-row"/).size, chips.size]
 puts "册 / 板块: #{books} 册 + #{tracked} 个板块，全部带 stage 标记"
 puts issues.empty? ? '章节页体检全部通过 ✓' : issues.map { |i| "  ✗ #{i}" }.join("\n")

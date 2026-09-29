@@ -89,8 +89,8 @@
           <span class="tree-head__meta" id="tree-meta">六册 · 29 章</span>
           <i data-lucide="chevron-down" class="tree-head__icon"></i>
           <button type="button" class="tree-collapse" id="tree-collapse" aria-expanded="true"
-                  aria-label="收起目录" title="收起 / 展开目录">
-            <i data-lucide="chevron-left" class="tree-collapse__icon"></i>
+                  aria-label="收起目录" title="收起 / 展开目录" data-collapse-icon="panel-left-close">
+            <i data-lucide="panel-left-close" class="tree-collapse__icon"></i>
           </button>
         </label>
 
@@ -208,7 +208,7 @@
         <div class="side-bar">
           <span class="side-bar__label">本页</span>
           <button type="button" class="side-collapse" id="side-collapse" aria-expanded="true"
-                  aria-label="隐藏右栏" title="隐藏右栏">
+                  aria-label="隐藏右栏" title="隐藏右栏" data-collapse-icon="panel-right-close">
             <i data-lucide="panel-right-close" class="side-collapse__icon"></i>
           </button>
         </div>
@@ -588,7 +588,6 @@
 .side-collapse:focus-visible{outline:2px solid var(--math-primary);outline-offset:-2px}
 .tree-collapse__icon,
 .side-collapse__icon{width:18px;height:18px}
-.tree-collapse__icon{transition:transform 200ms cubic-bezier(.2,.8,.2,1)}
 .tree-collapse{margin-left:2px}.side-bar{
   position:sticky;top:0;z-index:2;
   display:flex;align-items:center;gap:8px;

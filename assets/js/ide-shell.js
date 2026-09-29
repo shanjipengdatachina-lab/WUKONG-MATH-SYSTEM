@@ -263,6 +263,20 @@
     return shell.getAttribute('data-right') === 'hidden';
   }
 
+  /* 收起 / 展开这两颗按钮的图标**随状态换一个**，而不是把同一个箭头转 180°：
+     面板形状的图标转过来会把"面板"画到另一侧去（左栏那颗一转就成了"面板在右边"），
+     看着就不对了 —— 用户点名要换的就是这个箭头。
+     lucide 会把 <i data-lucide> 换成 <svg>（原 <i> 就没了），所以整块重写再让它重画一次
+     —— 跟下面头像那处同一个写法；图标名没变就跳过，省一次 SVG 重建。 */
+  function setCollapseIcon(btn, name, cls) {
+    if (!btn || btn.getAttribute('data-collapse-icon') === name) return;
+    btn.setAttribute('data-collapse-icon', name);
+    btn.innerHTML = '<i data-lucide="' + name + '" class="' + cls + '"></i>';
+    if (window.lucide && window.lucide.createIcons) {
+      try { window.lucide.createIcons(); } catch (err) { /* 忽略 */ }
+    }
+  }
+
   function syncPanels() {
     var lh = leftHidden();
     var rh = rightHidden();
@@ -272,6 +286,7 @@
       treeBtn.setAttribute('aria-expanded', lh ? 'false' : 'true');
       treeBtn.setAttribute('aria-label', lh ? '展开目录' : '收起目录');
       treeBtn.setAttribute('title', lh ? '展开目录' : '收起目录');
+      setCollapseIcon(treeBtn, lh ? 'panel-left-open' : 'panel-left-close', 'tree-collapse__icon');
     }
     if (sideBtn) {
       sideBtn.setAttribute('aria-expanded', rh ? 'false' : 'true');
@@ -279,6 +294,7 @@
       /* 提示语里不再跟快捷键（原来是"隐藏右栏（⌘/Ctrl + ⌥/Alt + B）"）——
          用户要求去掉界面上的快捷键提示；⌘/Ctrl + ⌥/Alt + B 本身照旧好使。 */
       sideBtn.setAttribute('title', rh ? '展开右栏' : '隐藏右栏');
+      setCollapseIcon(sideBtn, rh ? 'panel-right-open' : 'panel-right-close', 'side-collapse__icon');
     }
   }
 

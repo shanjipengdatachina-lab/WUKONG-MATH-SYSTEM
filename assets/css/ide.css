@@ -199,7 +199,9 @@ html[data-embed] .ide-rail { display: none; }
   .reader-shell[data-left="hidden"] .tree-head__icon,
   .reader-shell[data-left="hidden"] .tree-body { display: none; }
   .reader-shell[data-left="hidden"] .tree-collapse { margin-left: 0; }
-  .reader-shell[data-left="hidden"] .tree-collapse__icon { transform: rotate(180deg); }
+  /* 收起态的图标**不在这里转 180°**：图标本身由 ide-shell.js 按状态换一个
+     （收起 → panel-left-open / panel-right-open）。面板形状的图标转 180° 会把"面板"
+     画到另一侧去（左栏那颗一转就成了"面板在右边"），看着不对 —— 用户点名要换的就是这个箭头。 */
 
   /* 目录收起时（左栏只剩 56px）：学段那一排**只留当前那一个**。
      四个 chip 的 min-content 宽加起来约 218px，在 56px 的窄条里会被裁到只剩第一个 ——
@@ -220,7 +222,6 @@ html[data-embed] .ide-rail { display: none; }
   .reader-shell[data-right="hidden"] .side-bar__label { display: none; }
   .reader-shell[data-right="hidden"] .reader-side > *:not(.side-bar) { display: none; }
   .reader-shell[data-right="hidden"] .side-collapse { margin-left: 0; }
-  .reader-shell[data-right="hidden"] .side-collapse__icon { transform: rotate(180deg); }
 }
 /* 1024~1279：**右栏也在**，只是窄一档（264px）。
    这一档原来是 `--panel-right: 0px`（把右栏内容挪到正文下面去），于是 1024~1279 的窗口
