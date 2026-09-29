@@ -1725,112 +1725,30 @@ eq(elById('wb-panel').hidden, true, '题面收起 → 面板收起，「正对�
 WB.setShowProblem(true);
 WB.redraw();
 
-/* ---- 17c 题面那两颗控件：什么时候出现 ---- */
-var ctl17 = elById('wb-problem-ctl');
-WB.setProblemHover(false);
-WB.setProblemCtlHot(false);
-WB.redraw();
-eq(ctl17.hidden, true, '鼠标没压到题面上 → 控件藏着');
+/* ---- 17c/d/e 题面那两颗 hover 控件（✕ 收起题面 / ⠿ 拖动）已经撤掉 ----
+   用户原话："这俩按钮去掉吧"。原来这三小节守的是：hover 才现身、位置夹在题面框之内、
+   ⠿ 真能拖、✕ 能收起题面。现在元素本身没有了，这三节的断言无处可量 —— 一并删掉。
 
-WB.setProblemHover(true);
-WB.redraw();
-eq(ctl17.hidden, false, '鼠标压到题面上 → 控件露出来');
-assert(ctl17.style.left && ctl17.style.top, '控件的位置是算出来写上去的（不是靠 CSS 摆的）');
+   **不丢功能**，两条路都另有入口，分别由别的守线继续盯着：
+   · 收起题面 → 工具条上那颗「题面」（#wb-problem-toggle），断言在下面工具条那一节；
+   · 拖动题面 → 画布上题面自身的把手（左侧竖条 + 有 tag 时的标题行），
+     断言在上面的 17 节前半（hitProblemHandle / 从标题行拖走）。
+   "这两颗不许长回来"由 verify_whiteboard.rb 那条静态守线兜住（HTML 里不许再出现 wb-problem-ctl）。 */
 
-/* 贴在题面框**之内**的右上角 —— 用户原话："题目的关闭按钮和拖动按钮要在题目的范围内，
-   要不然点不到"。为什么"在范围内"是硬要求而不是审美：控件原来在框上面 6px 的外面，
-   指针从题面挪过去要先跨过那 6px 空档，一跨出去题面就判定"离开了"，控件当场消失 ——
-   于是它永远点不到（这一条只能这么量：位置必须在框内，且贴着右上角）。 */
-var v17 = WB.view();
-var box17 = WB.problemLayout();
-var ctlW17 = 50, ctlH17 = 24;   /* 桩里量不到 offsetWidth/Height，取代码里的兜底值 */
-var boxL17 = v17.x + box17.x * v17.scale;
-var boxR17 = v17.x + (box17.x + box17.w) * v17.scale;
-var boxT17 = v17.y + box17.y * v17.scale;
-var boxB17 = v17.y + (box17.y + box17.h) * v17.scale;
-var ctlL17a = parseFloat(ctl17.style.left);
-var ctlT17a = parseFloat(ctl17.style.top);
-assert(ctlL17a >= boxL17 - 0.01 && ctlL17a + ctlW17 <= boxR17 + 0.01,
-  '控件横向在题面框之内（左 ' + Math.round(ctlL17a) + ' ≥ ' + Math.round(boxL17) +
-  '，右 ' + Math.round(ctlL17a + ctlW17) + ' ≤ ' + Math.round(boxR17) + '）');
-assert(ctlT17a >= boxT17 - 0.01 && ctlT17a + ctlH17 <= boxB17 + 0.01,
-  '控件纵向也在题面框之内（上 ' + Math.round(ctlT17a) + ' ≥ ' + Math.round(boxT17) +
-  '，下 ' + Math.round(ctlT17a + ctlH17) + ' ≤ ' + Math.round(boxB17) + '）');
-assert(Math.abs((ctlL17a + ctlW17) - boxR17) <= 8 && Math.abs(ctlT17a - boxT17) <= 8,
-  '控件贴着题面框的右上角（离右缘、上缘都在 8px 内）');
-
-/* 跟着板面平移缩放走：题面搬了，控件跟着搬（它不是"屏幕像素的工具窗口"） */
-var ctlL17 = parseFloat(ctl17.style.left);
-var ctlT17 = parseFloat(ctl17.style.top);
-WB.state.problemAt.x = WB.state.problemAt.x + 120;
-WB.redraw();
-assert(Math.round(parseFloat(ctl17.style.left)) === Math.round(ctlL17 + 120),
-  '题面右移 120 → 控件也右移 120（跟着板面走）');
-eq(Math.round(parseFloat(ctl17.style.top)), Math.round(ctlT17), '横向移动不改变纵向位置');
-WB.state.problemAt.x = WB.state.problemAt.x - 120;
-WB.redraw();
-
-/* 缩到很小的时候，题面在屏幕上还没控件宽 —— 这时**框左缘 / 上缘那两道夹子**才见真章：
-   只按右缘算的话（x = 右缘 - 宽），x 会跑到框左缘的左边去，控件又浮到框外、又点不到。
-   框比控件还小的时候"整个塞进去"是做不到的（控件 50px、框这里只有 13px），
-   所以这一档的保证是**左缘 / 上缘绝不舍到框外**（宁可往右下溢一点，也不飘到框左上方去）。 */
-var keepScale17 = WB.state.view.scale;
-WB.state.view.scale = 0.08;
-WB.redraw();
-var v17b = WB.view();
-var b17b = WB.problemLayout();
-var bL17b = v17b.x + b17b.x * v17b.scale;
-var bT17b = v17b.y + b17b.y * v17b.scale;
-var cL17b = parseFloat(ctl17.style.left);
-var cT17b = parseFloat(ctl17.style.top);
-assert(cL17b >= bL17b - 0.01,
-  '缩到 8%（框比控件还小）时，控件左缘仍不舍到框外（左 ' + cL17b.toFixed(1) + ' ≥ ' + bL17b.toFixed(1) + '）');
-assert(cT17b >= bT17b - 0.01,
-  '缩到 8% 时，控件上缘也仍在框内（上 ' + cT17b.toFixed(1) + ' ≥ ' + bT17b.toFixed(1) + '）');
-WB.state.view.scale = keepScale17;
-WB.redraw();
-
-/* 指针停在控件上时不许自己消失：不然会出现"鼠标正压着它、它却没了"，点不着还一闪一闪 */
-WB.setProblemHover(false);
-WB.setProblemCtlHot(true);
-WB.redraw();
-eq(ctl17.hidden, false, '指针停在控件上 → 控件留着（画布的 pointerleave 不算"离开题面"）');
-WB.setProblemCtlHot(false);
-WB.redraw();
-eq(ctl17.hidden, true, '指针离开控件、也没压着题面 → 收回去');
-
-/* ---- 17d ⠿ 指纹是真的能拖（不是只做了个样子） ---- */
-WB.setProblemHover(true);
-WB.redraw();
-var dragFrom17 = WB.state.problemAt.x;
-var grip17 = elById('wb-problem-grip');
-assert(!!grip17._h.pointerdown, '指纹上挂着 pointerdown（按上去有反应）');
-__ctxCalls.captured = null;
-grip17._h.pointerdown(pe(400, 300));
-eq(WB.state.active && WB.state.active.mode, 'problem', '按指纹 → 进入"搬题面"模式（不是落笔）');
-eq(__ctxCalls.captured, 1, '指纹那边把指针捕获设回画布 —— 后续 pointermove 才回得到画布的 onMove');
-assert(ctl17.classList.contains('is-dragging'), '拖的时候控件挂上 is-dragging（光标跟着变"正抓着"）');
-canvasEl._h.pointermove(pe(460, 300));
-assert(WB.state.problemAt.x > dragFrom17, '拖指纹 → 题面跟着往右走（原来 ' + dragFrom17 + '，现在 ' + WB.state.problemAt.x + '）');
-canvasEl._h.pointerup(pe(460, 300));
-eq(WB.state.active, null, '松手 → 拖动结束');
-eq(ctl17.classList.contains('is-dragging'), false, '松手后 is-dragging 摘掉（光标变回"可抓"）');
-
-/* ---- 17e 题面那颗 ✕ 收起题面（可逆，跟工具条上那颗同一个动作） ---- */
-WB.setShowProblem(true);
-WB.setProblemHover(true);
-WB.redraw();
-var close17 = elById('wb-problem-close');
-assert(!!close17._h.click, '题面的 ✕ 上挂着 click');
-close17._h.click();
-eq(WB.state.showProblem, false, '点题面的 ✕ → 题面收起');
-eq(elById('wb-problem-toggle').getAttribute('aria-pressed'), 'false', '工具条上那颗「题面」跟着灭掉（同一个动作一个状态）');
-WB.redraw();
-eq(ctl17.hidden, true, '题面收起后控件自己也没了（不留一个飘在空板上的按钮）');
+/* 撤掉那两颗之后，「收起题面」在界面上就只剩工具条那颗「题面」了 ——
+   这条路必须亲自走一遍：按一下收起来、再按一下回来，按钮自己的按下态跟着走。
+   （原来这一条是拿题面那颗 ✕ 验的；✕ 撤了，就改在工具条那颗上验，别让它变成没人验的路。） */
 WB.setShowProblem(true);
 WB.redraw();
-eq(ctl17.hidden, false, '题面回来 → 控件也回来（收起是可逆的，不是把题删了）');
-eq(WB.state.problemId, '7a-13', '✕ 只是收起题面，没有把题从板上删掉');
+eq(elById('wb-problem-toggle').getAttribute('aria-pressed'), 'true', '「题面」按钮：题面在的时候是按下的');
+elById('wb-problem-toggle')._h.click(pe(0, 0));
+eq(WB.state.showProblem, false, '点工具条那颗「题面」→ 题面收起');
+eq(elById('wb-problem-toggle').getAttribute('aria-pressed'), 'false', '按钮自己的按下态跟着灭（同一个动作一个状态）');
+WB.redraw();
+elById('wb-problem-toggle')._h.click(pe(0, 0));
+eq(WB.state.showProblem, true, '再点一下 → 题面回来（收起是可逆的，不是把题删了）');
+eq(elById('wb-problem-toggle').getAttribute('aria-pressed'), 'true', '按下态跟着回到按下');
+WB.redraw();
 
 /* ---- 收尾 ---- */
 WB.clearAll();

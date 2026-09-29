@@ -44,8 +44,8 @@
 .wb-bank__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
 .wb-bank__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .wb-bank__count{margin-left:auto;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-4);font-variant-numeric:tabular-nums}
-/* ✕：声明体跟 .wb-panel__close / .wb-ink__close / .wb-pctl__close **逐字节一样**（守线逐条比过）。
-   四个 ✕ 是同一个动作，就得是同一个东西 —— 改一处要改四处，别各写各的。 */
+/* ✕：声明体跟 .wb-panel__close / .wb-ink__close **逐字节一样**（守线逐条比过）。
+   三个 ✕ 是同一个动作，就得是同一个东西 —— 改一处要改三处，别各写各的。 */
 .wb-bank__close{
   flex:none;width:22px;height:22px;display:grid;place-items:center;
   border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
@@ -116,35 +116,14 @@
 }
 #wb-canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none;overscroll-behavior:contain}
 
-/* ---------- 题面自己的两个控件（鼠标压到题面上才出现） ----------
-   ✕ 收起题面、⠿ 拖动把手 —— 跟分析面板标题栏上那一套是同一个样子、同一个动作。
-   用户原话："当前题目也应该有个和分析面板一样的关闭按钮和拖动，当鼠标hover的时候出现"。
+/* ---------- 题面自己那两颗 hover 控件已经撤掉了 ----------
+   原来是鼠标压到题面上时浮在右上角的一组：`✕ 收起题面` + `⠿ 拖动`（`.wb-pctl`）。
+   用户原话："这俩按钮去掉吧"。
 
-   两条设计约束：
-   1. **落在题面框之内**（右上角，往里缩 6px）。用户原话："题目的关闭按钮和拖动按钮要在题目的
-      范围内，要不然点不到" —— 原来它浮在框**上面 6px 的外面**，指针从题面挪过去要先跨过那
-      6px 空档，一跨出去题面就判定"离开了"，控件当场消失，于是永远点不到。
-      代价是它压住正文右上角那一小块；换来的是"一定点得到"。位置由 layoutProblemCtl 算。
-   2. 把手是**真的能拖**：按在指纹上就能搬题面（处理函数走 beginProblemDrag，跟按在
-      标题行上同一条路），不是只做了个样子。 */
-.wb-pctl{
-  position:absolute;left:0;top:0;z-index:3;
-  display:inline-flex;align-items:center;gap:2px;
-  padding:2px;
-  border:1px solid var(--math-border);border-radius:var(--math-radius-md);
-  background:var(--math-popover);box-shadow:var(--math-shadow-1);
-}
-.wb-pctl[hidden]{display:none}
-/* 收起题面那颗 ✕：声明体跟三个面板的 ✕ 逐字节一样（守线逐条比过） */
-.wb-pctl__close{
-  flex:none;width:22px;height:22px;display:grid;place-items:center;
-  border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
-  font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;
-}
-.wb-pctl__close:hover{background:var(--math-surface);color:var(--math-foreground)}
-.wb-pctl__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
-.wb-pctl__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4);cursor:grab;touch-action:none}
-.wb-pctl.is-dragging .wb-pctl__grip{cursor:grabbing}
+   **撤掉不丢功能** —— 两件事各自都另有入口，这两颗纯属重复：
+   · 收起题面：工具条上那颗「题面」（#wb-problem-toggle）是同一个动作，还在；
+   · 拖动题面：画布上那条把手还在（题面左侧的竖条，以及有 tag 时的标题行 —— 见 hitProblemHandle）。
+   题面周围也就更干净了，这正是当初把面板从题目上摘下来时要的效果。 */
 
 /* ---------- 悬浮工具条（底部居中，平时半透明，用时全亮） ---------- */
 .wb-dock{
@@ -817,12 +796,8 @@
             </div>
           </div>
 
-          <!-- 题面自己的两个控件：鼠标压到题面上才出现（详见 wb-styles 里 .wb-pctl 那段注释）。
-               顺序与面板标题栏一致：先 ✕ 后指纹。 -->
-          <div class="wb-pctl" id="wb-problem-ctl" hidden>
-            <button type="button" class="wb-pctl__close" id="wb-problem-close" title="收起题面" aria-label="收起题面">×</button>
-            <i data-lucide="grip-vertical" class="wb-pctl__grip" id="wb-problem-grip" aria-hidden="true"></i>
-          </div>
+          <!-- 题面原来在这里挂着两颗 hover 控件（✕ 收起题面 / ⠿ 拖动），用户要求去掉。
+               两件事各自另有入口（工具条「题面」那颗开关、画布上题面自身的把手），详见 wb-styles。 -->
         </div>
 
         <aside class="wb-bank" id="wb-bank" aria-label="题库" hidden>
@@ -930,8 +905,8 @@ body .toast-stack{bottom:calc(76px + env(safe-area-inset-bottom))}
   font-size:calc(11px * var(--math-fs));letter-spacing:.06em;color:var(--math-ink-3);
 }
 .wb-ink__badge[hidden]{display:none}
-/* ✕：外观跟 .wb-panel__close / .wb-bank__close / .wb-pctl__close 一致（这一条自己多一个 margin-left:auto
-   把按钮顶到标题栏最右端，那是排版、不算"长相"）。守线逐条比对四个 ✕ 的尺寸与配色声明。 */
+/* ✕：外观跟 .wb-panel__close / .wb-bank__close 一致（这一条自己多一个 margin-left:auto
+   把按钮顶到标题栏最右端，那是排版、不算"长相"）。守线逐条比对三个 ✕ 的尺寸与配色声明。 */
 .wb-ink__close{
   margin-left:auto;width:22px;height:22px;display:grid;place-items:center;
   border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);

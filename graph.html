@@ -298,8 +298,8 @@ body{padding-top:0}
 .mm-card__grip{flex:none;width:14px;height:14px;color:var(--math-ink-4)}
 .mm-card__title{font-size:calc(13px * var(--math-fs));font-weight:600;color:var(--math-foreground)}
 .mm-card__count{margin-left:auto;font-size:calc(11.5px * var(--math-fs));color:var(--math-ink-4);font-variant-numeric:tabular-nums}
-/* ✕：声明体跟 .wb-panel__close / .wb-ink__close / .wb-pctl__close **逐字节一样**（守线逐条比过）。
-   四个 ✕ 是同一个动作，就得是同一个东西 —— 改一处要改四处，别各写各的。 */
+/* ✕：声明体跟 .wb-panel__close / .wb-ink__close **逐字节一样**（守线逐条比过）。
+   三个 ✕ 是同一个动作，就得是同一个东西 —— 改一处要改三处，别各写各的。 */
 .mm-card__close{flex:none;width:22px;height:22px;display:grid;place-items:center;
   border:0;border-radius:var(--math-radius-md);background:none;color:var(--math-ink-3);
   font-size:calc(15px * var(--math-fs));line-height:1;cursor:pointer;}
@@ -307,6 +307,15 @@ body{padding-top:0}
 .mm-card__close:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
 .mm-card.is-dragging{box-shadow:var(--math-shadow-2)}
 .mm-card.is-dragging .mm-card__head{cursor:grabbing}
+/* ---------- 题面自己那两颗 hover 控件已经撤掉了 ----------
+   原来是鼠标压到题面上时浮在右上角的一组：`✕ 收起题面` + `⠿ 拖动`（`.wb-pctl`）。
+   用户原话："这俩按钮去掉吧"。
+
+   **撤掉不丢功能** —— 两件事各自都另有入口，这两颗纯属重复：
+   · 收起题面：工具条上那颗「题面」（#wb-problem-toggle）是同一个动作，还在；
+   · 拖动题面：画布上那条把手还在（题面左侧的竖条，以及有 tag 时的标题行 —— 见 hitProblemHandle）。
+   题面周围也就更干净了，这正是当初把面板从题目上摘下来时要的效果。 */
+
 /* ---------- 悬浮工具条（底部居中，平时半透明，用时全亮） ---------- */
 .mm-dock{position:absolute;left:50%;bottom:18px;z-index:5;
   transform:translateX(-50%);

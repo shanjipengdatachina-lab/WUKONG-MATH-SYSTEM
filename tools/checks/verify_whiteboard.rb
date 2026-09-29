@@ -427,15 +427,16 @@ issues << '条目正文不是 12.5px —— 正文必须比标题（13px）小�
 issues << '转译面板里的条目正文没跟台阶正文同档（应 12.5px，两块同屏并排）' unless
   html[/[}\n]\s*\.wb-ink \.wb-tile__text\{[^}]*font-size:calc\(12\.5px \* var\(--math-fs\)\)/m]
 
-# 四颗 ✕ 必须长得一模一样（用户原话："题库的关闭按钮和样式应该和分析面板一致"）。
-# 分析面板 / 题库 / 转译 / 题面各有一颗，四个是同一个动作 —— 以前各写各的：
-# 分析面板 22×22 无边框文字 ×、题库 24×24 带边框的 svg x、转译 22×22、题面压根没有。
+# 三颗 ✕ 必须长得一模一样（用户原话："题库的关闭按钮和样式应该和分析面板一致"）。
+# 分析面板 / 题库 / 转译各有一颗，三个是同一个动作 —— 以前各写各的：
+# 分析面板 22×22 无边框文字 ×、题库 24×24 带边框的 svg x、转译 22×22。
+# （曾经还有第四颗：题面右上那颗 hover 控件上的 ✕ —— 用户要求把那两颗一起撤掉，见下面那条。）
 # 这里逐条比对"尺寸与配色"，**margin-left 这类排版项不参与**（转译那颗要多一个 margin-left:auto
 # 把自己顶到标题栏右端，那是排版不是长相）。
 CLOSE_PROPS = %w[width height display place-items border border-radius background color
                  font-size line-height cursor].freeze
 CLOSE_SELECTORS = { '.wb-panel__close' => '分析面板', '.wb-bank__close' => '题库面板',
-                    '.wb-ink__close' => '转译窗口', '.wb-pctl__close' => '题面控件' }.freeze
+                    '.wb-ink__close' => '转译窗口' }.freeze
 
 def close_face(css, sel)
   body = css[/#{Regexp.escape(sel)}\{([^}]*)\}/m, 1]
@@ -474,33 +475,27 @@ issues << '题库的抓手不是 14px（分析面板是 14px）' unless
 issues << '题库拖动时的投影没跟分析面板同一档（应 var(--math-shadow-2)）' unless
   html[/\.wb-bank\.is-dragging\{[^}]*box-shadow:var\(--math-shadow-2\)/m]
 
-# 题面自己那两颗控件（用户原话："当前题目也应该有个和分析面板一样的关闭按钮和拖动，
-# 当鼠标hover的时候出现"）。守四件事：标签齐、默认藏着、hover 才露、指纹真能拖。
-issues << '题面控件没挂上（找不到 #wb-problem-ctl）' unless html.include?('id="wb-problem-ctl"')
-issues << '题面控件缺收起按钮（#wb-problem-close）' unless html.include?('id="wb-problem-close"')
-issues << '题面控件缺拖动指纹（#wb-problem-grip）' unless html.include?('id="wb-problem-grip"')
-issues << '题面控件默认没藏起来（应带 hidden，鼠标压到题面上才出现）' unless
-  html[/<div class="wb-pctl" id="wb-problem-ctl" hidden>/]
-issues << '题面控件的显隐没跟 hover 挂钩（应 problemCtlVisible）' unless
-  wbjs[/function problemCtlVisible\(\)[\s\S]{0,400}?state\.problemHover/m]
-issues << '指针停在控件上时控件会自己消失（缺 problemCtlHot 这一路）' unless
-  wbjs.include?('problemCtlHot') && wbjs.include?("to.closest('#wb-problem-ctl')")
-issues << '题面控件没跟着板面平移缩放走（应走 boardToScreen，它不是"屏幕像素的工具窗口"）' unless
-  wbjs[/function layoutProblemCtl\([\s\S]{0,900}?boardToScreen\(/m]
-issues << '题面的拖动指纹是假的（没走 beginProblemDrag，按上去拖不动）' unless
-  wbjs[/pctlGrip[\s\S]{0,400}?beginProblemDrag\(e\)/m]
-issues << '画布上那条把手没走 beginProblemDrag（两个入口必须同一条路）' unless
+# 题面那两颗 hover 控件（✕ 收起题面 / ⠿ 拖动）用户要求撤掉（原话："这俩按钮去掉吧"）。
+# 撤掉**不丢功能**，两条路都另有入口：
+#   · 收起题面 → 工具条上那颗「题面」（#wb-problem-toggle，见上面 need 里那条）；
+#   · 拖动题面 → 画布上题面自身的把手（左侧竖条 + 有 tag 时的标题行，见下面"题面的把手"那节）。
+# 所以这里反过来守：**不许长回来**。留着就是死码 —— 元素没了、样式没了、JS 却在跑。
+#
+# 这一条必须**先把注释剥掉再查**：解释这次撤除的那两段注释（wb-styles 里那段、
+# 以及 HTML 里那行说明）本身就写着 `.wb-pctl` / wb-problem-ctl 这些字样 ——
+# 拿原文去 include? 就是拿自己的注释把守线顶绿（这个坑这个项目已经踩到第七次）。
+html_code = html.gsub(/<!--.*?-->/m, '').gsub(%r{/\*.*?\*/}m, '')
+issues << '题面那两颗 hover 控件又长回来了（代码里还有 wb-problem-ctl / .wb-pctl）' if
+  html_code.include?('wb-problem-ctl') || html_code.include?('.wb-pctl')
+issues << '题面控件那套 JS 还留着（problemCtl* 已经是死码了）' if
+  wbjs.include?('problemCtlEl') || wbjs.include?('problemCtlVisible') || wbjs.include?('problemCtlHot')
+# 题面还得能拖 —— 撤掉的是"重复的那个入口"，画布上那条把手必须完好无损
+issues << '画布上那条把手没走 beginProblemDrag（题面就拖不动了）' unless
   wbjs[/hitProblemHandle\(pt\.x, pt\.y\)\)\s*\{\s*beginProblemDrag\(e\);/m]
-# 控件必须在题面框**之内**（用户原话："题目的关闭按钮和拖动按钮要在题目的范围内，要不然点不到"）。
-# 为什么"在范围内"是硬要求而不是审美：原来它落在框**上面 6px 的外面**，指针从题面挪过去要先
-# 跨过那 6px 空档 —— 一跨出去题面就判定"离开了"、控件当场消失，于是永远点不到。
-# 守线盯两个**夹子**：x 要从框左缘往上夹（只按右缘算的话，缩放小/题目短时控件比框还宽，
-# 就又浮到框外去了），y 要同时夹在框的上缘与下缘之间。
-# （真正的几何断言在 wb-check 第 17 节：把缩放调到 0.08 再量一次，专门踩这两种情况。）
-issues << '题面控件的 x 没夹进题面框的左右边（只按右缘算，窄题/小缩放下会浮到框外）' unless
-  wbjs[/var x = Math\.max\(boxL, Math\.min\(boxR - w - PAD/m]
-issues << '题面控件的 y 没夹在题面框的上下沿之间' unless
-  wbjs[/var y = Math\.max\(boxT, Math\.min\(boxT \+ PAD[\s\S]{0,60}?boxB - h/m]
+# 「收起题面」也只剩工具条那颗「题面」一条路了（题面那颗 ✕ 已撤）——
+# 它要是不再绑着，学生就**再也收不起题面**了。这条是撤控件的前提，必须守。
+issues << '工具条那颗「题面」没绑到 setShowProblem（题面就收不起来了）' unless
+  wbjs[/bind\('wb-problem-toggle',\s*function\s*\(\)\s*\{\s*setShowProblem\(!state\.showProblem\);?\s*\}\)/m]
 
 # 分析必须跟着题走（用户原话："分析是针对当前的题目做的分析；所以当用户切换题目的时候，
 # 分析窗口是自动更新的"）。两处一起守：

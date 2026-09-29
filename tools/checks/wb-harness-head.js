@@ -173,11 +173,8 @@ elById('wb-ink-text').setAttribute('hidden', 'hidden');
 elById('wb-ink-badge').hidden = true;
 elById('wb-ink-acts').hidden = true;
 
-/* 题面自己那两颗控件（✕ 收起 / ⠿ 拖动）：真实 HTML 里带 hidden，鼠标压到题面上才出现 */
-elById('wb-problem-ctl').hidden = true;
-elById('wb-problem-ctl').setAttribute('hidden', 'hidden');
-elById('wb-problem-close').setAttribute('aria-label', '收起题面');
-elById('wb-problem-grip').setAttribute('aria-hidden', 'true');
+/* 题面那两颗 hover 控件（✕ 收起 / ⠿ 拖动）已经撤掉，桩里不再预置它们 ——
+   真实 HTML 里也没有了，留着反而会掩盖"又长回来"这类回退。 */
 
 var window = {
   devicePixelRatio: 2,
