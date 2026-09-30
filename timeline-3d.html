@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间轴 3D · 悟空数学</title>
+    <!-- 阅读与显示设置：首屏前应用（字号方案 / 亮中暗配色）-->
+    <script src="assets/js/display.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">时间轴 3D</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="timeline.html" data-nav-key="timeline" data-active="true" aria-current="page" title="时间轴">
+          <i data-lucide="git-commit-horizontal" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">时间轴</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+        </a>
+        <a class="ide-rail__account" href="login.html" title="登录 / 注册">
+          <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
+          <span class="ide-rail__label">登录</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+<main class="t3-shell" data-t3>
+
+  <div class="t3-stage">
+
+    <!-- 3D 画布：同一根轴，转到立体之后能看见"时间"那一维 -->
+    <div class="t3-canvas-wrap" data-t3-wrap>
+      <canvas data-t3-canvas aria-label="知识时间轴 3D 视图，可拖动旋转"></canvas>
+    </div>
+
+    <!-- 左上角：这一轴是谁的 + 读数（划过哪一格就读哪一格） -->
+    <div class="t3-left">
+      <div class="t3-who" data-t3-who role="note"></div>
+      <div class="t3-readout" aria-live="polite">
+        <div class="t3-readout__now" data-t3-now></div>
+        <div class="t3-readout__sub" data-t3-sub></div>
+      </div>
+      <div class="t3-exam" data-t3-exam hidden></div>
+    </div>
+
+    <!-- 图例 2026-09-30 先撤掉（用户："先去掉……我们一个个的来做"）——
+         里面的东西会一个一个重新定，定完再决定要不要有个说明条回到这里。 -->
+
+    <!-- 帮助：手势与小抄 -->
+    <div class="t3-help" data-t3-help hidden>
+      <div class="t3-help__row">X 轴 = 知识序列（一年级 → 六年级）· Y 轴 = 综合难度（1–5 档）· Z 轴 = 学习时间（底部那条时间条）</div>
+      <div class="t3-help__row">**右侧那排**是难度层的五个档：基础层（绿）· 概念层（蓝）· 应用层（黄）· 变化层（橙）· 综合层（红）—— 点名字就开 / 关那一层</div>
+      <div class="t3-help__row">**拖动底部时间条**：柱子那堵墙在时间里滑、颜色按那一天算，滑过哪一场的日子，那一块考试切片才冒出来</div>
+      <div class="t3-help__row">一块玻璃板 = **一次考试**：点住它 → 板上考点用曲线连到对应的柱子、底部排出一串考点点（**颜色 = 难度档、红圈 = 做错**），其余柱子灰显；旋转焦点也跟着搬到这一场</div>
+      <div class="t3-help__row">拖动 = 转视角（**不限角度**）· Shift 拖动 / 右键拖动 = 平移 · 滚轮 = 放大缩小 · 平面那一档拖动就是平移</div>
+      <a class="t3-help__link" href="timeline.html">回到平面时间轴 →</a>
+    </div>
+
+    <!-- 划过就浮现的小卡（照参照原型那个 hover 气泡：名字 + 编号 · 难度 · 状态 + 考到哪几场） -->
+    <div class="t3-hover" data-t3-hover role="status" aria-live="off"></div>
+
+    <!-- 考试分析：点住某一块玻璃板之后，边上弹出这一场的分析报告
+         （用户 2026-09-30："每个考试的面……点击之后呢？它会在边上弹出一个面板。
+         面板上我会出这次考试的一些分析报告。点知识点对应的知识点。然后还有难度。"） -->
+    <aside class="t3-report" data-t3-report hidden aria-label="这场考试的考点分析">
+      <div class="t3-report__head">
+        <div class="t3-report__title">
+          <div class="t3-report__name" data-t3-report-name></div>
+          <div class="t3-report__meta" data-t3-report-meta></div>
+        </div>
+        <button type="button" class="t3-report__close" data-t3-report-close aria-label="收起分析面板">
+          <i data-lucide="x" class="t3-report__x"></i>
+        </button>
+      </div>
+      <div class="t3-report__stats" data-t3-report-stats></div>
+      <div class="t3-report__cap">考点（点一行 → 在轴上点出那一格）</div>
+      <ul class="t3-report__list" data-t3-report-list></ul>
+    </aside>
+
+    <!-- 难度层：**右侧那排竖按钮**（照白板那排按钮的样子）——
+         五个档各一个开关，点名字就开 / 关那一层（用户 2026-09-30） -->
+    <div class="t3-levels" data-t3-levels role="group" aria-label="难度层"></div>
+
+    <!-- 底部时间条：拖它把"当前"挪到某一天 —— 柱子那堵墙就在时间里滑，
+         滑过哪一场的日子，那一块考试切片就冒出来（照参照原型的 timebar） -->
+    <div class="t3-timebar" data-t3-timebar>
+      <button type="button" class="t3-dock__btn" data-t3-prev-day data-t3-tip="前一天" aria-label="前一天">
+        <i data-lucide="chevron-left" class="t3-dock__icon"></i>
+      </button>
+      <div class="t3-timebar__title">
+        <span>Z · 学习时间</span>
+        <strong data-t3-date></strong>
+      </div>
+      <div class="t3-timebar__slider">
+        <input type="range" data-t3-day min="0" max="1" value="0" aria-label="选择学习日期">
+        <div class="t3-timebar__ticks" data-t3-ticks></div>
+      </div>
+      <button type="button" class="t3-dock__btn" data-t3-next-day data-t3-tip="后一天" aria-label="后一天">
+        <i data-lucide="chevron-right" class="t3-dock__icon"></i>
+      </button>
+    </div>
+
+    <!-- 工具条：照白板那套 —— **图标按钮**，汉字说明在 hover 时用气泡出（用户 2026-09-30） -->
+    <div class="t3-dock" role="toolbar" aria-label="3D 视图工具">
+      <button type="button" class="t3-dock__btn" data-t3-toggle aria-pressed="false"
+              data-t3-tip="转成 3D（时间轴那一维拉出来）" aria-label="切换 3D 视角">
+        <i data-lucide="box" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-proj aria-pressed="true"
+              data-t3-tip="现在是透视 · 点一下换正交" aria-label="切换投影方式">
+        <i data-lucide="scan" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-render aria-pressed="false"
+              data-t3-tip="现在是柱 · 点一下切成曲线" aria-label="切换柱 / 曲线">
+        <i data-lucide="activity" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-color aria-pressed="false"
+              data-t3-tip="现在按掌握状态着色 · 点一下按年级着色" aria-label="切换着色口径">
+        <i data-lucide="eye" class="t3-dock__icon"></i>
+      </button>
+      <span class="t3-dock__sep"></span>
+      <button type="button" class="t3-dock__btn" data-t3-exams aria-pressed="true"
+              data-t3-tip="考试切片已开 · 点一下关掉" aria-label="切换考试切片">
+        <i data-lucide="calendar-days" class="t3-dock__icon"></i>
+      </button>
+      <span class="t3-dock__sep"></span>
+      <button type="button" class="t3-dock__btn" data-t3-zoom-out data-t3-tip="缩小" aria-label="缩小">
+        <i data-lucide="minus" class="t3-dock__icon"></i>
+      </button>
+      <span class="t3-dock__zoom" data-t3-zoom>100%</span>
+      <button type="button" class="t3-dock__btn" data-t3-zoom-in data-t3-tip="放大" aria-label="放大">
+        <i data-lucide="plus" class="t3-dock__icon"></i>
+      </button>
+      <span class="t3-dock__sep"></span>
+      <button type="button" class="t3-dock__btn" data-t3-reset data-t3-tip="重置视角" aria-label="重置视角">
+        <i data-lucide="rotate-ccw" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-help-btn aria-pressed="false"
+              data-t3-tip="帮助" aria-label="帮助">
+        <i data-lucide="circle-help" class="t3-dock__icon"></i>
+      </button>
+      <a class="t3-dock__btn" href="timeline.html" data-t3-tip="回到平面时间轴" aria-label="回到平面时间轴">
+        <i data-lucide="git-commit-horizontal" class="t3-dock__icon"></i>
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<style id="t3-styles">
+/* ==========================================================================
+   时间轴 3D 页 (timeline-3d.html)
+   --------------------------------------------------------------------------
+   同一根轴的**只读观察层**（用户 2026-09-30 定的口径）。骨架、工具条、读数、
+   气泡提示全部照平面那一页来：按钮 34×34、图标 16px、圆角 8px、选中态是浅色实心块。
+   颜色一个字都不写死（画布里的颜色也是从 tokens.css 读的），字号一律乘 --math-fs。
+   ========================================================================== */
+
+html, body { height: 100%; overflow: hidden; }
+
+[data-t3] { position: relative; min-height: 520px; }
+.t3-stage { position: relative; height: 100vh; min-width: 0; }
+
+.t3-canvas-wrap {
+  position: absolute; inset: 0; overflow: hidden;
+  background: var(--math-background); touch-action: none;
+}
+#t3-canvas, [data-t3-canvas] {
+  display: block; width: 100%; height: 100%;
+  touch-action: none; overscroll-behavior: contain;
+  cursor: grab;
+}
+[data-t3-canvas]:active { cursor: grabbing; }
+[data-t3-canvas]:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
+
+/* ---------- 左上角：这一轴是谁的 + 读数 ---------- */
+.t3-left { position: absolute; left: 36px; top: 26px; z-index: 4; pointer-events: none; max-width: min(560px, 62vw); }
+.t3-who {
+  display: inline-block; margin-bottom: 9px; padding: 3px 10px;
+  border: 1px solid var(--math-border); border-radius: 999px;
+  background: var(--math-surface); color: var(--math-ink-2);
+  font-size: calc(11.5px * var(--math-fs));
+}
+.t3-readout__now { font-size: calc(15px * var(--math-fs)); font-weight: 600; color: var(--math-foreground); }
+.t3-readout__sub { margin-top: 3px; font-size: calc(11.5px * var(--math-fs)); line-height: 1.6; color: var(--math-ink-3); }
+.t3-exam {
+  display: inline-block; margin-top: 8px; padding: 3px 10px;
+  border-radius: 999px; background: var(--math-primary-tint); color: var(--math-primary);
+  font-size: calc(11.5px * var(--math-fs)); font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 帮助浮层 ---------- */
+.t3-help {
+  position: absolute; right: 24px; top: 24px; z-index: 6; width: min(430px, 78vw);
+  padding: 14px 16px; border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-popover); color: var(--math-ink-2);
+  box-shadow: var(--math-shadow-2); font-size: calc(11.5px * var(--math-fs)); line-height: 1.75;
+}
+.t3-help[hidden] { display: none; }
+.t3-help__row + .t3-help__row { margin-top: 4px; }
+.t3-help__link { display: inline-block; margin-top: 8px; color: var(--math-primary); }
+
+/* ---------- 工具条 ---------- */
+.t3-dock {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; z-index: 5;
+  display: flex; align-items: center; gap: 2px; padding: 6px 8px;
+  border: 1px solid var(--math-border); border-radius: 999px;
+  background: var(--math-dock); box-shadow: var(--math-shadow-2);
+}
+.t3-dock__btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  width: 34px; height: 34px; padding: 0; border: 0; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-2); cursor: pointer;
+}
+.t3-dock__btn:hover { background: var(--math-surface); color: var(--math-foreground); }
+.t3-dock__btn[aria-pressed="true"] { background: var(--math-primary-tint); color: var(--math-primary); }
+.t3-dock__btn:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
+.t3-dock__icon { width: 16px; height: 16px; }
+/* 分隔与缩放读数（照参照原型那条工具条：分组之间一根竖线、中间写百分比） */
+.t3-dock__sep { width: 1px; height: 20px; margin: 0 4px; background: var(--math-border); }
+.t3-dock__zoom {
+  min-width: 42px; text-align: center; font-size: calc(11.5px * var(--math-fs));
+  color: var(--math-ink-3); font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 底部时间条（照参照原型：前一天 / 日期 / 滑杆 + 刻度 / 后一天） ---------- */
+.t3-timebar {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 82px; z-index: 5;
+  display: flex; align-items: center; gap: 12px;
+  width: min(760px, 88vw); padding: 7px 12px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-dock); box-shadow: var(--math-shadow-2);
+}
+.t3-timebar__title {
+  display: flex; flex-direction: column; gap: 2px; min-width: 92px;
+  color: var(--math-ink-4); font-size: calc(11px * var(--math-fs));
+}
+.t3-timebar__title strong {
+  color: var(--math-primary); font-size: calc(12.5px * var(--math-fs)); font-variant-numeric: tabular-nums;
+}
+.t3-timebar__slider { flex: 1; min-width: 0; }
+.t3-timebar__slider input { width: 100%; height: 3px; margin: 0; accent-color: var(--math-primary); cursor: pointer; }
+.t3-timebar__ticks {
+  display: flex; justify-content: space-between; padding-top: 3px;
+  color: var(--math-ink-4); font-size: calc(10.5px * var(--math-fs));
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 难度层（右侧竖排：照白板那排按钮，五个档各一个开关） ---------- */
+.t3-levels {
+  position: absolute; right: 18px; top: 50%; transform: translateY(-50%); z-index: 5;
+  display: flex; flex-direction: column; gap: 5px; padding: 9px 10px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-popover); box-shadow: var(--math-shadow-2);
+}
+.t3-levels__cap {
+  margin-bottom: 2px; color: var(--math-ink-4);
+  font-size: calc(10.5px * var(--math-fs)); text-align: center;
+}
+.t3-levels__btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px;
+  border: 1px solid transparent; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-2); cursor: pointer;
+  font-size: calc(11.5px * var(--math-fs)); white-space: nowrap;
+}
+.t3-levels__btn:hover { background: var(--math-surface); color: var(--math-foreground); }
+.t3-levels__btn:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
+.t3-levels__btn[aria-pressed="true"] {
+  border-color: var(--math-border); background: var(--math-surface);
+  color: var(--math-foreground); font-weight: 600;
+}
+.t3-levels__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+/* ---------- 划过浮现的小卡（照参照原型：底部居中一块，pointer 不拦） ---------- */
+.t3-hover {
+  position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%);
+  z-index: 5; min-width: 165px; padding: 10px 14px; pointer-events: none;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-popover); box-shadow: var(--math-shadow-2);
+  opacity: 0; transition: opacity .12s ease;
+}
+.t3-hover.show { opacity: 1; }
+.t3-hover strong {
+  display: block; margin-bottom: 4px;
+  font-size: calc(13px * var(--math-fs)); font-weight: 600; color: var(--math-foreground);
+}
+.t3-hover small { display: block; font-size: calc(11.5px * var(--math-fs)); line-height: 1.6; color: var(--math-ink-3); }
+
+/* 气泡提示（与白板 / 平面那一页同一套：自绘，不吃 pointer 事件） */
+[data-t3-tip] { position: relative; }
+[data-t3-tip]::after {
+  content: attr(data-t3-tip); position: absolute; left: 50%; bottom: calc(100% + 10px);
+  transform: translateX(-50%); white-space: nowrap; padding: 5px 9px; border-radius: var(--math-radius-md);
+  background: var(--math-popover); color: var(--math-ink-2); border: 1px solid var(--math-border);
+  font-size: calc(11px * var(--math-fs)); font-weight: 400; opacity: 0; pointer-events: none;
+  transition: opacity .12s ease;
+}
+[data-t3-tip]:hover::after { opacity: 1; }
+
+/* ---------- 考试分析面板（点住某一块玻璃板之后，弹在右边） ---------- */
+.t3-report {
+  position: absolute; right: 24px; top: 24px; z-index: 6;
+  display: flex; flex-direction: column;
+  width: min(322px, 80vw); max-height: calc(100% - 300px);
+  padding: 13px 4px 9px 14px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-popover); color: var(--math-ink-2);
+  box-shadow: var(--math-shadow-2); font-size: calc(11.5px * var(--math-fs));
+}
+.t3-report[hidden] { display: none; }
+.t3-report__head { display: flex; align-items: flex-start; gap: 8px; padding-right: 10px; }
+.t3-report__title { min-width: 0; }
+.t3-report__name { font-size: calc(13px * var(--math-fs)); font-weight: 600; color: var(--math-foreground); }
+.t3-report__meta { margin-top: 2px; color: var(--math-ink-4); font-variant-numeric: tabular-nums; }
+.t3-report__close {
+  margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: 0; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-3); cursor: pointer;
+}
+.t3-report__close:hover { background: var(--math-surface); color: var(--math-foreground); }
+.t3-report__x { width: 14px; height: 14px; }
+.t3-report__stats {
+  margin: 9px 10px 0 0; padding: 6px 9px; border-radius: var(--math-radius-md);
+  background: var(--math-surface); color: var(--math-ink-2); line-height: 1.6;
+}
+.t3-report__cap { margin: 10px 0 4px; color: var(--math-ink-4); }
+.t3-report__list { margin: 0; padding: 0 10px 0 0; list-style: none; overflow: auto; }
+.t3-report__row {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px;
+  border: 0; border-radius: var(--math-radius-md); background: none; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.t3-report__row:hover { background: var(--math-surface); }
+.t3-report__row:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
+.t3-report__no { color: var(--math-ink-4); font-variant-numeric: tabular-nums; }
+.t3-report__nm { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.t3-report__diff { color: var(--math-ink-3); font-variant-numeric: tabular-nums; }
+.t3-report__bad { color: var(--math-bar-weak); font-weight: 600; }
+.t3-report__ok { color: var(--math-ink-4); }
+
+@media (max-width: 640px) {
+  .t3-left { left: 16px; top: 16px; max-width: 80vw; }
+  .t3-dock { bottom: 16px; }
+  .t3-report { right: 12px; top: 12px; width: min(260px, 86vw); max-height: calc(100% - 110px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t3-dock__btn, [data-t3-tip]::after { transition-duration: .001ms !important; }
+}
+</style>
+
+<script>lucide.createIcons();</script>
+<link rel="stylesheet" href="assets/css/shell.css">
+<link rel="stylesheet" href="assets/css/ide.css">
+
+<script src="assets/js/shell.js"></script>
+<script src="assets/js/ide-shell.js"></script>
+<script src="assets/js/math-tree.js"></script>
+<script src="assets/js/timeline-axis.js"></script>
+<script src="assets/js/timeline-data.js"></script>
+<script src="assets/js/timeline-3d.js"></script>
+</body>
+</html>

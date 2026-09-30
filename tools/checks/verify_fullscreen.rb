@@ -35,9 +35,12 @@ pages.each do |path|
   end
 end
 
-# 除独立文档（白板功能规划）外应全有。这个数是**页面总数 - 1**：
-# 2026-09-29 加入 timeline.html 之后是 43 - 1 = 42，加页面时跟着改。
-issues << '仍有个别页面漏加全屏按钮（除独立文档外应全有）' unless with_btn.size == 42
+# 除独立文档（白板功能规划）外应全有。这个数是**页面总数 - 1**。
+# 2026-09-30 加 timeline-3d.html 时把写死的 42 改成跟着页面总数走：
+# 加页面时不用再回来改这个数，"漏加"照样抓得住。
+expect_with_btn = pages.size - 1
+issues << "仍有个别页面漏加全屏按钮（除独立文档外应全有；应 #{expect_with_btn} 页，实际 #{with_btn.size} 页）" unless
+  with_btn.size == expect_with_btn
 issues << '白板工具条里还留着全屏按钮（应与侧栏统一）' if
   File.read(File.join(ROOT, 'whiteboard.html'), encoding: 'UTF-8')[/<div class="wb-dock".*?<div class="wb-pop"/m].to_s.include?('id="wb-full"')
 

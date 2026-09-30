@@ -58,9 +58,259 @@
 
   var DAY = 86400000;
   var PROGRESS = 0.437;          /* 演示学生学到哪（43.7%），设计稿的原话 */
-  var START_AT = '2026-01-05';   /* 第一个知识点是这天学的 */
-  var END_AT   = '2026-09-25';   /* 最后一个已学的知识点是这天 */
+  /* 演示学生的**真实学时**：小学一年级上（2020-09）一直学到七年级下期末（2026-06）——
+     拉成 K12 的真实跨度（用户 2026-09-30 定的口径）。原来挤在 9 个月里，
+     跟"课程计划日"差了五六年，3D 的 Z 轴把两条线摆在一起就是一团不对的东西。 */
+  var START_AT = '2020-09-01';   /* 第一个知识点是这天学的（小学一年级开学） */
+  var END_AT   = '2026-06-30';   /* 最后一个已学的知识点是这天（七年级下期末） */
   var DEFAULT_SEED = 20260929;   /* 演示那一份写死的种子：同一个学生每次进页面拿到的都一样 */
+
+  /* ==================================================================== *
+   * 3D 轴的数据地基（用户 2026-09-30 定的口径：X = 知识结构、Z = 日历时间）
+   * --------------------------------------------------------------------
+   * 这一层**完全不动上面那份记录**（mastery / learnedAt / term / marks 一个都不碰），
+   * 只在它上面挂两样新东西、外加一组考试：
+   *   · rec.plannedAt —— 这个知识点**按课程计划**该在哪天学（K12 的真实学年）
+   *   · rec.events    —— 学习轨迹：首学 → 复习若干次 → 纠错 / 考试
+   *   · exams         —— 考试实体：一册考一次，每道题有得分，错题一眼看得出
+   *
+   * 为什么"不动旧字段"是硬要求：2D 那条链路（`build()`）与 1396 条自检都压在上面，
+   * 新加的东西一旦混进**主随机流**，掌握度 / 学习日 / 卡片整份都会跟着挪位。
+   * 所以这里的每一个随机数都走 `markRoll`（按知识点编号散列的**独立**流），
+   * 跟标记那四类共用同一套办法 —— 这正是当初给标记分流时记下的坑。
+   * ==================================================================== */
+
+  /** 演示数据里的"今天"：跟着学时窗口走 —— 七年级下期末刚考完。 */
+  var TODAY_AT = '2026-06-30';
+
+  /* K12 的真实日历：小学一年级（上）2020 年 9 月开学，一学年两学期。
+     轴上的"年级"是按**教材顺序**排的，跟日历不是一回事 —— 接上日历之后，
+     "按部就班学"会落在一条斜线上，而复习 / 考试 / 跳学才是偏离它的那部分。 */
+  var K12 = {
+    startYear: 2020,
+    term: { upper: '09-01', lower: '02-20' },
+    grades: { '一年级': 1, '二年级': 2, '三年级': 3, '四年级': 4, '五年级': 5, '六年级': 6,
+              '七年级': 7, '八年级': 8, '九年级': 9, '高一': 10, '高二': 11 }
+  };
+
+  /** 这个知识点按课程计划该在哪天学。竞赛那几支没有年级 → 给空串（3D 里跳过它）。 */
+  function plannedAtOf(item) {
+    var chain = item && item.chain;
+    if (!chain) { return ''; }
+    var grade = '';
+    var book = '';
+    for (var k = 0; k < chain.length; k += 1) {
+      if (chain[k].depth === 1) { grade = chain[k].name; }
+      if (chain[k].depth === 2) { book = chain[k].name; }
+    }
+    var n = K12.grades[grade];
+    if (!n) { return ''; }
+    var year = K12.startYear + (n - 1);
+    return (/下/.test(book) ? (year + 1) : year) + '-' +
+           (/下/.test(book) ? K12.term.lower : K12.term.upper);
+  }
+
+  /* 轨迹上的四类事件（3D 的 Z 轴要看的就是它们） */
+  var EVENT_KINDS = [
+    { key: 'first',  name: '首学' },
+    { key: 'review', name: '复习' },
+    { key: 'fix',    name: '纠错' },
+    { key: 'exam',   name: '考试' }
+  ];
+
+  /* 一册一考时那三档范围（`take` = 这一册里考多少）；另外每学年还会有一场跨册的
+     "学年考"（scope: 'year'），那是最长的一种 —— 3D 的板宽就是照这些范围来的 */
+  var EXAM_SCOPES = [
+    { key: 'unit',  name: '单元测', take: 0.34 },
+    { key: 'mid',   name: '期中',   take: 0.6 },
+    { key: 'final', name: '期末',   take: 1 }
+  ];
+
+  /* 新字段专用的一批散列盐（避开标记那四类用的 0–3） */
+  var TL_SALT = { first: 11, peak: 12, review: 13, examDate: 14, examScore: 15, fix: 16, scope: 17 };
+  var REVIEW_GAP = [7, 21, 45];      /* 第 1 / 2 / 3 次复习各隔多少天 */
+
+  /** 一个知识点的学习轨迹。
+   *  **最后一条的掌握度一定等于 `rec.mastery`** —— 2D 的彩条显示的就是那个数，
+   *  两条线必须是同一条，否则 3D 的曲线跟 2D 的柱子会互相打脸。
+   *  状态是"待复习 / 薄弱"的那些，中间会先冲到峰值再落下来（学完时不错、后来忘了）。 */
+  function trajectoryOf(rec, i, seed0, today) {
+    var m = rec.mastery;
+    var t0 = parseDay(rec.learnedAt);
+    var cnt = m >= 80 ? 3 : (m >= 65 ? 2 : (m >= 45 ? 1 : 0));
+    if (!cnt) { return [{ at: t0, kind: 'first', mastery: m }]; }
+    var dip = rec.status === '待复习' || rec.status === '薄弱';
+    var peak = dip ? Math.min(100, m + 10 + Math.round(markRoll(seed0, i, TL_SALT.peak) * 10)) : m;
+    var first = Math.max(4, Math.round(m * (0.45 + 0.2 * markRoll(seed0, i, TL_SALT.first))));
+    var out = [{ at: t0, kind: 'first', mastery: first }];
+    var prev = t0;
+    for (var k = 1; k <= cnt; k += 1) {
+      var jitter = Math.round((markRoll(seed0, i, TL_SALT.review + k) * 6 - 3) * DAY);
+      var at = t0 + REVIEW_GAP[k - 1] * DAY + jitter;
+      if (at > today) { break; }                     /* 还没到的复习不排 */
+      if (at <= prev) { at = prev + DAY; }
+      if (at > today) { break; }
+      prev = at;
+      out.push({ at: at, kind: 'review', mastery: Math.round(first + (peak - first) * (k / cnt)) });
+    }
+    out[out.length - 1].mastery = m;                 /* 钉成 2D 那个数 */
+    return out;
+  }
+
+  /** 某个时刻的掌握度：在轨迹上按时间取（考试那天的水平就是这么算的）。 */
+  function masteryAt(events, atMs) {
+    if (!events || !events.length) { return 0; }
+    var v = events[0].mastery;
+    for (var k = 0; k < events.length; k += 1) {
+      if (events[k].at <= atMs) { v = events[k].mastery; } else { break; }
+    }
+    return v;
+  }
+
+  /** 一册的名字（当考试的卷名用）：链上 depth 2 那一级。 */
+  function bookOf(item) {
+    var chain = item && item.chain;
+    if (!chain) { return ''; }
+    for (var k = 0; k < chain.length; k += 1) {
+      if (chain[k].depth === 2) { return chain[k].name; }
+    }
+    return '';
+  }
+
+  /**
+   * 考试：**一册考一场**，只考"已经整册学完"的（学着的那册不考）。
+   * 范围轮着来（用户 2026-09-30："他每次考试，他考的范围不一样……考的难度也不一样"）：
+   *   单元测 = 这一册里的一段 · 期中 = 前半册 · 期末 = 整册 —— 三场轮着来。
+   * 另外**上下两册都学完就来一场跨册的"学年考"** —— 范围最长的那种
+   * （用户 2026-09-30："这个长的考试，就涵盖范围长的考试，这样我就可以看到长的是什么样子"）。
+   * 3D 那块玻璃板的宽度按**这场实际考到的考点跨度**画，所以范围不同、宽度才不一样。
+   * 每道题的得分由"考试那天这个知识点的掌握度"推出来（± 一点起伏），
+   * 所以这张卷子是可以对着事件流复算的 —— 3D 的考试切片要的就是这个。
+   * `paper` 里每项：{ index, full, score }，错题（不到 60%）一眼看得出来。
+   */
+  function makeExams(items, records, seed0, today) {
+    var groups = [];
+    var cur = null;
+    for (var i = 0; i < records.length; i += 1) {
+      var key = bookOf(items[i]);
+      if (!key) { continue; }
+      if (!cur || cur.key !== key) {
+        cur = { key: key, name: key, from: i, to: i + 1 };
+        groups.push(cur);
+      } else {
+        cur.to = i + 1;
+      }
+    }
+    /** 这一册整册学完了吗 */
+    function done(grp) {
+      for (var j = grp.from; j < grp.to; j += 1) { if (!records[j].learnedAt) { return false; } }
+      return true;
+    }
+    /** 一场卷子：把 [from, to) 这几格按"考试那天的掌握度"打上分 */
+    function paperOver(from, to, at) {
+      var paper = [];
+      for (var q = from; q < to; q += 1) {
+        var mAt = masteryAt(records[q].events, at);
+        var noise = (markRoll(seed0, q, TL_SALT.examScore) * 2 - 1) * 12;
+        var p = Math.max(0, Math.min(1, (mAt + noise) / 100));
+        paper.push({ index: q, full: 10, score: Math.round(p * 10) });
+      }
+      return paper;
+    }
+    var out = [];
+    for (var g = 0; g < groups.length; g += 1) {
+      var grp = groups[g];
+      if (!done(grp)) { continue; }                   /* 没学完的册不考 */
+      var scope = EXAM_SCOPES[g % EXAM_SCOPES.length];
+      var span = grp.to - grp.from;
+      var take = span >= 3 ? Math.max(2, Math.round(span * scope.take)) : span;
+      var from = grp.from;
+      if (take < span) {
+        from = grp.from + Math.min(span - take, Math.round(markRoll(seed0, g, TL_SALT.scope) * (span - take)));
+      }
+      var to = from + take;
+      var gap = (6 + Math.round(markRoll(seed0, g, TL_SALT.examDate) * 8)) * DAY;
+      var at = Math.min(parseDay(records[to - 1].learnedAt) + gap, today);
+      out.push({
+        id: '', name: grp.name + ' · ' + scope.name, at: at, date: dayText(at),
+        from: from, to: to, scope: scope.key, paper: paperOver(from, to, at)
+      });
+    }
+    /* 学年考：轴上是**连续的上下两册**（一年级上册 → 一年级下册）才算一个学年。
+       高中那几册没有"上/下"（必修第一册…），推不出学年就跳过 —— 不硬编一个。 */
+    for (var y = 0; y + 1 < groups.length; y += 2) {
+      var g1 = groups[y];
+      var g2 = groups[y + 1];
+      var m1 = /^(.+?)[上下]册$/.exec(g1.name);
+      var m2 = /^(.+?)[上下]册$/.exec(g2.name);
+      if (!m1 || !m2 || m1[1] !== m2[1]) { continue; }
+      if (!done(g1) || !done(g2)) { continue; }
+      var yFrom = g1.from;
+      var yTo = g2.to;
+      var yGap = (6 + Math.round(markRoll(seed0, y, TL_SALT.examDate) * 8)) * DAY;
+      var yAt = Math.min(parseDay(records[yTo - 1].learnedAt) + yGap, today);
+      out.push({
+        id: '', name: m1[1] + ' · 学年考', at: yAt, date: dayText(yAt),
+        from: yFrom, to: yTo, scope: 'year', paper: paperOver(yFrom, yTo, yAt)
+      });
+    }
+    /* 编号按**时间**排（E1 就是最早那一场），面板列表读起来才顺 */
+    out.sort(function (a, b) { return a.at - b.at; });
+    out.forEach(function (e, k) { e.id = 'E' + (k + 1); });
+    return out;
+  }
+
+  /** 把考试与纠错接回每个知识点的轨迹，按时间排好，最后钉成 rec.mastery。 */
+  function attachExams(records, exams, seed0, today) {
+    var i, k, q;
+    for (k = 0; k < exams.length; k += 1) {
+      var ex = exams[k];
+      for (q = 0; q < ex.paper.length; q += 1) {
+        var item = ex.paper[q];
+        var rec = records[item.index];
+        if (!rec) { continue; }
+        var mAt = masteryAt(rec.events, ex.at);
+        rec.events.push({ at: ex.at, kind: 'exam', mastery: mAt, exam: ex.id, score: item.score, full: item.full });
+        if (item.score * 5 < item.full * 3) {        /* 不到 60% = 错题 → 之后纠错一笔 */
+          var fixAt = Math.min(ex.at + (5 + Math.round(markRoll(seed0, item.index, TL_SALT.fix) * 8)) * DAY, today);
+          rec.events.push({
+            at: fixAt, kind: 'fix', mastery: Math.min(100, mAt + 12),
+            exam: ex.id, from: item.score, to: item.full
+          });
+        }
+      }
+    }
+    for (i = 0; i < records.length; i += 1) {
+      var r = records[i];
+      if (!r.events || !r.events.length) { continue; }
+      r.events.sort(function (a, b) { return a.at - b.at; });
+      r.events[r.events.length - 1].mastery = r.mastery;
+    }
+  }
+
+  /**
+   * 3D 那边要的全部数据。**调用前先 `build(items, opts)`** ——
+   * 它会就地给每条记录挂上 plannedAt / events，并返回考试与日历。
+   * 2D 那条链路一个字都不碰：`build()` 自己既不加 events、也不读 plannedAt。
+   */
+  function buildTimeline(items, records, opts) {
+    var opt = opts || {};
+    var seed0 = typeof opt.seed === 'number' ? opt.seed : DEFAULT_SEED;
+    var today = parseDay(opt.todayAt || TODAY_AT);
+    var i;
+    for (i = 0; i < records.length; i += 1) {
+      var rec = records[i];
+      rec.plannedAt = plannedAtOf(items[i]);
+      if (!rec.learnedAt) {                       /* 没学过的格子：没有轨迹 */
+        rec.events = [];
+        continue;
+      }
+      rec.events = trajectoryOf(rec, i, seed0, today);
+    }
+    var exams = makeExams(items, records, seed0, today);
+    attachExams(records, exams, seed0, today);
+    return { calendar: K12, kinds: EVENT_KINDS, exams: exams, today: dayText(today) };
+  }
 
   /* ------------------------------------------------------------------ *
    * 看谁的学习记录（用户第 11 条：未登录看演示学生，登录了看自己的）
@@ -146,6 +396,19 @@
     return d.getUTCFullYear() + '-' + (m.length < 2 ? '0' + m : m) + '-' + (day.length < 2 ? '0' + day : day);
   }
 
+  /* 时间段的**粒度是学期**（用户 2026-09-30 定的），不是月：
+     12 年的学时按月切是 69 个格子（对比卡列 69 行、筛选摆 69 个胶囊，没法用），
+     按学期切是 12 个 —— 也正好对上"一学期一次期中 / 期末"的真实节奏。
+     学年以 9 月为界：9–12 月与次年 1 月算**上学期**，2–8 月（含暑假）算**下学期**。 */
+  function termOf(ms) {
+    var d = new Date(ms);
+    var y = d.getUTCFullYear();
+    var m = d.getUTCMonth() + 1;
+    if (m >= 9) { return y + '-上'; }
+    if (m === 1) { return (y - 1) + '-上'; }
+    return (y - 1) + '-下';
+  }
+
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
   /* 各类标记的"命中比例"（演示用）：该复习的与硬骨头多标一些，"重点"本来就少 */
@@ -173,7 +436,7 @@
    *   learnedAt / reviewAt  学习日 / 下次复习日（未学是空串）
    *   cards    这个知识点名下的卡片数（未学为 0）
    *   diff     难度 1.0–5.0（**综合判定**：这个点有多硬）—— 轴上条子的高矮就是它
-   *   month    'YYYY-MM'，按时间段对比要用
+   *   term     'YYYY-上' / 'YYYY-下'（**学期**，按时间段对比与筛选要用）
    *   marks    **学员自己贴的标记**（`'key' / 'hard' / 'review'` 的任意组合，可以几个同时挂）
    *   blocked  **系统算的**"前置未满足"（布尔）—— 学员改不了，见 MARKS 上的 `own`
    */
@@ -211,7 +474,7 @@
       if (i >= learned) {
         out.push({
           mastery: 0, status: '未开始', learnedAt: '', reviewAt: '',
-          diff: diff, month: '', cards: [], factors: null,
+          diff: diff, term: '', cards: [], factors: null,
           /* 还没学的格子带不出自评标记，只可能被系统标"前置未满足"（就是这一档的意思） */
           marks: [],
           blocked: markRoll(seed0, i, MARK_SALT.block) < MARK_RATE.block
@@ -292,7 +555,7 @@
       out.push({
         mastery: mastery, status: status,
         learnedAt: dayText(at), reviewAt: reviewAt,
-        factors: factors, cards: cards, diff: diff, month: dayText(at).slice(0, 7),
+        factors: factors, cards: cards, diff: diff, term: termOf(at),
         marks: marks, blocked: false
       });
     }
@@ -330,21 +593,21 @@
     };
   }
 
-  /** 按"学的那一个月"汇总（用户第 13 条的时间段对比用它）：
-   *  每个月学了多少格、平均掌握多少、多少张卡片。按月份升序返回。
-   *  没学过的格子没有日期，不参与 —— 所以每个月的"已学"就是那段时间真实学掉的量。
-   *  接后端时这里换成服务端按月聚合的报表即可。 */
-  function months(records) {
+  /** 按"学的那一个**学期**"汇总（用户第 13 条的时间段对比用它）：
+   *  每个学期学了多少格、平均掌握多少、多少张卡片。按学期升序返回。
+   *  没学过的格子没有日期，不参与 —— 所以每个学期的"已学"就是那段时间真实学掉的量。
+   *  接后端时这里换成服务端按学期聚合的报表即可。 */
+  function terms(records) {
     var map = {};
     var order = [];
     for (var i = 0; i < records.length; i += 1) {
       var r = records[i];
-      if (!r.month) { continue; }
-      if (!map[r.month]) {
-        map[r.month] = { month: r.month, learned: 0, sum: 0, cards: 0 };
-        order.push(r.month);
+      if (!r.term) { continue; }
+      if (!map[r.term]) {
+        map[r.term] = { term: r.term, learned: 0, sum: 0, cards: 0 };
+        order.push(r.term);
       }
-      var m = map[r.month];
+      var m = map[r.term];
       m.learned += 1;
       m.sum += r.mastery;
       m.cards += (r.cards && r.cards.length) || 0;
@@ -353,7 +616,7 @@
     return order.map(function (k) {
       var m = map[k];
       return {
-        month: k,
+        term: k,
         learned: m.learned,
         avg: m.learned ? Math.round(m.sum / m.learned) : 0,
         cards: m.cards
@@ -398,7 +661,13 @@
     tokenOf: tokenOf,
     build: build,
     rollup: rollup,
-    months: months,
-    summary: summary
+    terms: terms,
+    summary: summary,
+    /* ---- 3D 那一层（用户 2026-09-30）：现有 2D 一个字段都不用它 ---- */
+    buildTimeline: buildTimeline,
+    plannedAtOf: plannedAtOf,
+    eventKinds: EVENT_KINDS,
+    calendar: K12,
+    todayAt: TODAY_AT
   };
 }());

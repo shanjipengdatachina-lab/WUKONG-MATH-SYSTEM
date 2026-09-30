@@ -230,6 +230,11 @@
         <i data-lucide="maximize-2"></i>
       </button>
       <span class="tk-dock__sep" aria-hidden="true"></span>
+      <!-- 3D 视角：同一根轴的立体观察层（用户 2026-09-30）—— 另起一页，
+           默认视角与这里一模一样，点那一页的「3D」才转成俯瞰。 -->
+      <a class="tk-dock__btn" href="timeline-3d.html" data-tk-tip="3D 视角" aria-label="3D 视角">
+        <i data-lucide="box"></i>
+      </a>
       <button type="button" class="tk-dock__btn" id="tk-help" aria-expanded="false" aria-controls="tk-help" data-tk-tip="帮助" aria-label="帮助">
         <i data-lucide="circle-help"></i>
       </button>
@@ -255,8 +260,8 @@
         <i data-lucide="info"></i>
       </button>
       <!-- 第 13 条：时间段对比；第 18 条：方阵（打卡 / 选座那种小方块） -->
-      <button type="button" class="tk-side__btn" id="tk-months" aria-expanded="false"
-              aria-controls="tk-months-panel" data-tk-tip="时间段对比" aria-label="时间段对比">
+      <button type="button" class="tk-side__btn" id="tk-terms" aria-expanded="false"
+              aria-controls="tk-terms-panel" data-tk-tip="时间段对比" aria-label="时间段对比">
         <i data-lucide="calendar-range"></i>
       </button>
       <button type="button" class="tk-side__btn" id="tk-matrix" aria-expanded="false"
@@ -293,14 +298,14 @@
 
     <!-- 时间段对比（用户第 13 条）：一个月一行，"条子长" = 那个月的平均掌握 ——
          一屏之内就能比出"哪个月学得扎实"；点一行只留下那个月学过的格子（其余变淡）。 -->
-    <aside class="tk-card tk-months" id="tk-months-panel" data-tk-months hidden role="group" aria-label="时间段对比">
-      <div class="tk-card__head" data-tk-months-head>
+    <aside class="tk-card tk-terms" id="tk-terms-panel" data-tk-terms hidden role="group" aria-label="时间段对比">
+      <div class="tk-card__head" data-tk-terms-head>
         <span class="tk-card__name">时间段对比</span>
-        <button type="button" class="tk-card__close" data-tk-months-close aria-label="收起时间段对比">×</button>
+        <button type="button" class="tk-card__close" data-tk-terms-close aria-label="收起时间段对比">×</button>
         <i data-lucide="grip-vertical" class="tk-card__grip" aria-hidden="true"></i>
       </div>
-      <p class="tk-card__subject" data-tk-months-subject></p>
-      <div class="tk-card__body" data-tk-months-body></div>
+      <p class="tk-card__subject" data-tk-terms-subject></p>
+      <div class="tk-card__body" data-tk-terms-body></div>
     </aside>
 
     <!-- 方阵（用户第 18 条）：一个方块 = 一个知识点，像"打卡 / 选电影座位"那样铺开。
@@ -793,28 +798,29 @@ button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--
 .tk-filters__clear:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
 
 /* ---------- 时间段对比卡（用户第 13 条）----------
-   一个月一行：左边月份、中间一条"掌握率条"、右边已学几格 —— 一屏比出哪个月学得扎实。 */
-.tk-months { width: calc(var(--math-float-w) + 24px); }
-.tk-month {
+   一个**学期**一行：左边学年学期、中间一条"掌握率条"、右边已学几格 —— 一屏比出哪个学期学得扎实。
+   粒度是学期不是月（用户 2026-09-30 定的）：学时拉成 K12 的 12 年之后，按月切就是 69 行。 */
+.tk-terms { width: calc(var(--math-float-w) + 24px); }
+.tk-term {
   display: flex; align-items: center; gap: 8px; width: 100%;
   padding: 3px 5px; border: 0; border-radius: var(--math-radius-md);
   background: none; color: var(--math-ink-2); cursor: pointer; text-align: left;
   font: inherit; font-size: calc(11.5px * var(--math-fs)); line-height: 1.5;
 }
-.tk-month:hover { background: var(--math-surface); color: var(--math-foreground); }
-.tk-month:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
-.tk-month.is-on { background: var(--math-primary-tint); color: var(--math-primary); }
-.tk-month__label { flex: none; width: 36px; font-variant-numeric: tabular-nums; }
-.tk-month__track {
+.tk-term:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-term:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+.tk-term.is-on { background: var(--math-primary-tint); color: var(--math-primary); }
+.tk-term__label { flex: none; width: 62px; font-variant-numeric: tabular-nums; }
+.tk-term__track {
   flex: 1 1 auto; height: 7px; min-width: 36px; overflow: hidden;
   border-radius: 999px; background: var(--math-line);
 }
-.tk-month__fill { display: block; height: 100%; border-radius: 999px; }
-.tk-month__meta {
+.tk-term__fill { display: block; height: 100%; border-radius: 999px; }
+.tk-term__meta {
   flex: none; width: 104px; color: var(--math-ink-3); text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.tk-month.is-on .tk-month__meta { color: var(--math-primary); }
+.tk-term.is-on .tk-term__meta { color: var(--math-primary); }
 
 /* ---------- 方阵卡（用户第 18 条）----------
    一格一个知识点，18 列——"像买电影票填座位那样"；颜色就是掌握情况。
@@ -872,6 +878,7 @@ button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--
 <script src="assets/js/shell.js"></script>
 <script src="assets/js/ide-shell.js"></script>
 <script src="assets/js/math-tree.js"></script>
+<script src="assets/js/timeline-axis.js"></script>
 <script src="assets/js/timeline-data.js"></script>
 <script src="assets/js/timeline.js"></script>
 </body>

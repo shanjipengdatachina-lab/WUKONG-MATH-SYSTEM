@@ -24,6 +24,7 @@ issues = []
 
 page  = read('timeline.html')
 js    = read('assets/js/timeline.js')
+axis_js = read('assets/js/timeline-axis.js')   # 摊平图谱的共享模块（2D 与 3D 共用同一根轴）
 data  = read('assets/js/timeline-data.js')
 css   = read('assets/css/tokens.css')
 pages = Dir.glob(File.join(ROOT, '*.html')).sort.map { |p| File.basename(p) }
@@ -102,20 +103,25 @@ issues << '时间轴页自己没把「时间轴」标为当前项' unless
   page =~ /data-nav-key="timeline" data-active="true" aria-current="page"/
 
 # ---------- 3. 视图与刻度的契约 ----------
-# 刻度必须从图谱来，不是设计稿里编的那几组数
-issues << 'timeline.js 没读图谱数据（window.MATH_TREE）' unless js.include?('window.MATH_TREE')
-issues << 'timeline.js 没有摊平图谱的函数（buildAxis）' unless js.include?('function buildAxis')
-# 五级刻度：学段 / 册·板块 / 章 / 节 / 知识点
+# 刻度必须从图谱来，不是设计稿里编的那几组数。
+# **2026-09-30 起"摊平图谱"这件事搬到了共享模块 timeline-axis.js**（2D 与 3D 用的必须是同一根轴）：
+# 这里查"timeline.js 确实用了那个模块"，规则本身查下面那份 axis。
+issues << 'timeline.js 没读图谱数据（window.MATH_TREE）' unless
+  js.include?('window.MATH_TREE') || js.include?('window.WK_AXIS')
+issues << 'timeline.js 没有用共享的摊平模块（timeline-axis.js / window.WK_AXIS.build）' unless
+  page.include?('assets/js/timeline-axis.js') && js.include?('window.WK_AXIS.build()')
+issues << 'timeline-axis.js 里没有摊平图谱的函数（buildAxis）' unless
+  axis_js.include?('function buildAxis') && axis_js.include?('window.WK_AXIS = {')
 %w[book track chapter section point].each do |kind|
-  issues << "timeline.js 里没处理图谱的「#{kind}」这一级" unless js.include?("'#{kind}'")
+  issues << "摊平图谱时没处理「#{kind}」这一级" unless axis_js.include?("'#{kind}'")
 end
 # 六级文字：**分段 → 年级 → 册 → 章 → 节 → 知识点**（用户 2026-09-29 定的顺序）
 issues << 'timeline.js 没有六级刻度的阶梯（LADDER 应为 6 级）' unless
   js =~ /var LADDER = \[[\s\S]{0,900}?\];/ && js[/var LADDER = \[([\s\S]{0,900}?)\];/, 1].to_s.scan(/\{ size:/).size == 6
-issues << 'timeline.js 没有"年级"这一级（图谱里没有，得从册名推：一年级上册 → 一年级）' unless
-  js.include?('function gradeOf') && js.include?('年级')
+issues << '摊平图谱时没有"年级"这一级（图谱里没有，得从册名推：一年级上册 → 一年级）' unless
+  axis_js.include?('function gradeOf') && axis_js.include?('年级')
 issues << '竞赛那四支没有年级，不该硬塞一个（年级那一级应允许为空）' unless
-  js.include?("if (grade) { next = next.concat(")
+  axis_js.include?("if (grade) { next = next.concat(")
 # （原来这里查的是"769 格 · 4 分段 / 11 年级 / …"那一行的六个数的顺序。
 #   2026-09-30 用户把左上角收成"当前知识点 + 掌握情况"两行，那一行没有了，这条守线随之撤掉；
 #   六级刻度本身由上面的 LADDER 与 drawLevels 那几条盯着。）
@@ -322,7 +328,7 @@ issues << 'Esc 关不掉图例卡' unless js[/Escape'\)[\s\S]{0,220}?setLegend\(
 # 图例**不是面板**（用户 2026-09-29："也不用出这个面板了……它不是个面板，
 # 直接写在这块中间这块区域就行"）：它是底部工具条正上方的那一行，不该再回到可拖浮层那一套。
 issues << '图例又变成可拖的浮层了（用户定的：它不是面板，是工具条正上方的一行）' unless
-  js.include?("var WIN_KEYS = ['card', 'filter', 'months', 'matrix']") &&
+  js.include?("var WIN_KEYS = ['card', 'filter', 'terms', 'matrix']") &&
   page.include?('data-tk-legend-bar') &&
   # 它住在"工具条正上方那一列"里（.tk-above），不再是各自绝对定位 —— 与缩略条同一列往上排
   page[/\.tk-above \{[\s\S]{0,520}?bottom: 78px/] &&
@@ -501,7 +507,7 @@ issues << '刻度与文字没有开关（右侧那颗应能整层关掉）' unle
 issues << '信息面板没有开关（应能整块藏起来）' unless
   js.include?('function setReadout') && js.include?('leftEl.hidden = !state.readout')
 issues << '筛选卡不是与知识点卡片同一套浮层（可拖、位置记住）' unless
-  js.include?('var winAt = { card: null, filter: null, months: null, matrix: null }')
+  js.include?('var winAt = { card: null, filter: null, terms: null, matrix: null }')
 # 筛选按钮的"亮不亮"只算一遍，且**面板开着也算亮**（用户 2026-09-30："激活筛选面板的时候，
 # 筛选按钮还是不显示的状态，这不对的"）。以前那颗按钮只在"有筛的维度"时才亮，
 # 于是空筛选打开面板时按钮是暗的 —— 看着像没生效。
@@ -511,14 +517,50 @@ issues << '筛选面板开着时筛选按钮还是不亮（用户点名要它亮
   js[/function syncFilterButton[\s\S]{0,600}?if \(open \|\| filterOn\(\)\)/]
 
 # ---------- 4e. 时间段对比（用户第 13 条）与方阵（用户第 18 条）----------
-issues << 'timeline-data.js 没有按月的汇总（months）' unless
-  data.include?('function months') && data.include?('months: months')
-issues << '页面没有时间段对比卡（data-tk-months）' unless page.include?('data-tk-months')
-issues << '时间段没有成为筛选的一维（选了月份要能落到轴上）' unless
-  js.include?('state.filter.month') &&
-  js.include?("f.month.length && f.month.indexOf(rec.month || '') < 0")
-issues << '月份那一行的条子不是按平均掌握给的' unless
-  js[/function buildMonths[\s\S]{0,1500}?fill\.style\.width = Math\.max\(2, m\.avg\)/]
+issues << 'timeline-data.js 没有按学期的汇总（terms）' unless
+  data.include?('function terms') && data.include?('terms: terms')
+
+# ---------- 4c-2. 3D 轴的数据地基（用户 2026-09-30 定的口径：X = 知识结构、Z = 日历时间）----------
+# 这一层只**加**东西，一个字都不改上面那份记录 —— 这是"不影响现在功能"的落点。
+# 所以守线盯的是三件事：① 现有 build() 不许碰新字段；② 新字段只走独立散列流；
+# ③ 轨迹的最后一条必须钉成 2D 显示的那个掌握度（两条线是同一条）。
+issues << 'timeline-data.js 没有 buildTimeline（3D 那一层的数据入口）' unless
+  data.include?('function buildTimeline') && data.include?('buildTimeline: buildTimeline')
+issues << 'timeline-data.js 没有 K12 日历（年级 ↔ 真实学年）' unless
+  data.include?('var K12 = {') && data.include?('function plannedAtOf')
+%w[first review fix exam].each do |k|
+  issues << "轨迹里没有「#{k}」这类事件（四类要齐全：首学 / 复习 / 纠错 / 考试）" unless
+    data.include?("key: '#{k}'")
+end
+issues << '新字段用了主随机流（会把现有的掌握度 / 学习日 / 卡片整份带跑偏）—— 必须走 markRoll 那条独立流' unless
+  data.include?('markRoll(seed0, i, TL_SALT.')
+issues << '轨迹的最后一条没有钉成 rec.mastery（3D 的曲线会跟 2D 的柱子对不上）' unless
+  data.include?('out[out.length - 1].mastery = m;') &&
+  data.include?('r.events[r.events.length - 1].mastery = r.mastery;')
+# 考试范围要**不一样**（用户 2026-09-30："他每次考试他考的范围不一样……考的难度也不一样"）：
+# 一册一考，但三档轮着来 —— 单元测 / 期中 / 期末。3D 那块玻璃板的宽度就是照
+# "这场卷子实际考到的考点跨度"画的，范围一样宽就全都一样宽（用户原话点过这一点）。
+issues << '考试没有分档（单元测 / 期中 / 期末要轮着来，不然每场范围一样、面板就一样宽）' unless
+  data.include?('var EXAM_SCOPES = [') && data.include?("key: 'unit'") &&
+  data.include?("key: 'mid'") && data.include?("key: 'final'") &&
+  data.include?('EXAM_SCOPES[g % EXAM_SCOPES.length]')
+issues << '卷子里没记这场考了哪一段（3D 的板宽要按 from / to 算，不能按整册边界）' unless
+  data.include?('from: from, to: to') && data.include?('scope: scope.key') &&
+  data.include?('TL_SALT.scope')
+# 还要有**最长的那种**：上下两册都学完就来一场跨册的"学年考"
+# （用户 2026-09-30："这个长的考试，就涵盖范围长的考试，这样我就可以看到长的是什么样子"）。
+issues << '没有跨册的"学年考"（最长的那种面板 —— 上下两册连着考）' unless
+  data.include?("' · 学年考'") && data.include?("scope: 'year'") &&
+  data.include?('EXAM_SCOPES') && data.include?('[上下]册$')
+issues << '考试编号不是按时间排的（E1 要是最早那一场，面板读起来才顺）' unless
+  data.include?('out.sort(function (a, b) { return a.at - b.at; });') &&
+  data.include?("e.id = 'E' + (k + 1);")
+issues << '页面没有时间段对比卡（data-tk-terms）' unless page.include?('data-tk-terms')
+issues << '时间段没有成为筛选的一维（选了学期要能落到轴上）' unless
+  js.include?('state.filter.term') &&
+  js.include?("f.term.length && f.term.indexOf(rec.term || '') < 0")
+issues << '学期那一行的条子不是按平均掌握给的' unless
+  js[/function buildTerms[\s\S]{0,1500}?fill\.style\.width = Math\.max\(2, m\.avg\)/]
 issues << '页面没有方阵卡（data-tk-matrix）' unless page.include?('data-tk-matrix')
 issues << '方阵不是"一排 18 个"（用户第 18 条："这一块一共有 18 个块"）' unless
   js.include?('var MATRIX_COLS = 18') && page.include?('repeat(18, 1fr)')

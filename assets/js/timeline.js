@@ -80,12 +80,12 @@
   var stageChips = main.querySelector('[data-tk-stage-chips]');
   var btnFiltersClose = main.querySelector('[data-tk-filters-close]');
   /* 时间段对比（第 13 条）与方阵（第 18 条）：两张同样式样的可拖面板 */
-  var monthsEl = main.querySelector('[data-tk-months]');
-  var monthsHead = main.querySelector('[data-tk-months-head]');
-  var monthsSubject = main.querySelector('[data-tk-months-subject]');
-  var monthsBody = main.querySelector('[data-tk-months-body]');
-  var btnMonths = side ? side.querySelector('#tk-months') : null;
-  var btnMonthsClose = main.querySelector('[data-tk-months-close]');
+  var termsEl = main.querySelector('[data-tk-terms]');
+  var termsHead = main.querySelector('[data-tk-terms-head]');
+  var termsSubject = main.querySelector('[data-tk-terms-subject]');
+  var termsBody = main.querySelector('[data-tk-terms-body]');
+  var btnTerms = side ? side.querySelector('#tk-terms') : null;
+  var btnTermsClose = main.querySelector('[data-tk-terms-close]');
   var matrixEl = main.querySelector('[data-tk-matrix]');
   var matrixHead = main.querySelector('[data-tk-matrix-head]');
   var matrixSubject = main.querySelector('[data-tk-matrix-subject]');
@@ -178,109 +178,14 @@
    * 1. 数据：把图谱摊成一维的刻度序列
    * ------------------------------------------------------------------ */
 
-  var STAGE_CN = { primary: '小学', junior: '初中', senior: '高中', olympiad: '竞赛' };
+  /* 摊平图谱（buildAxis）与它那两个帮手（STAGE_CN / gradeOf / nameAt）搬到了共享模块
+     `assets/js/timeline-axis.js` —— 2D 与 3D 用的必须是**同一根轴**，规则只留一份。
+     这里只保留别名，下面照旧 `window.WK_AXIS.build()`。 */
 
-  /* 册名 → 年级。文字层级是「分段 → 年级 → 册 → 章 → 节 → 知识点」（用户 2026-09-29 定的顺序），
-     而图谱里没有"年级"这一层，得从册名推：一年级上册 → 一年级；必修第一册 → 高一……
-     竞赛那四支没有年级（一条 track 直接当"册"那一级），推不出来就是空，空的那一级不生成段。 */
-  function gradeOf(bookName) {
-    var m = /^([一二三四五六七八九]年级)/.exec(bookName);
-    if (m) { return m[1]; }
-    if (bookName.indexOf('选择性必修') === 0) { return '高二'; }
-    if (bookName.indexOf('必修') === 0) { return '高一'; }
-    return '';
-  }
-
-  function buildAxis() {
-    var root = window.MATH_TREE;
-    var items = [];
-    var total = { book: 0, chapter: 0, section: 0, point: 0 };
-    if (!root || !root.children) {
-      return { items: items, segs: [[], [], [], [], [], []], total: total };
-    }
-
-    function walk(node, chain) {
-      var kind = node.kind;
-      var next = chain;
-      if (kind === 'book') {
-        total.book += 1;
-        var grade = gradeOf(node.name);
-        next = chain.concat([{ depth: 0, stage: node.stage, name: STAGE_CN[node.stage] || '数学' }]);
-        if (grade) { next = next.concat([{ depth: 1, stage: node.stage, name: grade }]); }
-        next = next.concat([{ depth: 2, stage: node.stage, name: node.name }]);
-      } else if (kind === 'track') {
-        /* 竞赛没有"册"，也没有年级：一条 track（板块）直接落在"册"那一级（depth 2） */
-        next = chain.concat([{ depth: 0, stage: 'olympiad', name: STAGE_CN.olympiad },
-                             { depth: 2, stage: 'olympiad', name: node.name }]);
-      } else if (kind === 'chapter') {
-        total.chapter += 1;
-        next = chain.concat([{ depth: 3, name: node.name }]);
-      } else if (kind === 'section') {
-        total.section += 1;
-        next = chain.concat([{ depth: 4, name: node.name }]);
-      } else if (kind === 'point') {
-        total.point += 1;
-      }
-      /* 方法速学 / 易错速析 / 考点（group / method / error / exam）不上轴：
-         它们是知识点卡片里的料，不是学习路径上的一格。 */
-
-      var kids = node.children || [];
-      var finer = kids.filter(function (k) { return k.kind === 'section' || k.kind === 'point'; });
-      if (kind === 'point') {
-        items.push({ name: node.name, kind: 'point', stage: stageOf(next), chain: next });
-      } else if (kind === 'section') {
-        /* 一节底下有知识点，就让位给知识点；没有，节自己就是一格 */
-        if (!kids.some(function (k) { return k.kind === 'point'; })) {
-          items.push({ name: node.name, kind: 'section', stage: stageOf(next), chain: next });
-        }
-      } else if (kind === 'chapter') {
-        /* 竞赛那四支的章**底下没有节**（只有章名），这种章本身就是最细的一格 ——
-           不认这一步，整个竞赛段就会从轴上消失。 */
-        if (!finer.length) {
-          items.push({ name: node.name, kind: 'chapter', stage: stageOf(next), chain: next });
-        }
-      }
-      kids.forEach(function (k) { walk(k, next); });
-    }
-
-    function stageOf(chain) {
-      for (var i = chain.length - 1; i >= 0; i -= 1) {
-        if (chain[i].stage) { return chain[i].stage; }
-      }
-      return '';
-    }
-
-    walk(root, []);
-
-    /* 一格占一个世界单位，中心在 i + 0.5 */
-    items.forEach(function (it, i) { it.i = i; it.x = i + 0.5; });
-
-    /* 逐级求"段"：把相邻且同名祖先的格子合成一段（段边界就是刻度的位置） */
-    var segs = [[], [], [], [], [], []];
-    for (var d = 0; d <= 5; d += 1) {
-      (function (depth) {
-        var list = segs[depth];
-        items.forEach(function (it, i) {
-          /* 第 5 级是"知识点"：只有 kind=point 的格子自己算一段（节那一级不重复占） */
-          var name = depth === 5 ? (it.kind === 'point' ? it.name : '') : nameAt(it.chain, depth);
-          if (!name) { return; }
-          var last = list[list.length - 1];
-          if (last && last.name === name) { last.end = i + 1; return; }
-          list.push({ depth: depth, name: name, start: i, end: i + 1, stage: it.stage });
-        });
-      }(d));
-    }
-    return { items: items, segs: segs, total: total };
-  }
-
-  function nameAt(chain, depth) {
-    for (var i = 0; i < chain.length; i += 1) {
-      if (chain[i].depth === depth) { return chain[i].name; }
-    }
-    return '';
-  }
-
-  var axis = buildAxis();
+  /* 摊平图谱的规则住在共享模块 `assets/js/timeline-axis.js`（2D 与 3D 共用**同一根轴**）。 */
+  var STAGE_CN = window.WK_AXIS.stageCN;
+  var nameAt = window.WK_AXIS.nameAt;
+  var axis = window.WK_AXIS.build();
   var ITEMS = axis.items;
   var SEGS = axis.segs;
   var N = ITEMS.length;
@@ -530,7 +435,7 @@
     levels: true,                       /* 刻度与文字这一层画不画（右侧那条第二颗开关） */
     readout: true,                      /* 左上角"这一轴是谁的 + 读数"显不显示 */
     axis: 1,                            /* **数轴整体大小**（1 = 标准）：轴、刻度、文字、点、彩条一起放大缩小 */
-    filter: { status: [], diff: [], mark: [], month: [] }   /* 筛选：空数组 = 这一维不筛 */
+    filter: { status: [], diff: [], mark: [], term: [] }   /* 筛选：空数组 = 这一维不筛 */
   };
   /* mastery：掌握度彩条层（条子 + 点的状态色）要不要画。
      **默认关**（用户原话："默认时不显示这些彩色的。它只有刻度，只有这些文字的点。
@@ -1196,7 +1101,7 @@
     if (elNow) { elNow.textContent = nowText(); }
     if (elProgress) { elProgress.textContent = progressText(); }
     renderWho();
-    syncMonths();                       /* 换了人：月份那几行的数据全变了 */
+    syncTerms();                       /* 换了人：月份那几行的数据全变了 */
     if (matrixEl && !matrixEl.hidden) { buildMatrix(); }   /* 方阵也一样（颜色全变了） */
     scheduleRedraw();
   }
@@ -1473,25 +1378,25 @@
 
   var WIN_KEY = 'wkmath.timeline.v1';
   var SIDE_GAP = 74;              /* 右侧那条竖工具条的占地（18 + 46 + 余量）：浮层默认躲开它 */
-  var WIN_KEYS = ['card', 'filter', 'months', 'matrix'];
-  var winAt = { card: null, filter: null, months: null, matrix: null };
+  var WIN_KEYS = ['card', 'filter', 'terms', 'matrix'];
+  var winAt = { card: null, filter: null, terms: null, matrix: null };
   var winDrag = null;
 
   function winEl(which) {
     if (which === 'filter') { return filtersEl; }
-    if (which === 'months') { return monthsEl; }
+    if (which === 'terms') { return termsEl; }
     if (which === 'matrix') { return matrixEl; }
     return cardEl;
   }
   function winHead(which) {
     if (which === 'filter') { return filtersHead; }
-    if (which === 'months') { return monthsHead; }
+    if (which === 'terms') { return termsHead; }
     if (which === 'matrix') { return matrixHead; }
     return cardHead;
   }
 
   function loadWinAt() {
-    winAt = { card: null, filter: null, months: null, matrix: null };
+    winAt = { card: null, filter: null, terms: null, matrix: null };
     try {
       var raw = window.localStorage.getItem(WIN_KEY);
       var got = raw ? JSON.parse(raw) : null;
@@ -1500,7 +1405,7 @@
          老版本里还存过 legend 的位置，现在图例不是面板了，那条读进来也没有用，直接忽略。 */
       if (typeof got.left === 'number') { winAt.card = { left: got.left, top: got.top }; }
       WIN_KEYS.forEach(function (k) { if (got[k]) { winAt[k] = got[k]; } });
-    } catch (err) { winAt = { card: null, filter: null, months: null, matrix: null }; }
+    } catch (err) { winAt = { card: null, filter: null, terms: null, matrix: null }; }
   }
 
   function saveWinAt() {
@@ -1525,7 +1430,7 @@
         winAt[which] = { left: leftCol, top: 72 };
       } else if (which === 'filter') {
         winAt[which] = { left: leftCol, top: bottom };
-      } else if (which === 'months') {
+      } else if (which === 'terms') {
         winAt[which] = { left: rightCol, top: bottom };
       } else {
         winAt[which] = { left: rightCol, top: 72 };
@@ -1968,7 +1873,7 @@
 
   function filterOn() {
     var f = state.filter;
-    return !!(f.status.length || f.diff.length || f.mark.length || f.month.length);
+    return !!(f.status.length || f.diff.length || f.mark.length || f.term.length);
   }
 
   function passFilter(rec) {
@@ -1987,8 +1892,8 @@
       }
       if (!hit) { return false; }
     }
-    /* 时间段这一维：没学过的格子没有日期（month 空串），选了月份就留不下来 */
-    if (f.month.length && f.month.indexOf(rec.month || '') < 0) { return false; }
+    /* 时间段这一维：没学过的格子没有日期（term 空串），选了月份就留不下来 */
+    if (f.term.length && f.term.indexOf(rec.term || '') < 0) { return false; }
     return true;
   }
 
@@ -2083,7 +1988,7 @@
       btnFilter.setAttribute('data-tk-tip', filterOn() ? '筛选 · 已筛掉 ' + n + ' 格' : '筛选');
     }
     syncFilterButton();    /* 亮不亮由它统一算：面板开着 或 有筛的维度 */
-    syncMonths();          /* 时间段对比卡里的"选中"状态与筛选是同一份数据 */
+    syncTerms();          /* 时间段对比卡里的"选中"状态与筛选是同一份数据 */
     scheduleRedraw();
   }
 
@@ -2209,20 +2114,21 @@
    * 7d. 时间段对比（用户第 13 条）
    *   "一月份、二月份、三月份、四月份或者某个时间段，我们可以通过这个时间段来进行
    *   时间的对比，也就是不同时间段我们对时间轴的掌握程度可以进行对比。"
-   *   一个月一行，条子长 = 那个月的**平均掌握**，右边写"已学几格 · 掌握多少%"——
-   *   一屏之内就能比出哪个月学得扎实。点一行 = 把"时间段"加进筛选（只看那个月学过的格子），
+   *   一个**学期**一行，条子长 = 那个学期的**平均掌握**，右边写"已学几格 · 掌握多少%"——
+   *   一屏之内就能比出哪个学期学得扎实。点一行 = 把"时间段"加进筛选（只看那个学期学过的格子），
    *   再点取消；这样这件事既在面板里看得出，也落到轴上比对（其余格子变淡）。
    * ------------------------------------------------------------------ */
 
-  function monthList() {
-    if (!LEARN || !window.WK_LEARNING || !window.WK_LEARNING.months) { return []; }
-    return window.WK_LEARNING.months(LEARN);
+  function termList() {
+    if (!LEARN || !window.WK_LEARNING || !window.WK_LEARNING.terms) { return []; }
+    return window.WK_LEARNING.terms(LEARN);
   }
 
-  /* '2026-03' → '3 月' */
-  function monthLabel(month) {
-    var m = String(month).split('-')[1] || '';
-    return (Number(m) || m) + ' 月';
+  /* '2020-上' → '2020 上'（学年 + 学期）。
+     粒度是**学期**不是月：12 年的学时按月切是 69 个格子，这张卡与筛选胶囊都摆不下；
+     按学期切是 12 个，也正好对上"一学期一次期中 / 期末"的真实节奏。 */
+  function termLabel(term) {
+    return String(term).replace('-', ' ');
   }
 
   /* 平均掌握 → 那一档的颜色（条子与轴上同一个语言） */
@@ -2231,65 +2137,65 @@
     return statusColor(L && L.stateOf ? L.stateOf(v) : '未开始');
   }
 
-  function buildMonths() {
-    if (!monthsBody) { return; }
-    monthsBody.textContent = '';
-    var list = monthList();
+  function buildTerms() {
+    if (!termsBody) { return; }
+    termsBody.textContent = '';
+    var list = termList();
     if (!list.length) {
-      monthsBody.appendChild(el('p', 'tk-card__empty', '这份记录里还没有学习日期'));
+      termsBody.appendChild(el('p', 'tk-card__empty', '这份记录里还没有学习日期'));
       return;
     }
     list.forEach(function (m) {
-      var on = state.filter.month.indexOf(m.month) >= 0;
-      var row = el('button', 'tk-month' + (on ? ' is-on' : ''));
+      var on = state.filter.term.indexOf(m.term) >= 0;
+      var row = el('button', 'tk-term' + (on ? ' is-on' : ''));
       row.type = 'button';
       row.setAttribute('aria-pressed', on ? 'true' : 'false');
-      row.appendChild(el('span', 'tk-month__label', monthLabel(m.month)));
-      var track = el('span', 'tk-month__track');
-      var fill = el('span', 'tk-month__fill');
+      row.appendChild(el('span', 'tk-term__label', termLabel(m.term)));
+      var track = el('span', 'tk-term__track');
+      var fill = el('span', 'tk-term__fill');
       fill.style.width = Math.max(2, m.avg) + '%';
       fill.style.background = statusOfMastery(m.avg);
       track.appendChild(fill);
       row.appendChild(track);
-      row.appendChild(el('span', 'tk-month__meta', '已学 ' + m.learned + ' 格 · ' + m.avg + '%'));
-      row.setAttribute('title', m.month + ' · 已学 ' + m.learned + ' 格 · 平均掌握 ' +
+      row.appendChild(el('span', 'tk-term__meta', '已学 ' + m.learned + ' 格 · ' + m.avg + '%'));
+      row.setAttribute('title', m.term + ' · 已学 ' + m.learned + ' 格 · 平均掌握 ' +
         m.avg + '% · 卡片 ' + m.cards + ' 张');
-      row.addEventListener('click', function () { toggleFilter('month', m.month); });
-      monthsBody.appendChild(row);
+      row.addEventListener('click', function () { toggleFilter('term', m.term); });
+      termsBody.appendChild(row);
     });
   }
 
-  function syncMonthsSubject() {
-    if (!monthsSubject) { return; }
-    var picked = state.filter.month;
-    monthsSubject.textContent = picked.length
-      ? '只看 ' + picked.map(monthLabel).join(' / ') + ' 学过的格子'
-      : '条子长 = 那个月的平均掌握；点一行只留那个月';
+  function syncTermsSubject() {
+    if (!termsSubject) { return; }
+    var picked = state.filter.term;
+    termsSubject.textContent = picked.length
+      ? '只看 ' + picked.map(termLabel).join(' / ') + ' 学过的格子'
+      : '条子长 = 那个学期的平均掌握；点一行只留那个学期';
   }
 
   /* 筛选一变就跟着刷（只在面板开着时重建 DOM） */
-  function syncMonths() {
-    if (!monthsEl || monthsEl.hidden) { return; }
-    buildMonths();
-    syncMonthsSubject();
+  function syncTerms() {
+    if (!termsEl || termsEl.hidden) { return; }
+    buildTerms();
+    syncTermsSubject();
   }
 
-  function syncMonthsButton() {
-    if (!btnMonths) { return; }
-    var open = !!(monthsEl && !monthsEl.hidden);
-    btnMonths.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) { btnMonths.classList.add('is-on'); } else { btnMonths.classList.remove('is-on'); }
+  function syncTermsButton() {
+    if (!btnTerms) { return; }
+    var open = !!(termsEl && !termsEl.hidden);
+    btnTerms.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { btnTerms.classList.add('is-on'); } else { btnTerms.classList.remove('is-on'); }
   }
 
-  function setMonthsPanel(on) {
-    if (!monthsEl) { return; }
-    monthsEl.hidden = !on;
-    if (on) { buildMonths(); syncMonthsSubject(); placeWin('months'); }
-    syncMonthsButton();
+  function setTermsPanel(on) {
+    if (!termsEl) { return; }
+    termsEl.hidden = !on;
+    if (on) { buildTerms(); syncTermsSubject(); placeWin('terms'); }
+    syncTermsButton();
   }
 
-  function toggleMonthsPanel() {
-    setMonthsPanel(!!monthsEl && monthsEl.hidden);
+  function toggleTermsPanel() {
+    setTermsPanel(!!termsEl && termsEl.hidden);
   }
 
   /* ------------------------------------------------------------------ *
@@ -2702,8 +2608,8 @@
     if (btnFilterClear) { btnFilterClear.addEventListener('click', function () { clearFilter(); }); }
     if (btnLevels) { btnLevels.addEventListener('click', function () { setLevels(!state.levels); }); }
     if (btnReadout) { btnReadout.addEventListener('click', function () { setReadout(!state.readout); }); }
-    if (btnMonths) { btnMonths.addEventListener('click', function () { toggleMonthsPanel(); }); }
-    if (btnMonthsClose) { btnMonthsClose.addEventListener('click', function () { setMonthsPanel(false); }); }
+    if (btnTerms) { btnTerms.addEventListener('click', function () { toggleTermsPanel(); }); }
+    if (btnTermsClose) { btnTermsClose.addEventListener('click', function () { setTermsPanel(false); }); }
     if (btnMatrix) { btnMatrix.addEventListener('click', function () { toggleMatrixPanel(); }); }
     if (btnMatrixClose) { btnMatrixClose.addEventListener('click', function () { setMatrixPanel(false); }); }
     /* 缩略条：点 / 拖 / 键盘都能挪视野（与白板拖动同一套 pointer 写法） */
@@ -2757,7 +2663,7 @@
         closeCard();
         setLegend(false);
         setFilterPanel(false);
-        setMonthsPanel(false);
+        setTermsPanel(false);
         setMatrixPanel(false);
       } else { return; }
       e.preventDefault();
@@ -2799,7 +2705,7 @@
   syncFilterButton();
   syncLevelsButton();
   syncReadoutButton();
-  syncMonthsButton();
+  syncTermsButton();
   syncMatrixButton();
   renderWho();
   bind();
@@ -2842,11 +2748,11 @@
     closeCard: closeCard,
     setLegend: setLegend,
     viewer: function () { return WHO; },
-    setFilter: function (status, diff, mark, month) {
+    setFilter: function (status, diff, mark, term) {
       state.filter.status = status || [];
       state.filter.diff = diff || [];
       state.filter.mark = mark || [];
-      state.filter.month = month || [];
+      state.filter.term = term || [];
       syncFilters();
     },
     markColor: markColor,
@@ -2855,8 +2761,8 @@
     ownMarks: ownMarkKeys,
     tapMark: tapMark,
     markEdits: function () { return markEdits; },
-    months: monthList,
-    setMonthsPanel: setMonthsPanel,
+    terms: termList,
+    setTermsPanel: setTermsPanel,
     setMatrixPanel: setMatrixPanel,
     mini: function () {
       return {

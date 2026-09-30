@@ -436,9 +436,9 @@ TK.setFilter([], [], ['key', 'hard'], []);
 assert(TK.filtered() === N - hitAny,
   '一维里选两个（重点 或 难点）= 沾上哪个都算（筛掉 ' + TK.filtered() + ' 格）');
 
-var hitMonth = matchCount(function (r) { return r.month === '2026-03'; });
-TK.setFilter([], [], [], ['2026-03']);
-assert(TK.filtered() === N - hitMonth, '时间段这一维：没学过的格子没有日期，选了月份就留不下来');
+var hitTerm = matchCount(function (r) { return r.term === '2025-下'; });
+TK.setFilter([], [], [], ['2025-下']);
+assert(TK.filtered() === N - hitTerm, '时间段这一维：没学过的格子没有日期，选了学期就留不下来');
 
 var hitDiff5 = matchCount(function (r) { return Math.max(1, Math.min(5, Math.round(r.diff))) === 5; });
 TK.setFilter([], [5], [], []);
@@ -567,13 +567,95 @@ var a1 = window.WK_LEARNING.build(items, { seed: 7, progress: 0.5 });
 var a2 = window.WK_LEARNING.build(items, { seed: 7, progress: 0.5 });
 var same = true;
 for (var z = 0; z < a1.length; z += 1) {
-  if (a1[z].mastery !== a2[z].mastery || a1[z].month !== a2[z].month ||
+  if (a1[z].mastery !== a2[z].mastery || a1[z].term !== a2[z].term ||
       a1[z].marks.join() !== a2[z].marks.join() || a1[z].blocked !== a2[z].blocked) { same = false; break; }
 }
 assert(same, '同一个种子生成的数据一字不差（演示数据可复现，接后端时换掉这一层即可）');
 var a3 = window.WK_LEARNING.build(items, { seed: 8, progress: 0.5 });
 assert(a3[10].mastery !== a1[10].mastery || a3[50].diff !== a1[50].diff,
   '换一个种子就是另一份（不是无论给什么都返回同一个数）');
+
+/* ------------------------------------------------------------ *
+ * 3a-2. 3D 的数据地基（用户 2026-09-30：X = 知识结构、Z = 日历时间）
+ *   这一层只**加**东西：现有 build() 一个字段都不碰，
+ *   新字段（plannedAt / events / 考试）全走独立散列流。
+ * ------------------------------------------------------------ */
+out('---- 3D 的数据地基 ----');
+var L3 = window.WK_LEARNING;
+var recD = L3.build(items, { seed: 7, progress: 0.5 });
+assert(!('events' in recD[0]) && !('plannedAt' in recD[0]),
+  '现有的 build() 不碰新字段（2D 那条链路一字没动 —— "不影响现在功能"就落在这条上）');
+var plan = L3.buildTimeline(items, recD, { seed: 7, progress: 0.5 });
+var learnedD = recD.filter(function (r) { return r.learnedAt; }).length;
+var evN = recD.filter(function (r) { return r.events && r.events.length; }).length;
+assert(learnedD > 0 && evN === learnedD, '每个学过的格子都有一条轨迹（' + evN + '/' + learnedD + '）');
+assert(recD.every(function (r) { return r.learnedAt || r.events.length === 0; }),
+  '没学过的格子没有轨迹（不编造没发生的事）');
+assert(recD.every(function (r) {
+  var e = r.events;
+  return !e.length || e[e.length - 1].mastery === r.mastery;
+}), '每条轨迹最后一条掌握度 == 2D 显示的那个数（两条线是同一条，不许互相打脸）');
+assert(recD.every(function (r) {
+  for (var k = 1; k < r.events.length; k += 1) { if (r.events[k].at < r.events[k - 1].at) { return false; } }
+  return true;
+}), '轨迹按时间排好了序（3D 的 Z 轴要按它画）');
+var kinds3 = {};
+recD.forEach(function (r) { r.events.forEach(function (e) { kinds3[e.kind] = (kinds3[e.kind] || 0) + 1; }); });
+assert(kinds3.first === learnedD && kinds3.review > 0 && kinds3.exam > 0 && kinds3.fix > 0,
+  '四类事件都有（首学 ' + kinds3.first + ' · 复习 ' + kinds3.review + ' · 考试 ' + kinds3.exam + ' · 纠错 ' + kinds3.fix + '）');
+assert(plan.exams.length > 0, '考试实体有了（' + plan.exams.length + ' 次）');
+assert(plan.exams.every(function (e) {
+  return e.paper.every(function (p) { return p.index >= e.from && p.index < e.to && p.score >= 0 && p.score <= p.full; });
+}), '每张卷子自洽（题号落在这册范围里，得分在 0–满分之间）');
+assert(plan.exams.every(function (e) {
+  for (var k = e.from; k < e.to; k += 1) { if (!recD[k].learnedAt) { return false; } }
+  return true;
+}), '只考"整册学完"的（学着的那册不考）');
+/* 考试范围轮着来（用户 2026-09-30："他每次考试，他考的范围不一样……考的难度也不一样"）：
+   一册一考，但三档轮着来 —— 单元测 / 期中 / 期末；3D 那块玻璃板的宽度就是照它画的。 */
+assert(plan.exams.every(function (e) {
+  return e.scope === 'unit' || e.scope === 'mid' || e.scope === 'final' || e.scope === 'year';
+}), '每场考试都带范围档（单元测 / 期中 / 期末 / 学年考）');
+assert(plan.exams.some(function (e) { return e.scope === 'final'; }) &&
+       plan.exams.some(function (e) { return e.scope !== 'final'; }),
+  '范围不是一刀切（既有考整册的期末、也有只考一段的单元测 / 期中）');
+var spans3 = plan.exams.map(function (e) { return e.paper.length; });
+var spanMin = Math.min.apply(null, spans3);
+var spanMax = Math.max.apply(null, spans3);
+assert(spanMax > spanMin * 1.5,
+  '卷面宽窄拉得开（最短 ' + spanMin + ' 个考点 / 最长 ' + spanMax + ' 个 —— 3D 的板宽才有差别）');
+/* 最长的那一种：跨册的"学年考"（用户 2026-09-30："这个长的考试，就涵盖范围长的考试，
+   这样我就可以看到长的是什么样子"）—— 它必须比任何一册的都长。 */
+var yearEx = plan.exams.filter(function (e) { return e.scope === 'year'; });
+var bookMax = Math.max.apply(null, plan.exams.filter(function (e) { return e.scope !== 'year'; })
+  .map(function (e) { return e.paper.length; }));
+assert(yearEx.length > 0, '有跨册的"学年考"（' + yearEx.length + ' 场）');
+assert(yearEx.every(function (e) { return e.paper.length > bookMax; }),
+  '学年考确实是最长的（' + Math.min.apply(null, yearEx.map(function (e) { return e.paper.length; })) +
+  ' ≥ 单册最长 ' + bookMax + ' 格）');
+assert(plan.exams.every(function (e, k) {
+  return k === 0 || plan.exams[k - 1].at <= e.at;
+}), '考试按时间排好序（编号 E1 就是最早那一场）');
+var examSlots = plan.exams.reduce(function (a, e) { return a + e.paper.length; }, 0);
+/* 一格可能被考两次（一次期末 + 一次跨册的学年考），所以不能拿"有考试事件的总格数"去比；
+   要比的是**每一道题都能在轨迹里找到它那一场**（按 exam id 认）。 */
+var examTraceOk = plan.exams.every(function (e) {
+  return e.paper.every(function (p) {
+    return (recD[p.index].events || []).some(function (ev) {
+      return ev.kind === 'exam' && ev.exam === e.id;
+    });
+  });
+});
+assert(examTraceOk, '考过的每一格，轨迹里都有一笔"考试"（切片能落在点上，共 ' + examSlots + ' 题）');
+var plannedN = recD.filter(function (r) { return !!r.plannedAt; }).length;
+assert(plannedN > 0 && /^20[0-9]{2}-/.test(recD[0].plannedAt),
+  'K12 日历接上了（' + plannedN + ' 格有计划日，第一格 ' + recD[0].plannedAt + '）');
+assert(recD.some(function (r) { return !r.plannedAt; }), '竞赛那几支没有年级 → 计划日留空，不硬编一个');
+var recE = L3.build(items, { seed: 7, progress: 0.5 });
+L3.buildTimeline(items, recE, { seed: 7, progress: 0.5 });
+assert(recE.every(function (r, k) {
+  return r.plannedAt === recD[k].plannedAt && JSON.stringify(r.events) === JSON.stringify(recD[k].events);
+}), '同一个种子 → 同一份轨迹与考试表（演示数据仍然可复现）');
 
 /* 这一轴是谁的：没有会话 = 看演示学生（用户第 11 条） */
 assert(TK.viewer().mine === false && TK.viewer().name === '林一鸣',

@@ -88,6 +88,18 @@
   --math-bar-weak: #fa4b4b;    /* 薄弱：正红 */
   --math-bar-idle: var(--math-ink-4);
 
+  /* ---------- 难度五档的**色阶**（绿 → 蓝 → 黄 → 橙 → 红）----------
+     给"难度层"那五个水平面与考点点用：一条从"基础"走到"综合"的尺子。
+     五个值都是**从上面那七档里挑的**（那批是机器搜过的：同时压纯白与纯黑都 ≥ 3:1），
+     所以这里不需要再各压一遍。
+     跟七档色同一条理由 —— **色阶不跟主题、也不跟配色包走**：它是一把尺子，
+     换配色包时"难度 4 是橙的"这件事不该变。 */
+  --math-lv-1: #11a204;      /* 难度 1 · 基础层：绿 */
+  --math-lv-2: #1f8cf9;      /* 难度 2 · 概念层：蓝 */
+  --math-lv-3: #987f04;      /* 难度 3 · 应用层：黄（深一号，压白才够） */
+  --math-lv-4: #a84e04;      /* 难度 4 · 变化层：橙 */
+  --math-lv-5: #fa4b4b;      /* 难度 5 · 综合层：红 */
+
   /* ---------- 学员自己打的那四类特殊标记（重点 / 难点 / 待复习 / 前置未满足）----------
      与"掌握度"是两码事：上面那七色说的是系统判定学到什么程度，
      这四个色说的是学员自己给这一格贴的标签。四个都得能引用就引用 ——
@@ -550,6 +562,26 @@ html[data-wk-scheme="a11y"], html [data-wk-scheme="a11y"] {
 /* ==========================================================================
    Shared utilities
    ========================================================================== */
+
+/* ---------- 滚轮条：**跟着主题走** ----------
+   全站一直没写这一段，于是浏览器拿操作系统那套默认来画 ——
+   暗色主题是"纯黑底 + 纯白字"，滚轮条却还是浅色那一套，纯黑的页面边上横着
+   一根亮条，很扎眼（用户 2026-09-30 截图圈出来的"这些竖条颜色不对"）。
+   滑块用 --math-ink-4（三套里都是中灰：压得住白底也压得住黑底），悬停深/亮一档
+   用 --math-ink-3；轨道留透明，免得又出来一条底色带。
+   两条都写：`scrollbar-color` 管标准（Firefox / 新 Chrome），
+   `::-webkit-scrollbar-*` 管 WebKit（老 Chrome / Safari）。 */
+html { scrollbar-color: var(--math-ink-4) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--math-ink-4);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--math-ink-3); }
+::-webkit-scrollbar-corner { background: transparent; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

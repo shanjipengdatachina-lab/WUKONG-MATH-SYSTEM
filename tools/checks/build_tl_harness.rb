@@ -1,8 +1,10 @@
 # encoding: UTF-8
 # 拼装时间轴自检脚本：tl-check.js
 #   ruby tools/checks/build_tl_harness.rb
-# 顺序要紧：图谱数据（MATH_TREE）与学习记录（WK_LEARNING）都在 timeline.js **加载时**就要读，
-# 所以它们必须排在前面；timeline.js 自己是个 IIFE，加载完就把 window.WK_TIMELINE 挂出来。
+# 顺序要紧：图谱数据（MATH_TREE）、摊平图谱的共享模块（WK_AXIS）与学习记录（WK_LEARNING）
+# 都在 timeline.js **加载时**就要读，所以它们必须排在前面；timeline.js 自己是个 IIFE，
+# 加载完就把 window.WK_TIMELINE 挂出来。
+# 2026-09-30：摊平图谱搬到了 timeline-axis.js（2D 与 3D 共用同一根轴），这里跟着加上它。
 DIR  = __dir__
 OUT  = File.join(__dir__, '_build')
 ROOT = (ENV['WKMATH_ROOT'] || File.expand_path('../..', __dir__)).dup.force_encoding('UTF-8')
@@ -22,5 +24,5 @@ def src(n)
   File.join(ROOT, 'assets/js', n)
 end
 
-build([here('tl-harness-head.js'), src('math-tree.js'), src('timeline-data.js'),
+build([here('tl-harness-head.js'), src('math-tree.js'), src('timeline-axis.js'), src('timeline-data.js'),
        src('timeline.js'), here('tl-harness-tail.js')], 'tl-check.js')

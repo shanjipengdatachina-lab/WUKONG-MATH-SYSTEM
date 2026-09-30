@@ -78,8 +78,12 @@ issues << '在 tokens.css 里没找到颜色令牌（解析失败）' if color_n
 # 掌握度那七档**豁免**这条规则（用户 2026-09-30，撤掉深色底板之后的版本）：
 # 六个彩色档同时压在纯白与纯黑上都 ≥ 3:1，所以三个主题共用同一份值 ——
 # 它们不跟主题走，不该被要求在中色 / 暗色包里再写一遍（写了反而是走回头路）。
+# 同一天稍后又加了**难度五档的色阶**（--math-lv-1…5，绿→蓝→黄→橙→红，给"难度层"那五个
+# 水平面与考点点用）：五色都是从上面那七档里挑的，一样压白压黑都达标，也一样**不跟主题、
+# 不跟配色包走** —— 它是一把尺子，换配色包时"难度 4 是橙的"这件事不该变。
 THEME_FREE = %w[--math-bar-ok --math-bar-gold --math-bar-first --math-bar-learn
-                --math-bar-review --math-bar-weak].freeze
+                --math-bar-review --math-bar-weak
+                --math-lv-1 --math-lv-2 --math-lv-3 --math-lv-4 --math-lv-5].freeze
 
 { 'mid' => '中色', 'dark' => '暗色' }.each do |theme, cn|
   block = block_of(tokens, %(html[data-wk-theme="#{theme}"]))
@@ -472,6 +476,34 @@ issues << '黑板那三档浓淡（inkSoft / tag / tagHot）还带着色相' unl
   board.scan(/rgba\(255,255,255,/).size + board.scan(/rgba\(255, 255, 255,/).size >= 3
 issues << "黑板默认那支笔不是纯白（实际 #{wb[/\{ value: '(#f8fafc|#[0-9a-f]{6})', label: '雪白'/, 1]}）" unless
   wb.include?("{ value: '#ffffff', label: '雪白' }")
+
+# ---------- 9. 难度五档的色阶：同时压得住白和黑 ----------
+# （放在最后：这一段要用 rgb_of / resolve_tok，那两个 helper 定义在上面）
+# 它是"一把尺子"（基础绿 → 概念蓝 → 应用黄 → 变化橙 → 综合红），
+# 谁手改一个偏亮 / 偏暗的值进来，就会有一头看不清 —— 跟七档色同一条约束。
+LEVEL_TOKENS = %w[--math-lv-1 --math-lv-2 --math-lv-3 --math-lv-4 --math-lv-5].freeze
+LEVEL_TOKENS.each do |t|
+  raw = resolve_tok(root_tokens[t], root_tokens)
+  l = raw.nil? ? nil : (lum(raw) || nil)
+  if l.nil?
+    issues << "难度档 #{t} 不是个纯色（读到的是 #{raw.inspect}）"
+  else
+    on_white = 1.05 / (l + 0.05)
+    on_black = (l + 0.05) / 0.05
+    if on_white < 3 || on_black < 3
+      issues << "难度档 #{t}（#{raw}）压不住底：白 #{on_white.round(2)}:1 · 黑 #{on_black.round(2)}:1（都要 ≥ 3:1）"
+    end
+  end
+end
+
+# ---------- 10. 滚轮条要跟着主题走 ----------
+# 用户 2026-09-30 圈了张截图："这些竖条颜色不对" —— 暗色是纯黑底 + 纯白字，
+# 浏览器默认那套滚轮条却是浅色的，纯黑页面边上横着一根亮条。
+issues << '滚轮条没跟主题走（暗色下会横一根浅色条）' unless
+  tokens.include?('scrollbar-color: var(--math-ink-4) transparent;') &&
+  tokens.include?('::-webkit-scrollbar-thumb') &&
+  tokens.include?('background-color: var(--math-ink-4);') &&
+  tokens.include?('background-color: var(--math-ink-3);')
 
 puts "页面：#{pages.size} 个，全部挂了启动器；字号可缩放 #{pages.size} 页"
 puts "配色令牌：:root 里 #{color_names.size} 个颜色令牌，中色 / 暗色逐一对齐"

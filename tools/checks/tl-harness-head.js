@@ -228,7 +228,7 @@ elFor('[data-tk-mini-track]').clientHeight = 12;
 elFor('[data-tk-mini-strip]').clientWidth = 400;
 elFor('[data-tk-mini-strip]').clientHeight = 12;
 /* 卡片 / 筛选 / 时间段 / 方阵四张浮层：HTML 里都带 hidden */
-['card', 'filters', 'months', 'matrix', 'stages', 'help', 'hover', 'legend-bar'].forEach(function (k) {
+['card', 'filters', 'terms', 'matrix', 'stages', 'help', 'hover', 'legend-bar'].forEach(function (k) {
   var el = elFor('[data-tk-' + k + ']');
   if (el) { el.hidden = true; }
 });
