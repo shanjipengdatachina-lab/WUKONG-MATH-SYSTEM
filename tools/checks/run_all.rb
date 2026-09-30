@@ -23,7 +23,7 @@ end
 # ---------- 1. 拼装断言脚本 ----------
 puts '== 拼装 =='
 %w[build_harness.rb build_wb_harness.rb build_mm_harness.rb build_bn_harness.rb
-   build_display_harness.rb].each do |b|
+   build_display_harness.rb build_tl_harness.rb].each do |b|
   path = File.join(DIR, b)
   next unless File.exist?(path)
   puts "  #{b}"
@@ -65,7 +65,7 @@ puts "\n== 体检 =="
 # 一条新守线用了个还没定义的变量，脚本 NameError 崩了，run_all 照样报"体检无红灯"）。
 problems = []
 %w[verify_brand.rb verify_rail.rb verify_reader_tree.rb verify_whiteboard.rb
-   verify_fullscreen.rb verify_graph.rb verify_bridges.rb verify_forum.rb
+   verify_fullscreen.rb verify_graph.rb verify_timeline.rb verify_bridges.rb verify_forum.rb
    verify_display.rb broken_links.rb residue_final.rb ia_audit.rb].each do |b|
   path = File.join(DIR, b)
   next unless File.exist?(path)

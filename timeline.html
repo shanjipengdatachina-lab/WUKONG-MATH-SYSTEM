@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间轴 · 悟空数学</title>
+    <!-- 阅读与显示设置：首屏前应用（字号方案 / 亮中暗配色）-->
+    <script src="assets/js/display.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">时间轴</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="timeline.html" data-nav-key="timeline" data-active="true" aria-current="page" title="时间轴">
+          <i data-lucide="git-commit-horizontal" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">时间轴</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+        </a>
+        <a class="ide-rail__account" href="login.html" title="登录 / 注册">
+          <span class="ide-rail__avatar" aria-hidden="true"><i data-lucide="user"></i></span>
+          <span class="ide-rail__label">登录</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+<main class="tk-shell" data-tk>
+
+  <div class="tk-stage">
+
+    <!-- 数轴画布：一屏一根完整的轴，可以拖、可以一直放大 -->
+    <div class="tk-canvas-wrap" data-tk-wrap>
+      <canvas id="tk-canvas" data-tk-canvas aria-label="知识时间轴，可拖动缩放"></canvas>
+    </div>
+
+    <!-- 左上角：这一轴是谁的 + 读数（轴上总共有什么、学到哪儿了、视野停在哪一段） -->
+    <div class="tk-left">
+      <!-- 未登录是一排演示学生（点谁看谁）；登录了只有"我"一个，内容由 JS 填 -->
+      <div class="tk-who" data-tk-who role="group" aria-label="看谁的学习记录"></div>
+      <!-- 读数就两行：**当前知识点** + **它的掌握情况**（用户 2026-09-30：
+           "左上角的面板就是先当前的知识点和掌握情况即可"）。
+           划到别的格子上时，这两行就跟着换成划过的那一格 —— 第 7 条要的"边上也出现对应的名字"。 -->
+      <div class="tk-readout" aria-live="polite">
+        <div class="tk-readout__now" data-tk-now></div>
+        <div class="tk-readout__progress" data-tk-progress></div>
+      </div>
+    </div>
+
+    <!-- 帮助：手势与小抄，按需出现 -->
+    <div class="tk-help" data-tk-help hidden>
+      <div class="tk-help__row">文字六级：分段 / 年级 / 册 / 章 / 节 / 知识点</div>
+      <div class="tk-help__row">轴上：分段是一颗大点，年级 / 册 / 章 / 节是刻度线</div>
+      <div class="tk-help__row">一颗小点 = 一个知识点；轴上方是它的难度条</div>
+      <div class="tk-help__row">划过出名字 · 点一下弹知识点卡片 · 拖着看会跟着刷新</div>
+      <div class="tk-help__row">深浅颜色 = 掌握情况（默认不显示，按「掌握度」才出来）</div>
+      <div class="tk-help__row">右侧一列：筛选 · 刻度与文字 · 信息面板 · 阶段</div>
+      <div class="tk-help__row">拖动 = 平移数轴；滚轮 = 平移 · ⌘/Ctrl + 滚轮 = 缩放</div>
+      <div class="tk-help__row">触屏：单指拖 · 双指捏合缩放 · 双击放大一档</div>
+      <div class="tk-help__row">快捷键：←→↑↓ 平移 · +/− 缩放 · 0 适配 · G 网格 · Esc 关卡片</div>
+    </div>
+
+    <!-- 知识点卡片：点轴上任何一格就出来；拖着视野它会跟着刷成正中那一格。
+         面板本身可以拖着走（抓手在标题栏右侧）——
+         结构、样式、手感、连位置记住都照白板的 .wb-panel 那一套来。 -->
+    <aside class="tk-card" data-tk-card hidden role="group" aria-label="知识点卡片">
+      <div class="tk-card__head" data-tk-card-head>
+        <span class="tk-card__name" data-tk-card-name></span>
+        <button type="button" class="tk-card__close" data-tk-card-close aria-label="收起知识点卡片">×</button>
+        <i data-lucide="grip-vertical" class="tk-card__grip" aria-hidden="true"></i>
+      </div>
+      <p class="tk-card__subject" data-tk-card-subject></p>
+      <div class="tk-card__body" data-tk-card-body></div>
+    </aside>
+
+    <!-- 图例条：**不是面板** —— 点底部那颗「图例」，内容就出现在工具条正上方，
+         七档掌握度色块 · 两种节点 · 四类特殊标记（带小图标）挨着排成一行；再点一下收起。
+         用户原话："也不用出这个面板了……就在这个底部菜单上面……挨着排就行了。
+         因为它本身它就是个看的这么一个东西，它不是个面板。" -->
+    <!-- 工具条正上方的那一列：网格/高度弹层、图例条、缩略条都住在这个 flex 列里，
+         从下往上排（缩略条最贴着工具条），谁也不压谁。
+         用户第 9 条："如果放大了，就需要在底部菜单的上方出现一个……实时动态显示的
+         当前屏幕所展示的数轴范围，也就是表示当前数轴的范围。" -->
+    <div class="tk-above" data-tk-above>
+      <!-- 网格疏密 / 彩色条高度（照白板：三档小按钮，格子那个块里就是该疏密画出来的样子） -->
+      <div class="tk-pop" id="tk-pop" hidden>
+        <div class="tk-pop__row">
+          <span class="tk-pop__label">网格</span>
+          <div class="tk-grids" id="tk-grids" role="radiogroup" aria-label="网格疏密"
+               title="一圈格子 = 多少个知识点。格子始终会自动保持在看得清的疏密范围内，所以放得很大或缩得很小时，三档会趋于同一个疏密。"></div>
+        </div>
+        <div class="tk-pop__row">
+          <span class="tk-pop__label">高度</span>
+          <div class="tk-bars-levels" id="tk-bar-levels" role="radiogroup" aria-label="彩色条高度"
+               title="彩色条的高度：低 / 中 / 高。条子的高度是屏幕上的高度（不跟着缩放一起长），所以放大以后剖面还是这么高。"></div>
+        </div>
+      </div>
+
+      <!-- 缩略条：整条轴压进这一条细杆里，亮着的那一段 = 屏幕上正显示的范围；
+           点一下 / 拖一下挪过去。只在放大之后出现（适配档它自己收起）。
+           用户 2026-09-30："太丑了……做得细一点。底下的白色框就不要了" ——
+           所以只有"一条细杆 + 一行读数"，杆里面也不再压"小学 / 初中 / 高中"这些字。
+           同一天又补两条："放在图例的上方"（所以它排在图例条**前面**）、
+           "提示文字应该在缩略图的上方，不应在右边"（所以读数排在杆子**前面**，列向排 ——
+           DOM 里读数是第一个子节点，靠 CSS 的 `flex-direction: column` 落在杆子上面）。
+           读数换行排还有个硬理由：它原来跟杆子挤在同一行、宽度又是变的
+           （"视野 1–43" 比 "视野 363–681" 短一截），而杆子是 `flex: 1` ——
+           读数一变宽杆子就变窄，拖动时量到的百分比跟着漂，时间轴就抖
+           （用户报的"拖动滑块的时候时间轴抖动"）。 -->
+      <div class="tk-mini" data-tk-mini hidden>
+        <span class="tk-mini__range" data-tk-mini-range></span>
+        <div class="tk-mini__track" data-tk-mini-track role="slider" tabindex="0"
+             aria-label="缩略图 · 当前视野范围" aria-valuemin="1" aria-valuemax="769"
+             aria-valuenow="1" aria-valuetext="整条数轴">
+          <canvas class="tk-mini__strip" data-tk-mini-strip aria-hidden="true"></canvas>
+          <span class="tk-mini__win" data-tk-mini-win hidden></span>
+        </div>
+      </div>
+
+      <div class="tk-legend-bar" id="tk-legend-bar" data-tk-legend-bar hidden role="group" aria-label="图例">
+        <div class="tk-legend-bar__group" data-tk-legend-states></div>
+        <span class="tk-legend-bar__sep" aria-hidden="true"></span>
+        <div class="tk-legend-bar__group">
+          <span class="tk-legend-bar__item"><span class="tk-legend__mark tk-legend__mark--now"></span>当前学习</span>
+          <span class="tk-legend-bar__item"><span class="tk-legend__mark tk-legend__mark--see"></span>当前观察</span>
+        </div>
+        <span class="tk-legend-bar__sep" aria-hidden="true"></span>
+        <div class="tk-legend-bar__group" data-tk-legend-marks></div>
+      </div>
+    </div>
+
+    <!-- 划过任何一格时跟着手出现的小气泡：名字 + 一行状态 -->
+    <div class="tk-hover" data-tk-hover hidden></div>
+
+    <!-- 底部悬浮工具条：图标、尺寸、气泡提示都照白板那一套 -->
+    <div class="tk-dock" data-tk-dock role="toolbar" aria-label="时间轴工具">
+      <button type="button" class="tk-dock__btn" id="tk-grid" aria-pressed="false" data-tk-tip="网格 · 关" aria-label="网格">
+        <i data-lucide="grid-3x3"></i>
+      </button>
+      <button type="button" class="tk-dock__btn" id="tk-pop-toggle" aria-expanded="false" aria-controls="tk-pop" data-tk-tip="网格与高度" aria-label="网格与高度">
+        <i data-lucide="sliders-horizontal"></i>
+      </button>
+      <span class="tk-dock__sep" aria-hidden="true"></span>
+      <button type="button" class="tk-dock__btn" id="tk-mastery" aria-pressed="false" data-tk-tip="掌握度彩条 · 已隐藏" aria-label="掌握度彩条">
+        <i data-lucide="bar-chart-3"></i>
+      </button>
+      <button type="button" class="tk-dock__btn" id="tk-legend" aria-expanded="false" aria-controls="tk-legend-bar" data-tk-tip="图例 · 工具条上方" aria-label="图例">
+        <i data-lucide="palette"></i>
+      </button>
+      <span class="tk-dock__sep" aria-hidden="true"></span>
+      <button type="button" class="tk-dock__btn" id="tk-plan" data-tk-tip="学习计划设定" aria-label="学习计划的时间轴设定">
+        <i data-lucide="calendar-plus"></i>
+      </button>
+      <span class="tk-dock__sep" aria-hidden="true"></span>
+      <button type="button" class="tk-dock__btn" id="tk-zoom-out" data-tk-tip="缩小" aria-label="缩小">
+        <i data-lucide="zoom-out"></i>
+      </button>
+      <button type="button" class="tk-dock__level tk-mono" id="tk-zoom-level" data-tk-zoom data-tk-tip="回到 100%（适配整条数轴）">100%</button>
+      <button type="button" class="tk-dock__btn" id="tk-zoom-in" data-tk-tip="放大" aria-label="放大">
+        <i data-lucide="zoom-in"></i>
+      </button>
+      <button type="button" class="tk-dock__btn" id="tk-zoom-fit" data-tk-tip="适配整条数轴" aria-label="适配整条数轴">
+        <i data-lucide="maximize-2"></i>
+      </button>
+      <span class="tk-dock__sep" aria-hidden="true"></span>
+      <button type="button" class="tk-dock__btn" id="tk-help" aria-expanded="false" aria-controls="tk-help" data-tk-tip="帮助" aria-label="帮助">
+        <i data-lucide="circle-help"></i>
+      </button>
+    </div>
+
+    <!-- 右侧竖工具条：照白板那条（`.wb-side`）—— 竖着排、图标竖着放、不悬停时淡着。
+         用户第 14 条："右边有筛选、有控制，显示这个图标的、显示信息面板的图标，
+         还有不同阶段的对比功能。" 五颗：筛选 / 刻度与文字 / 信息面板 / 时间段对比 / 方阵。
+         （2026-09-30 用户："阶段可以整合到筛选里" —— 原来那颗 `columns-3`「阶段」按钮与它的
+           浮层一起撤了，那排"全部 / 小学 / 初中 / 高中 / 竞赛"搬进筛选卡当一个行。）
+         提示气泡在这条上是**朝左**弹（白板那条也是），不然会顶出屏幕。 -->
+    <div class="tk-side" role="toolbar" aria-label="筛选与显示" data-tk-side>
+      <button type="button" class="tk-side__btn" id="tk-filter" aria-expanded="false"
+              aria-controls="tk-filters" data-tk-tip="筛选" aria-label="筛选">
+        <i data-lucide="filter"></i>
+      </button>
+      <button type="button" class="tk-side__btn" id="tk-levels" aria-pressed="true"
+              data-tk-tip="刻度与文字 · 显示中" aria-label="刻度与文字">
+        <i data-lucide="tags"></i>
+      </button>
+      <button type="button" class="tk-side__btn" id="tk-readout-toggle" aria-pressed="true"
+              data-tk-tip="信息面板 · 显示中" aria-label="信息面板">
+        <i data-lucide="panel-right-open"></i>
+      </button>
+      <!-- 第 13 条：时间段对比；第 18 条：方阵（打卡 / 选座那种小方块） -->
+      <button type="button" class="tk-side__btn" id="tk-months" aria-expanded="false"
+              aria-controls="tk-months-panel" data-tk-tip="时间段对比" aria-label="时间段对比">
+        <i data-lucide="calendar-range"></i>
+      </button>
+      <button type="button" class="tk-side__btn" id="tk-matrix" aria-expanded="false"
+              aria-controls="tk-matrix-panel" data-tk-tip="方阵 · 一格一个知识点" aria-label="知识点方阵">
+        <i data-lucide="layout-grid"></i>
+      </button>
+    </div>
+
+    <!-- 筛选卡：与知识点卡片 / 图例同一套面板（可拖、位置记住、三段式）。
+         掌握度七档 + 难度五档 + 标记四类，三行都是"不选 = 不筛"。
+         **最上面那行是"阶段"**（2026-09-30 从右侧那条搬进来的）：它不是筛的那一维 ——
+         筛只让格子变淡，点它是**换视野**（把这一段铺满屏幕，见 ⑯ 与 ⑲）。 -->
+    <aside class="tk-card tk-filters" id="tk-filters" data-tk-filters hidden role="group" aria-label="筛选">
+      <div class="tk-card__head" data-tk-filters-head>
+        <span class="tk-card__name">筛选</span>
+        <button type="button" class="tk-card__close" data-tk-filters-close aria-label="收起筛选">×</button>
+        <i data-lucide="grip-vertical" class="tk-card__grip" aria-hidden="true"></i>
+      </div>
+      <p class="tk-card__subject" data-tk-filters-subject></p>
+      <div class="tk-card__body">
+        <div class="tk-card__label">阶段</div>
+        <div class="tk-chips" data-tk-stage-chips role="group" aria-label="跳到某个阶段"></div>
+        <div class="tk-card__label tk-filters__gap">掌握度</div>
+        <div class="tk-chips" data-tk-filter-status role="group" aria-label="按掌握度筛选"></div>
+        <div class="tk-card__label tk-filters__gap">难度</div>
+        <div class="tk-chips" data-tk-filter-diff role="group" aria-label="按难度筛选"></div>
+        <div class="tk-card__label tk-filters__gap">标记</div>
+        <div class="tk-chips" data-tk-filter-mark role="group" aria-label="按特殊标记筛选"></div>
+        <div class="tk-filters__foot">
+          <button type="button" class="tk-filters__clear" data-tk-filter-clear>清空筛选</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 时间段对比（用户第 13 条）：一个月一行，"条子长" = 那个月的平均掌握 ——
+         一屏之内就能比出"哪个月学得扎实"；点一行只留下那个月学过的格子（其余变淡）。 -->
+    <aside class="tk-card tk-months" id="tk-months-panel" data-tk-months hidden role="group" aria-label="时间段对比">
+      <div class="tk-card__head" data-tk-months-head>
+        <span class="tk-card__name">时间段对比</span>
+        <button type="button" class="tk-card__close" data-tk-months-close aria-label="收起时间段对比">×</button>
+        <i data-lucide="grip-vertical" class="tk-card__grip" aria-hidden="true"></i>
+      </div>
+      <p class="tk-card__subject" data-tk-months-subject></p>
+      <div class="tk-card__body" data-tk-months-body></div>
+    </aside>
+
+    <!-- 方阵（用户第 18 条）：一个方块 = 一个知识点，像"打卡 / 选电影座位"那样铺开。
+         颜色 = 掌握情况；点一下就打开那个知识点的卡片（不在方阵上改数据）。 -->
+    <aside class="tk-card tk-matrix" id="tk-matrix-panel" data-tk-matrix hidden role="group" aria-label="知识点方阵">
+      <div class="tk-card__head" data-tk-matrix-head>
+        <span class="tk-card__name">方阵</span>
+        <button type="button" class="tk-card__close" data-tk-matrix-close aria-label="收起方阵">×</button>
+        <i data-lucide="grip-vertical" class="tk-card__grip" aria-hidden="true"></i>
+      </div>
+      <p class="tk-card__subject" data-tk-matrix-subject></p>
+      <div class="tk-card__body" data-tk-matrix-body></div>
+    </aside>
+  </div>
+</main>
+
+<style id="tk-styles">
+/* ==========================================================================
+   时间轴页 (timeline.html)
+   --------------------------------------------------------------------------
+   一屏一根**完整的**数轴。骨架、工具条、网格、浮层全部照白板那一套来
+   （用户点名："图标样式和大小都参考我们的白板功能"），所以这里的尺寸与
+   状态写法跟 whiteboard.html 是同一套：按钮 34×34、图标 16px、圆角 8px、
+   选中态是一块浅色实心块、气泡提示是自绘的。
+
+   与令牌的关系：
+     · 颜色一个字都不写死（连画布里的颜色也是从 tokens.css 读的），
+       所以亮 / 中 / 暗三套配色与七个高亮色自动生效；
+     · 字号一律乘 --math-fs（显示设置里的"大 / 特大"直接管到这里）。
+   ========================================================================== */
+
+html, body { height: 100%; overflow: hidden; }
+
+[data-tk] { position: relative; min-height: 520px; }
+.tk-stage { position: relative; height: 100vh; min-width: 0; }
+
+.tk-canvas-wrap {
+  position: absolute; inset: 0; overflow: hidden;
+  background: var(--math-background); touch-action: none;
+}
+#tk-canvas {
+  display: block; width: 100%; height: 100%;
+  cursor: grab; touch-action: none; overscroll-behavior: contain;
+}
+#tk-canvas:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
+
+/* ---------- 左上角：这一轴是谁的 + 读数 ----------
+   整块不吃指针事件（不然盖在画布上的这段文字会挡住拖动），只有那排小胶囊重新打开。 */
+.tk-left { position: absolute; left: 36px; top: 26px; z-index: 4; pointer-events: none; }
+.tk-left[hidden] { display: none; }
+
+/* 这一轴是谁的（用户第 11 条）：未登录一排演示学生可切换，登录了只有"我" */
+.tk-who {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin-bottom: 9px; pointer-events: auto;
+}
+.tk-who__lead {
+  font-size: calc(11px * var(--math-fs)); letter-spacing: .06em; color: var(--math-ink-3);
+}
+.tk-who__chip {
+  padding: 3px 9px; border: 1px solid var(--math-border); border-radius: 999px;
+  background: var(--math-background); color: var(--math-ink-2);
+  font: inherit; font-size: calc(11.5px * var(--math-fs)); line-height: 1.5;
+  white-space: nowrap; cursor: pointer;
+}
+button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--math-foreground); }
+.tk-who__chip.is-on {
+  border-color: var(--math-primary); background: var(--math-primary-tint);
+  color: var(--math-foreground);
+}
+.tk-who__chip:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
+.tk-who__note {
+  flex-basis: 100%; font-size: calc(11px * var(--math-fs)); color: var(--math-ink-4);
+}
+
+.tk-readout { margin-top: 2px; }
+/* 当前知识点：读数里的"标题"，最重的一档 */
+.tk-readout__now {
+  font-size: calc(13.5px * var(--math-fs)); line-height: 1.5;
+  color: var(--math-foreground);
+}
+/* 掌握情况：路径 / 状态 / 掌握度，轻一档 */
+.tk-readout__progress {
+  margin-top: 2px; font-size: calc(12px * var(--math-fs)); line-height: 1.5;
+  color: var(--math-ink-2);
+}
+.tk-mono { font-family: var(--math-font-mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- 底部悬浮工具条（照白板） ---------- */
+.tk-dock {
+  /* z-index 5 → 9：工具条自己的**气泡提示**是它的 ::after，而 z-index 在一个
+     "有 z-index + position" 的祖先里**自成一层**（.tk-dock 就是），所以气泡里写的
+     z-index: 9 只在工具条内部有效 —— 整条工具条（连气泡）一起压在 .tk-above（6）下面，
+     鼠标划到按钮上时提示就被缩略条盖住了（用户报的："名字被时间轴挡住了"）。
+     把工具条这一层抬到 9（高于缩略条 / 图例条 6、浮动卡片 7），气泡就浮在最上面了。 */
+  position: absolute; left: 50%; bottom: 18px; z-index: 9;
+  transform: translateX(-50%);
+  display: flex; align-items: center; justify-content: center; gap: 1px;
+  max-width: calc(100% - 24px);
+  padding: 5px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-dock);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  opacity: .34;
+  transition: opacity 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms cubic-bezier(.2,.8,.2,1);
+}
+.tk-dock:hover,
+.tk-dock:focus-within { opacity: 1; box-shadow: 0 10px 32px rgba(15, 23, 42, .16); }
+
+/* 按钮用圆角方形：跟浮层、设置面板同一套方圆，激活态是一块实心的浅色块 */
+.tk-dock__btn {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-2); cursor: pointer;
+  transition: color 140ms cubic-bezier(.2,.8,.2,1), background-color 140ms cubic-bezier(.2,.8,.2,1), border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.tk-dock__btn svg { width: 16px; height: 16px; }
+.tk-dock__btn:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-dock__btn:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+.tk-dock__btn.is-on { border-color: transparent; background: var(--math-primary-tint); color: var(--math-primary); }
+.tk-dock__btn.is-on:hover { background: var(--math-primary-tint); }
+.tk-dock__sep { width: 1px; height: 20px; margin: 0 3px; background: var(--math-border); }
+.tk-dock__level {
+  min-width: 52px; height: 34px; padding: 0 6px;
+  border: 0; border-radius: var(--math-radius-md); background: none; cursor: pointer;
+  font: inherit; font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-2);
+  transition: color 140ms cubic-bezier(.2,.8,.2,1), background-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.tk-dock__level:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-dock__level:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+
+/* ---------- 气泡提示：自绘小气泡，替掉系统那层灰框 ---------- */
+[data-tk-tip] { position: relative; }
+[data-tk-tip]::after {
+  content: attr(data-tk-tip);
+  position: absolute; left: 50%; bottom: calc(100% + 16px); z-index: 9;
+  transform: translateX(-50%) translateY(2px);
+  padding: 4px 8px;
+  border-radius: var(--math-radius-sm);
+  background: var(--math-foreground); color: var(--math-background);
+  font-size: calc(11.5px * var(--math-fs)); font-weight: 400; line-height: 1.45; white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .22);
+  opacity: 0; visibility: hidden;
+  transition: opacity 120ms cubic-bezier(.2,.8,.2,1), transform 120ms cubic-bezier(.2,.8,.2,1), visibility 120ms;
+}
+[data-tk-tip]:hover::after,
+[data-tk-tip]:focus-visible::after {
+  opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0);
+}
+
+/* ---------- 网格疏密浮层（照白板） ---------- */
+/* 工具条正上方的那一列（网格/高度弹层 · 缩略条 · 图例条）：一个 flex 列，从下往上排、
+   谁也不压谁。**缩略条排在图例条前面**（DOM 里靠上）—— 用户 2026-09-30：
+   "在这个图例的上方，如果图例出现的话……放在图例的上方"。
+   容器本身不吃点击（pointer-events: none），免得挡住画布上的拖动。 */
+.tk-above {
+  /* 左右贴边而不是 left:50% + 收缩宽度：绝对定位 + 收缩宽度时，
+     里面 width: min(640px, calc(100% - 32px)) 的百分比无从解析（踩过：
+     缩略条的 canvas 只有 268px 宽，底子就画歪了）。给一个确定的宽度，子项按它算。
+     bottom 74 → 78：实测那一版缩略条的底边正好压在工具条顶边上（749 撞 749）——
+     用户："他挡住了，中间没有呼吸感" —— 抬高 14px，两样东西（图例 / 缩略条）都不贴着工具条。 */
+  position: absolute; left: 24px; right: 24px; bottom: 78px; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.tk-above > * { pointer-events: auto; }
+
+.tk-pop {
+  width: var(--math-float-w); max-width: calc(100% - 24px);
+  padding: 12px 14px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-background);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, .16);
+}
+.tk-pop[hidden] { display: none; }
+.tk-pop__row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.tk-pop__row:last-child { margin-bottom: 0; }
+.tk-pop__label { flex: 0 0 30px; font-size: calc(11.5px * var(--math-fs)); letter-spacing: .06em; color: var(--math-ink-3); }
+.tk-grids { display: flex; gap: 6px; }
+.tk-grid {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--math-border); border-radius: 6px;
+  background: none; cursor: pointer; font: inherit;
+  font-size: calc(12px * var(--math-fs)); line-height: 1;
+  padding: 4px 7px; color: var(--math-ink-3);
+}
+.tk-grid:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-grid:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+.tk-grid.is-on { border-color: transparent; background: var(--math-primary-tint); color: var(--math-primary); }
+.tk-grid__chip {
+  flex: none; width: 14px; height: 14px; border-radius: 4px;
+  border: 1px solid var(--math-border);
+  background-image:
+    linear-gradient(to right, var(--math-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--math-border) 1px, transparent 1px);
+}
+.tk-grid[data-tk-grid="20"] .tk-grid__chip { background-size: 4px 4px; }
+.tk-grid[data-tk-grid="40"] .tk-grid__chip { background-size: 6px 6px; }
+.tk-grid[data-tk-grid="80"] .tk-grid__chip { background-size: 9px 9px; }
+
+/* 只有文字的筹码（彩色条高度那一行）：长相与网格那三个同一套，只是没有预览块 */
+.tk-bars-levels { display: flex; gap: 6px; }
+.tk-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 34px;
+  border: 1px solid var(--math-border); border-radius: 6px;
+  background: none; cursor: pointer; font: inherit;
+  font-size: calc(12px * var(--math-fs)); line-height: 1;
+  padding: 5px 8px; color: var(--math-ink-3);
+}
+.tk-chip:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-chip:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+.tk-chip.is-on { border-color: transparent; background: var(--math-primary-tint); color: var(--math-primary); }
+
+/* ---------- 划过时的小气泡 ---------- */
+.tk-hover {
+  position: absolute; z-index: 7; max-width: 264px;
+  padding: 6px 9px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-md);
+  background: var(--math-background); color: var(--math-foreground);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .16);
+  pointer-events: none;
+}
+.tk-hover[hidden] { display: none; }
+.tk-hover__name { display: block; font-size: calc(12.5px * var(--math-fs)); font-weight: 600; }
+.tk-hover__meta { display: block; margin-top: 2px; font-size: calc(11px * var(--math-fs)); color: var(--math-ink-3); }
+
+/* ---------- 知识点卡片 ----------
+   样式与手感照白板的 .wb-panel：absolute + JS 定 px、--math-float-w 宽、
+   popover 底 + shadow-1 边、标题栏当抓手（cursor:grab + touch-action:none +
+   user-select:none），拖动中整条标题栏（含 ✕）都换成 grabbing、阴影升一档。 */
+.tk-card {
+  position: absolute; left: 0; top: 0; z-index: 8;
+  width: var(--math-float-w); max-width: calc(100% - 24px);
+  padding: 8px 10px 9px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-popover); box-shadow: var(--math-shadow-1);
+  display: flex; flex-direction: column; max-height: calc(100% - 32px);
+}
+.tk-card[hidden] { display: none; }
+.tk-card__head {
+  flex: none; display: flex; align-items: center; gap: 7px;
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.tk-card.is-dragging { box-shadow: var(--math-shadow-2); }
+.tk-card.is-dragging .tk-card__head,
+.tk-card.is-dragging .tk-card__head * { cursor: grabbing; }
+.tk-card__name {
+  flex: 1 1 auto; min-width: 0;
+  font-size: calc(13px * var(--math-fs)); font-weight: 600; line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tk-card__close {
+  flex: none; width: 22px; height: 22px; display: grid; place-items: center;
+  border: 0; border-radius: var(--math-radius-md); background: none; color: var(--math-ink-3);
+  font-size: calc(15px * var(--math-fs)); line-height: 1; cursor: pointer;
+}
+.tk-card__close:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-card__close:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+.tk-card__grip { flex: none; width: 14px; height: 14px; color: var(--math-ink-4); }
+/* 落款那一行：这一格是哪一号、什么状态 —— 单行省略号，不许把面板撑高 */
+.tk-card__subject {
+  flex: none; margin: 5px 0 0;
+  font-size: calc(11.5px * var(--math-fs)); line-height: 1.45; color: var(--math-ink-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tk-card__body { padding-top: 7px; overflow-y: auto; min-height: 0; }
+
+.tk-card__empty { margin: 8px 0 0; font-size: calc(12px * var(--math-fs)); color: var(--math-ink-3); }
+.tk-card__meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tk-card__badge { font-size: calc(12.5px * var(--math-fs)); font-weight: 600; }
+.tk-card__mastery { font-size: calc(12.5px * var(--math-fs)); color: var(--math-ink-2); }
+.tk-card__bar { height: 4px; margin-top: 7px; border-radius: 999px; background: var(--math-line); overflow: hidden; }
+.tk-card__bar-fill { display: block; height: 100%; border-radius: 999px; }
+.tk-card__label { margin-bottom: 6px; font-size: calc(11px * var(--math-fs)); letter-spacing: .08em; color: var(--math-ink-4); }
+.tk-card__factors { margin-top: 12px; }
+.tk-card__factor { display: grid; grid-template-columns: 58px 30px 1fr 24px; align-items: center; gap: 8px; margin-bottom: 5px; }
+.tk-card__factor-name { font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-2); }
+.tk-card__factor-weight,
+.tk-card__factor-value { font-size: calc(11px * var(--math-fs)); color: var(--math-ink-4); text-align: right; }
+.tk-card__factor-track { height: 4px; border-radius: 999px; background: var(--math-line); overflow: hidden; }
+.tk-card__factor-dot { display: block; height: 100%; border-radius: 999px; }
+.tk-card__rows { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px 0 0; }
+.tk-card__rows dt { font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-4); }
+.tk-card__rows dd { margin: 0; font-size: calc(12px * var(--math-fs)); color: var(--math-ink-2); }
+.tk-card__path {
+  margin-top: 10px; padding-top: 9px;
+  border-top: 1px solid var(--math-line);
+  font-size: calc(11.5px * var(--math-fs)); line-height: 1.65; color: var(--math-ink-3);
+}
+.tk-card__cards { margin-top: 10px; }
+.tk-card__card {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--math-line);
+  font-size: calc(11.5px * var(--math-fs));
+}
+.tk-card__card:last-child { border-bottom: 0; }
+.tk-card__card-no { flex: none; width: 18px; color: var(--math-ink-4); }
+.tk-card__card-type { flex: none; width: 28px; color: var(--math-ink-2); }
+.tk-card__card-acc { flex: none; width: 34px; text-align: right; color: var(--math-foreground); }
+.tk-card__card-diff { flex: none; width: 48px; color: var(--math-ink-4); }
+.tk-card__card-state { flex: 1 1 auto; }
+.tk-card__card-at { flex: none; color: var(--math-ink-4); }
+
+/* ---------- 图例条：底部工具条正上方的一行（**不是面板**） ----------
+   用户口径："也不用出这个面板了……就在这个底部菜单上面……挨着排就行了。
+   因为它本身它就是个看的这么一个东西，它不是个面板。"
+   所以它是常驻在中间那块区域的一行文字+记号，跟工具条一个底色、一样浮在画布上。 */
+.tk-legend-bar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 6px 14px;
+  max-width: calc(100% - 32px);
+  padding: 9px 14px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-dock);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-2);
+}
+.tk-legend-bar[hidden] { display: none; }
+.tk-legend-bar__group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+.tk-legend-bar__item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.tk-legend-bar__sep { flex: none; width: 1px; height: 15px; background: var(--math-border); }
+.tk-legend-bar svg { width: 13px; height: 13px; }
+
+/* ---------- 缩略条（用户第 9 条；2026-09-30 三轮修订后的定稿）----------
+   "如果放大了，就需要在底部菜单的上方出现一个……实时动态显示的当前屏幕所展示的数轴范围"。
+   就是一条**标准滚动条**的样子（用户 2026-09-30：
+   "那个滑块的颜色现在也比较丑，你那个底色就直接弄成灰色，或者是黑色，
+   然后那个滑块的那个颜色就搞成那个系统色"）：
+     · 杆（底色）= 中性灰 —— 亮色下是一道浅灰，暗色下就是黑；
+     · 滑块（`.tk-mini__win`，亮着的那一段）= **系统色**（`--math-primary`，跟着七个高亮色走：
+       选红就是红的、选绿就是绿的）；
+     · 杆底那 2px 是**四个学段各一支色**的"刻度尺"（学段认色不认字，见 ⑲）。
+   杆子也不再是白卡片、不再有白底小框（"太丑了……细一点。底下的白色框就不要了"）。 */
+.tk-mini {
+  /* 列向：读数是**一行字、贴在杆子上面**（用户 2026-09-30："提示文字应该在缩略图的
+     上方，不应在右边"）。这不只是好看 —— 横排时读数跟杆子抢宽度，而读数的宽度是变的
+     （"视野 1–43" 比 "视野 363–681" 短一截），杆子又是 flex:1：
+     读数一变宽杆子就变窄，拖动时量到的百分比跟着漂，时间轴就抖。分行之后杆子宽度定死。 */
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+  /* 640px → 420px：用户 2026-09-30"这个宽度太宽了，会显得很笨，细一点就行" ——
+     收到跟底部工具条差不多宽（实测那条 411px），一条细杆配一条工具条，长度也齐。 */
+  width: min(420px, 100%);
+}
+.tk-mini[hidden] { display: none; }
+.tk-mini__track {
+  position: relative; height: 12px; overflow: hidden;
+  border-radius: var(--math-radius-pill);
+  background: var(--math-line-strong);        /* 中性灰的杆身（暗色那一包就是黑） */
+  cursor: pointer; touch-action: none;
+}
+.tk-mini__track:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+/* 底子那层 canvas 铺满整条；指针事件一律交给 track（canvas 别把点击吃掉） */
+.tk-mini__strip {
+  position: absolute; inset: 0; display: block;
+  width: 100%; height: 100%; pointer-events: none;
+}
+/* 滑块 = 屏幕上正显示的那一段：一块**系统色**的实心块（不是描边、也不压暗幕）——
+   外面那圈底色已经是灰的了，"哪一段"一眼就看得出，不必再拿白纱去洗别处
+   （原来那层 66% 的白纱放得很大时会把 90% 的杆子洗成近白，用户："那个颜色不对"）。 */
+.tk-mini__win {
+  position: absolute; top: 0; bottom: 0;
+  border-radius: var(--math-radius-pill);
+  background: var(--math-primary);
+  pointer-events: none;
+}
+.tk-mini__win[hidden] { display: none; }
+/* 读数在杆子上面、居中一行（不再跟杆子抢宽度 —— 见 .tk-mini 的注释） */
+.tk-mini__range {
+  text-align: center; white-space: nowrap;
+  font-size: calc(10.5px * var(--math-fs)); color: var(--math-ink-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-legend__item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.tk-legend__swatch { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+/* 筛选里的小胶囊也带同样的记号（色点 / 小图标）—— 图例一个样、筛选又一个样就又要来回认 */
+.tk-chip__dot { flex: none; width: 8px; height: 8px; border-radius: 999px; }
+.tk-grid svg { width: 12px; height: 12px; }
+/* 两种节点的记号：观察是空心（只是"我在看"），学习是实心（它是"事实"）——
+   形状也分开，不靠颜色一条腿走路 */
+.tk-legend__mark { flex: none; width: 11px; height: 11px; border-radius: 999px; }
+.tk-legend__mark--now { background: var(--math-primary); }
+.tk-legend__mark--see { border: 1.5px solid var(--math-foreground); background: none; }
+
+/* ---------- 右侧竖工具条（照白板 .wb-side）----------
+   白板那条是"对这道题做的事"；时间轴这条是"怎么筛 / 怎么显示"。
+   底色、按钮尺寸、激活块、不悬停时淡着一律照抄，只有方向不同（竖排）。 */
+.tk-side {
+  position: absolute; right: 18px; top: 50%; z-index: 5;
+  transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 5px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-dock);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, .10);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  opacity: .34;
+  transition: opacity 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms cubic-bezier(.2,.8,.2,1);
+}
+.tk-side:hover,
+.tk-side:focus-within { opacity: 1; box-shadow: 0 10px 32px rgba(15, 23, 42, .16); }
+.tk-side__btn {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-2); cursor: pointer;
+  transition: color 140ms cubic-bezier(.2,.8,.2,1), background-color 140ms cubic-bezier(.2,.8,.2,1), border-color 140ms cubic-bezier(.2,.8,.2,1);
+}
+.tk-side__btn svg { width: 16px; height: 16px; }
+.tk-side__btn:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-side__btn:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+.tk-side__btn.is-on { border-color: transparent; background: var(--math-primary-tint); color: var(--math-primary); }
+.tk-side__btn.is-on:hover { background: var(--math-primary-tint); }
+/* 这条上的提示气泡改到按钮**左边**（默认那条是"上方居中"，会顶出屏幕） */
+.tk-side [data-tk-tip]::after {
+  left: auto; right: calc(100% + 16px); bottom: auto; top: 50%;
+  transform: translateY(-50%) translateX(2px);
+}
+.tk-side [data-tk-tip]:hover::after,
+.tk-side [data-tk-tip]:focus-visible::after { transform: translateY(-50%) translateX(0); }
+
+/* ---------- 筛选卡 ---------- */
+.tk-filters { width: calc(var(--math-float-w) - 24px); }
+.tk-filters__gap { margin-top: 11px; }
+/* 小胶囊直接复用网格那套（.tk-grid）：形状 / 字级 / 激活块跟工具条里那几颗一个样 ——
+   用户要的就是"这些小按钮参考白板的那一套"，同一个页面里不该出现两种胶囊。 */
+.tk-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.tk-filters__foot { margin-top: 12px; }
+.tk-filters__clear {
+  padding: 4px 9px;
+  border: 1px solid var(--math-border); border-radius: 6px;
+  background: none; color: var(--math-ink-2); cursor: pointer;
+  font: inherit; font-size: calc(11.5px * var(--math-fs)); line-height: 1.5;
+}
+.tk-filters__clear:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-filters__clear:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+
+/* ---------- 时间段对比卡（用户第 13 条）----------
+   一个月一行：左边月份、中间一条"掌握率条"、右边已学几格 —— 一屏比出哪个月学得扎实。 */
+.tk-months { width: calc(var(--math-float-w) + 24px); }
+.tk-month {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 3px 5px; border: 0; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-2); cursor: pointer; text-align: left;
+  font: inherit; font-size: calc(11.5px * var(--math-fs)); line-height: 1.5;
+}
+.tk-month:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-month:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+.tk-month.is-on { background: var(--math-primary-tint); color: var(--math-primary); }
+.tk-month__label { flex: none; width: 36px; font-variant-numeric: tabular-nums; }
+.tk-month__track {
+  flex: 1 1 auto; height: 7px; min-width: 36px; overflow: hidden;
+  border-radius: 999px; background: var(--math-line);
+}
+.tk-month__fill { display: block; height: 100%; border-radius: 999px; }
+.tk-month__meta {
+  flex: none; width: 104px; color: var(--math-ink-3); text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tk-month.is-on .tk-month__meta { color: var(--math-primary); }
+
+/* ---------- 方阵卡（用户第 18 条）----------
+   一格一个知识点，18 列——"像买电影票填座位那样"；颜色就是掌握情况。
+   方阵本身就是"打卡表"，颜色是它的内容，所以这一处不受「掌握度」那颗开关管。 */
+.tk-matrix { width: calc(var(--math-float-w) + 24px); }
+/* 方块多了（小学段 380 格 = 21 排）就让正文自己滚，别把整张卡撑到屏幕一半高 */
+.tk-matrix .tk-card__body { max-height: 340px; }
+.tk-matrix__grid { display: grid; grid-template-columns: repeat(18, 1fr); gap: 2px; }
+.tk-cell {
+  width: 100%; padding: 0; aspect-ratio: 1 / 1;
+  border: 0; border-radius: 2px; background: var(--math-line); cursor: pointer;
+}
+.tk-cell:hover { outline: 2px solid var(--math-foreground); outline-offset: -1px; }
+.tk-cell:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -1px; }
+.tk-cell.is-on { outline: 2px solid var(--math-foreground); outline-offset: -1px; }
+
+/* ---------- 帮助 ---------- */
+.tk-help {
+  position: absolute; right: 36px; bottom: 74px; z-index: 6;
+  width: 272px; max-width: calc(100% - 32px);
+  padding: 12px 14px;
+  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-background);
+  box-shadow: 0 14px 36px rgba(15, 23, 42, .16);
+}
+.tk-help[hidden] { display: none; }
+.tk-help__row { font-size: calc(11.5px * var(--math-fs)); line-height: 1.7; color: var(--math-ink-2); }
+
+/* ---------- 多端 ---------- */
+@media (max-width: 900px) {
+  .tk-left { left: 20px; top: 16px; }
+  .tk-who { gap: 5px; margin-bottom: 7px; }
+  .tk-side { right: 10px; }
+  .tk-dock { bottom: 12px; }
+  .tk-pop { bottom: 66px; }
+  .tk-help { right: 16px; bottom: 66px; }
+}
+@media (max-width: 640px) {
+  .tk-who__chip { padding: 2px 7px; }
+  .tk-who__note { font-size: calc(10.5px * var(--math-fs)); }
+  .tk-pop, .tk-help { padding: 10px 12px; }
+  .tk-dock__level { min-width: 46px; }
+  .tk-help { right: 12px; width: auto; left: 12px; }
+  .tk-hover { max-width: 208px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tk-dock, .tk-dock__btn, [data-tk-tip]::after { transition-duration: .001ms !important; }
+}
+</style>
+
+<script>lucide.createIcons();</script>
+<link rel="stylesheet" href="assets/css/shell.css">
+<link rel="stylesheet" href="assets/css/ide.css">
+
+<script src="assets/js/shell.js"></script>
+<script src="assets/js/ide-shell.js"></script>
+<script src="assets/js/math-tree.js"></script>
+<script src="assets/js/timeline-data.js"></script>
+<script src="assets/js/timeline.js"></script>
+</body>
+</html>

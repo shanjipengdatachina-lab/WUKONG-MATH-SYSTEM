@@ -69,6 +69,46 @@
   --math-state-error: #b3402f;
   --math-state-info: var(--math-primary);
 
+  /* ---------- 掌握度：学习状态专用的 7 档色 ----------
+     时间轴 / 学习进度 / 学习报告共用同一套「这个知识点学到哪一步了」的配色。
+     色相照着设计稿的 brand 色阶来（绿 / 金 / 深金 / 蓝 / 紫 / 红 / 灰），
+     但按本项目的规矩压到能压在纯白底上看清的那一档 —— 它们是**填充色**
+     （彩条、色块、轴上的点），不当文字色用，所以门槛是 3:1 而不是 4.5:1。
+     分两半写是有意的：
+       · ok / gold / weak / idle 直接引用状态色与灰阶 —— 值里带着 var()，
+         换主题时自己就跟着走，所以不必在 mid / dark 两包里再抄一遍；
+       · first / learn / review 这三个色阶里没有现成的，只能写值，
+         于是三套配色各写一遍（verify_display 会逐个比对，缺一个就报错）。
+     新增状态色时照这个规矩办：能引用就引用，不能引用才写值、并补齐另外两包。 */
+  --math-bar-ok: var(--math-state-success);
+  --math-bar-gold: var(--math-state-warning);
+  --math-bar-first: #b06a12;
+  --math-bar-learn: #2f6fb5;
+  --math-bar-review: #6b46b8;
+  --math-bar-weak: var(--math-state-error);
+  --math-bar-idle: var(--math-ink-4);
+
+  /* ---------- 学员自己打的那四类特殊标记（重点 / 难点 / 待复习 / 前置未满足）----------
+     与"掌握度"是两码事：上面那七色说的是系统判定学到什么程度，
+     这四个色说的是学员自己给这一格贴的标签。四个都得能引用就引用 ——
+     待复习跟状态里的"待复习"是同一个意思，就干脆同一支紫，不再另配一支。 */
+  --math-mark-key: #c98500;      /* 重点：琥珀金。故意比"初步掌握"（#b06a12）更亮一档 ——
+                                    两支挨着看才分得开（否则星标会像条子的颜色） */
+  --math-mark-hard: #c2453f;     /* 难点：砖红 */
+  --math-mark-review: var(--math-bar-review);   /* 待复习：与状态同色（同义） */
+  --math-mark-block: #55607a;    /* 前置未满足：石板蓝灰（"被挡住了"） */
+
+  /* ---------- 学段（小学 / 初中 / 高中 / 竞赛）的标识色 ----------
+     缩略条下面那条四段色条用它。用户 2026-09-30 的两句：
+       "条目里也可以把小学、初中、高中用字母在下面标记一下吗？……或者说用不同的颜色来代表不同的阶段"
+       "不同的阶段就尽量少出现文字。" —— 选了颜色这一条：轴上与缩略条上都不写学段名。
+     四支都**引用现成的令牌**（蓝 / 品牌绿 / 金 / 紫），所以中色、暗色两包不必各写一遍 ——
+     跟着被引用的那支走（规矩见 verify_display 的 color_token?）。 */
+  --math-stage-primary: var(--math-bar-learn);    /* 小学 */
+  --math-stage-junior: var(--math-primary);       /* 初中 */
+  --math-stage-senior: var(--math-bar-gold);      /* 高中 */
+  --math-stage-olympiad: var(--math-bar-review);  /* 竞赛 */
+
   --math-ring: var(--math-primary);
 
   /* ---------- Radius (2 / 4 / 8 / 16) ---------- */
@@ -180,6 +220,15 @@ html[data-wk-theme="mid"] {
   --math-state-warning: #96600b;
   --math-state-error: #a63a2b;
 
+  /* 掌握度里那三个"必须写值"的档（见 :root 的同名注释）；ok / gold / weak / idle 引用状态色，自动跟随 */
+  --math-bar-first: #a2610f;
+  --math-bar-learn: #2b66a8;
+  --math-bar-review: #63409f;
+
+  --math-mark-key: #b8790a;
+  --math-mark-hard: #b03a35;
+  --math-mark-block: #4a556c;
+
   --math-shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
   --math-shadow-2: 0 8px 24px -8px rgba(15, 23, 42, 0.22);
 }
@@ -231,6 +280,15 @@ html[data-wk-theme="dark"] {
   --math-state-success: #4ade80;
   --math-state-warning: #fbbf24;
   --math-state-error: #f87171;
+
+  /* 掌握度里那三个"必须写值"的档在暗底上要提亮（深色压纯黑 = 隐形），所以与亮底那三档不是同一组数 */
+  --math-bar-first: #e8b45c;
+  --math-bar-learn: #6fb2f0;
+  --math-bar-review: #b79bf7;
+
+  --math-mark-key: #f0b64a;
+  --math-mark-hard: #f08b85;
+  --math-mark-block: #a3aec4;
 
   --math-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40), 0 1px 1px rgba(0, 0, 0, 0.30);
   --math-shadow-2: 0 10px 30px -10px rgba(0, 0, 0, 0.60);

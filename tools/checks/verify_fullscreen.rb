@@ -35,7 +35,9 @@ pages.each do |path|
   end
 end
 
-issues << '仍有个别页面漏加全屏按钮（除独立文档外应全有）' unless with_btn.size == 41
+# 除独立文档（白板功能规划）外应全有。这个数是**页面总数 - 1**：
+# 2026-09-29 加入 timeline.html 之后是 43 - 1 = 42，加页面时跟着改。
+issues << '仍有个别页面漏加全屏按钮（除独立文档外应全有）' unless with_btn.size == 42
 issues << '白板工具条里还留着全屏按钮（应与侧栏统一）' if
   File.read(File.join(ROOT, 'whiteboard.html'), encoding: 'UTF-8')[/<div class="wb-dock".*?<div class="wb-pop"/m].to_s.include?('id="wb-full"')
 
