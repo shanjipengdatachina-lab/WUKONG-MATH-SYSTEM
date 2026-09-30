@@ -108,8 +108,9 @@
       <div class="tk-help__row">一颗小点 = 一个知识点；轴上方是它的难度条</div>
       <div class="tk-help__row">划过出名字 · 点一下弹知识点卡片 · 拖着看会跟着刷新</div>
       <div class="tk-help__row">深浅颜色 = 掌握情况（默认不显示，按「掌握度」才出来）</div>
-      <div class="tk-help__row">右侧一列：筛选 · 刻度与文字 · 信息面板 · 阶段</div>
-      <div class="tk-help__row">拖动 = 平移数轴；滚轮 = 平移 · ⌘/Ctrl + 滚轮 = 缩放</div>
+      <div class="tk-help__row">右侧一列：筛选（含阶段）· 刻度与文字 · 信息面板 · 时间段对比 · 方阵</div>
+      <div class="tk-help__row">滚轮 = 放大 / 缩小 · 右键拖动 = 平移数轴</div>
+      <div class="tk-help__row">左键点一下 = 看这一格的卡片（左键的其它用法待定）</div>
       <div class="tk-help__row">触屏：单指拖 · 双指捏合缩放 · 双击放大一档</div>
       <div class="tk-help__row">快捷键：←→↑↓ 平移 · +/− 缩放 · 0 适配 · G 网格 · Esc 关卡片</div>
     </div>
@@ -235,11 +236,11 @@
       </button>
       <button type="button" class="tk-side__btn" id="tk-levels" aria-pressed="true"
               data-tk-tip="刻度与文字 · 显示中" aria-label="刻度与文字">
-        <i data-lucide="tags"></i>
+        <i data-lucide="ruler"></i>
       </button>
       <button type="button" class="tk-side__btn" id="tk-readout-toggle" aria-pressed="true"
               data-tk-tip="信息面板 · 显示中" aria-label="信息面板">
-        <i data-lucide="panel-right-open"></i>
+        <i data-lucide="info"></i>
       </button>
       <!-- 第 13 条：时间段对比；第 18 条：方阵（打卡 / 选座那种小方块） -->
       <button type="button" class="tk-side__btn" id="tk-months" aria-expanded="false"
@@ -330,8 +331,23 @@ html, body { height: 100%; overflow: hidden; }
 }
 #tk-canvas {
   display: block; width: 100%; height: 100%;
-  cursor: grab; touch-action: none; overscroll-behavior: contain;
+  touch-action: none; overscroll-behavior: contain;
+  /* 光标（用户 2026-09-30："图标默认不应该是小手"）：默认就是**一个小圆圈** ——
+     跟轴上"一颗点就是一个知识点"同一套记号；滚轮缩放时换成左右双箭头
+     （往外张 = 放大、往中间收 = 缩小）；拖动视野时是"移动"四向箭头。
+     图标都是 data-URI 画的（外圈白描边打底，深浅两套配色下都看得见），
+     最后那个 `default` / `move` 是兜底：浏览器不认 data-URI 光标也不会没光标。 */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18'%3E%3Ccircle cx='9' cy='9' r='4.4' fill='none' stroke='%23ffffff' stroke-opacity='.9' stroke-width='3.2'/%3E%3Ccircle cx='9' cy='9' r='4' fill='none' stroke='%232b3138' stroke-width='1.5'/%3E%3C/svg%3E") 9 9, default;
 }
+/* 滚轮：向外一张 = 放大 */
+#tk-canvas.is-zoom-in {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9h8M8 6L5 9l3 3M10 6l3 3-3 3'/%3E%3C/g%3E%3Cg fill='none' stroke='%232b3138' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 9h8M8 6L5 9l3 3M10 6l3 3-3 3'/%3E%3C/g%3E%3C/svg%3E") 9 9, ew-resize;
+}
+/* 滚轮：往中间收 = 缩小 */
+#tk-canvas.is-zoom-out {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.9' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9h2M5 6l3 3-3 3M13 6l-3 3 3 3'/%3E%3C/g%3E%3Cg fill='none' stroke='%232b3138' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 9h2M5 6l3 3-3 3M13 6l-3 3 3 3'/%3E%3C/g%3E%3C/svg%3E") 9 9, ew-resize;
+}
+#tk-canvas.is-panning { cursor: move; }
 #tk-canvas:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
 
 /* ---------- 左上角：这一轴是谁的 + 读数 ----------
@@ -567,6 +583,28 @@ button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--
 .tk-card__bar { height: 4px; margin-top: 7px; border-radius: 999px; background: var(--math-line); overflow: hidden; }
 .tk-card__bar-fill { display: block; height: 100%; border-radius: 999px; }
 .tk-card__label { margin-bottom: 6px; font-size: calc(11px * var(--math-fs)); letter-spacing: .08em; color: var(--math-ink-4); }
+/* 我的标记：一排开关（重点 / 难点 / 待复习）—— 点一下贴上、再点一下摘掉。
+   贴上的那颗点亮（底块 + 加粗），颜色仍走它自己那个令牌（与图例、轴上的小图标同一支色）。 */
+.tk-card__marks { margin-top: 12px; }
+.tk-card__marks-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tk-mark {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--math-border); border-radius: 6px;
+  background: none; cursor: pointer; font: inherit;
+  font-size: calc(12px * var(--math-fs)); line-height: 1;
+  padding: 4px 7px; color: var(--math-ink-3);
+}
+.tk-mark:hover { background: var(--math-surface); color: var(--math-foreground); }
+.tk-mark:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 1px; }
+.tk-mark.is-on { border-color: transparent; background: var(--math-surface); color: var(--math-foreground); font-weight: 600; }
+.tk-mark svg { width: 12px; height: 12px; }
+/* "前置未满足"那一行：**系统判定的**，只是说明 —— 长得就不像能点的东西 */
+.tk-card__mark-sys {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 7px;
+  font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-4);
+}
+.tk-card__mark-sys svg { width: 12px; height: 12px; }
 .tk-card__factors { margin-top: 12px; }
 .tk-card__factor { display: grid; grid-template-columns: 58px 30px 1fr 24px; align-items: center; gap: 8px; margin-bottom: 5px; }
 .tk-card__factor-name { font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-2); }

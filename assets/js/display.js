@@ -21,6 +21,9 @@
   var THEME_KEY = 'wkmath.display.theme';   /* light | mid | dark */
   var FS_KEY = 'wkmath.display.fs';         /* std | lg | xl */
   var ACCENT_KEY = 'wkmath.display.accent'; /* green | blue | violet | amber | cyan | rose */
+  /* 掌握度色彩方案（用户 2026-09-30 定的）：换的是那七档状态色的一整套 ——
+     轴上的彩条 / 图例条 / 筛选胶囊 / 卡片徽标全跟着走（它们只读令牌，见 tokens.css）。 */
+  var SCHEME_KEY = 'wkmath.display.scheme';
   /* 属性**用自己的名字空间**（data-wk-*），不用通用的 data-theme。
      踩过一次：`data-theme` 很多库与运行环境都认，实测就有环境在页面加载后把它改回 light，
      于是"选了暗色却还是亮色"，而我们的内存状态、本机存储、白板板面全都是暗的 —— 找半天。
@@ -28,15 +31,25 @@
   var THEME_ATTR = 'data-wk-theme';
   var FS_ATTR = 'data-wk-fs';
   var ACCENT_ATTR = 'data-wk-accent';
+  var SCHEME_ATTR = 'data-wk-scheme';
   var THEMES = ['light', 'mid', 'dark'];
   var SIZES = ['std', 'lg', 'xl'];
   var ACCENTS = ['green', 'blue', 'violet', 'amber', 'cyan', 'rose', 'red'];
+  /* 六个方案：松绿（默认，就是 tokens.css 里 :root 那一套）+ 五套备选。
+     无障碍那套是 Okabe–Ito：色觉友好、转灰度也分得开。 */
+  var SCHEMES = ['green', 'blue', 'violet', 'amber', 'cyan', 'a11y'];
   var THEME_LABEL = { light: '亮色', mid: '中色', dark: '暗色' };
   var FS_LABEL = { std: '标准', lg: '大', xl: '特大' };
   var ACCENT_LABEL = { green: '松绿', blue: '靛蓝', violet: '紫罗兰', amber: '琥珀', cyan: '青碧', rose: '玫红', red: '中国红' };
+  var SCHEME_LABEL = {
+    green: '松绿（默认）', blue: '靛蓝', violet: '紫罗兰',
+    amber: '琥珀', cyan: '青碧', a11y: '无障碍'
+  };
   /* 默认高亮色是松绿（Trae 的品牌绿）—— **不写属性**，它就住在 tokens.css 的 :root 里。
      这样"从没设过"和"设成松绿"在 DOM 上完全一样，不会出现"重置了但属性还挂着"的灰区。 */
   var ACCENT_DEFAULT = 'green';
+  /* 色彩方案同一个口径：默认那套不写属性 */
+  var SCHEME_DEFAULT = 'green';
 
   function pick(key, allowed, dflt) {
     var v = null;
@@ -48,7 +61,8 @@
     return {
       theme: pick(THEME_KEY, THEMES, 'light'),
       fs: pick(FS_KEY, SIZES, 'std'),
-      accent: pick(ACCENT_KEY, ACCENTS, ACCENT_DEFAULT)
+      accent: pick(ACCENT_KEY, ACCENTS, ACCENT_DEFAULT),
+      scheme: pick(SCHEME_KEY, SCHEMES, SCHEME_DEFAULT)
     };
   }
 
@@ -63,6 +77,8 @@
     else el.setAttribute(FS_ATTR, state.fs);
     if (state.accent === ACCENT_DEFAULT) el.removeAttribute(ACCENT_ATTR);
     else el.setAttribute(ACCENT_ATTR, state.accent);
+    if (state.scheme === SCHEME_DEFAULT) el.removeAttribute(SCHEME_ATTR);
+    else el.setAttribute(SCHEME_ATTR, state.scheme);
     return state;
   }
 
@@ -83,10 +99,12 @@
     if (patch && THEMES.indexOf(patch.theme) >= 0) next.theme = patch.theme;
     if (patch && SIZES.indexOf(patch.fs) >= 0) next.fs = patch.fs;
     if (patch && ACCENTS.indexOf(patch.accent) >= 0) next.accent = patch.accent;
+    if (patch && SCHEMES.indexOf(patch.scheme) >= 0) next.scheme = patch.scheme;
     try {
       window.localStorage.setItem(THEME_KEY, next.theme);
       window.localStorage.setItem(FS_KEY, next.fs);
       window.localStorage.setItem(ACCENT_KEY, next.accent);
+      window.localStorage.setItem(SCHEME_KEY, next.scheme);
     } catch (err) { /* 存不了也照样当场生效，只是刷新后回到默认 */ }
     apply(next);
     broadcast(next);
@@ -96,7 +114,8 @@
   var GROUPS = [
     { sel: '#set-fs [data-wk-fs]', attr: 'fs', dom: 'data-wk-fs', keys: SIZES },
     { sel: '#set-theme [data-wk-theme]', attr: 'theme', dom: 'data-wk-theme', keys: THEMES },
-    { sel: '#set-accent [data-wk-accent]', attr: 'accent', dom: 'data-wk-accent', keys: ACCENTS }
+    { sel: '#set-accent [data-wk-accent]', attr: 'accent', dom: 'data-wk-accent', keys: ACCENTS },
+    { sel: '#set-scheme [data-wk-scheme]', attr: 'scheme', dom: 'data-wk-scheme', keys: SCHEMES }
   ];
 
   function paintPressed(items, dom, value) {
@@ -137,11 +156,14 @@
     themes: THEMES,
     sizes: SIZES,
     accents: ACCENTS,
+    schemes: SCHEMES,
     accentDefault: ACCENT_DEFAULT,
+    schemeDefault: SCHEME_DEFAULT,
     themeLabel: THEME_LABEL,
     fsLabel: FS_LABEL,
     accentLabel: ACCENT_LABEL,
-    keys: { theme: THEME_KEY, fs: FS_KEY, accent: ACCENT_KEY },
+    schemeLabel: SCHEME_LABEL,
+    keys: { theme: THEME_KEY, fs: FS_KEY, accent: ACCENT_KEY, scheme: SCHEME_KEY },
     initial: initial,
     get: current,
     set: set,

@@ -95,13 +95,54 @@ var x0 = TK.view.x;
 dragAxis(-120, 0);
 assert(Math.abs(TK.view.x - (x0 - 120)) < 1e-9, '拖动 = 平移，位移与手指一致（Δx ' + (TK.view.x - x0) + '）');
 
-/* ⌘/Ctrl + 滚轮 = 缩放，且同样是锚点缩放 */
+/* 鼠标分工是用户 2026-09-30 定的：**滚轮 = 放大缩小 / 右键拖动 = 平移时间轴 / 左键待定**。
+   三条各自单独钉住 —— 谁把滚轮改回"带 ⌘ 才缩放"、把右键漏掉，这里就红。 */
 TK.fit();
 var wx = 400;
 var w0 = (wx - TK.view.x) / TK.view.scale;
-fire(canvasEl, 'wheel', pe(wx, 300, { ctrl: true, deltaY: -240 }));
+fire(canvasEl, 'wheel', pe(wx, 300, { deltaY: -240 }));
 assert(TK.view.scale > FIT && Math.abs((wx - TK.view.x) / TK.view.scale - w0) < 1e-9,
-  '⌘/Ctrl + 滚轮 = 缩放（触控板捏合也走这一条），锚点同样不动');
+  '滚轮 = 放大（不用按 ⌘/Ctrl），锚点是指针：指针底下那一格滚前滚后不动');
+fire(canvasEl, 'wheel', pe(wx, 300, { deltaY: 240 }));
+assert(Math.abs(TK.view.scale - FIT) < 1e-6, '往回滚就缩回去（滚轮的上下 = 放大 / 缩小）');
+fire(canvasEl, 'wheel', pe(wx, 300, { ctrl: true, deltaY: -240 }));
+assert(TK.view.scale > FIT, '按着 ⌘/Ctrl 滚同样缩放（触控板捏合一直走这一条，老习惯不落空）');
+TK.fit();
+
+/* 右键拖动 = 平移数轴 */
+var rx0 = TK.view.x;
+fire(canvasEl, 'pointerdown', pe(600, 300, { button: 2 }));
+fire(canvasEl, 'pointermove', pe(470, 300, { button: 2 }));
+fire(canvasEl, 'pointerup', pe(470, 300, { button: 2 }));
+assert(Math.abs(TK.view.x - (rx0 - 130)) < 1e-9,
+  '右键拖动 = 平移数轴（位移与手指一致：Δx ' + (TK.view.x - rx0) + '）');
+fire(canvasEl, 'pointerdown', pe(600, 300, { button: 2 }));
+fire(canvasEl, 'pointerup', pe(600, 300, { button: 2 }));
+assert(TK.cardIndex() === -1, '右键点一下不弹卡片（右键只管拖动，弹卡片是左键的事）');
+
+/* 观察点只由"点"决定，拖视野 **不许** 顺手把它挪走
+   （用户 2026-09-30："我右键拖动的时候，我已经选中的那观察点不应该移动，
+     不应该跟随我的这个鼠标移动"）。先点一格钉住它，再拖一小段，看它还在不在原处。 */
+TK.fit();
+fire(canvasEl, 'pointerdown', pe(500, 300, { button: 0 }));
+fire(canvasEl, 'pointerup', pe(500, 300, { button: 0 }));
+var pinned = TK.cardIndex();
+assert(pinned >= 0, '先左键点一格，把观察点钉住（钉在第 ' + pinned + ' 格）');
+fire(canvasEl, 'pointerdown', pe(620, 300, { button: 2 }));
+fire(canvasEl, 'pointermove', pe(430, 300, { button: 2 }));
+fire(canvasEl, 'pointermove', pe(300, 300, { button: 2 }));
+fire(canvasEl, 'pointerup', pe(300, 300, { button: 2 }));
+assert(TK.cardIndex() === pinned,
+  '拖视野这么久，观察点一动不动（还是第 ' + TK.cardIndex() + ' 格，没有被拖到视野正中）');
+TK.closeCard();
+TK.fit();
+
+/* 左键：眼下仍保留"点一下看这一格的卡片"（用户说"一会儿再设置"，所以先维持现状） */
+fire(canvasEl, 'pointerdown', pe(600, 300, { button: 0 }));
+fire(canvasEl, 'pointerup', pe(600, 300, { button: 0 }));
+assert(TK.cardIndex() >= 0, '左键点一下 = 弹这一格的卡片（左键的其它用法待用户定）');
+TK.closeCard();
+TK.fit();
 
 /* 键盘：←→ 平移、0 适配 */
 TK.fit();
@@ -192,7 +233,9 @@ assert(textsOn >= 10 && textsOn > textsOff * 3,
 
 /* 四类标记的小图标：格子太窄不画，放大到一格 ≥12px 才画 */
 var mk = -1;
-for (var i = 0; i < LEARN.length; i += 1) { if (LEARN[i] && LEARN[i].mark) { mk = i; break; } }
+for (var i = 0; i < LEARN.length; i += 1) {
+  if (LEARN[i] && (LEARN[i].marks.length || LEARN[i].blocked)) { mk = i; break; }
+}
 TK.zoomBy(12);
 TK.view.x = TK.view.w / 2 - (mk + 0.5) * TK.view.scale;
 ctxReset(AX); TK.redraw();
@@ -209,6 +252,104 @@ AX.fills.concat(AX.strokes).forEach(function (s) {
   if (tokVals.indexOf(s.style) < 0 && bad.indexOf(s.style) < 0) { bad.push(s.style); }
 });
 assert(bad.length === 0, '画布上的颜色全部来自令牌（没有写死的字面量）' + (bad.length ? '：' + bad.join('、') : ''));
+
+/* ------------------------------------------------------------ *
+ * 3b. 划过的那一格与光标（用户 2026-09-30）
+ * ------------------------------------------------------------ */
+out('---- 划过与光标 ----');
+
+/* 划过时**竖线 + 亮起来的点**必须成对出现，而且都指着指针那一格：
+   这是"名字指着谁"的答案 —— 没有它们，名字变了学生也不知道说的是哪一格。
+   注意基线：不划过时也有系统色竖线 —— "当前学习"那颗节点自己有一条引线（markNode），
+   所以不能"找到就算数"，要拿"划过前后多出来的那一根"。
+   门槛取 20 而不是 40：用户 2026-09-30 让划过那根线**短下来**（只到轴上方 26px、轴下 7px 穿过零轴），
+   在适配档下量出来约 31 个世界单位 —— 门槛压在 20 才抓得到它，同时仍容不下任何一段刻度短划。 */
+function primaryV(minLen) {
+  var min = minLen === undefined ? 20 : minLen;
+  return AX.strokes.filter(function (s) {
+    if (s.style !== TOK['--math-primary']) { return false; }
+    return (s.path || []).some(function (o) {
+      return o.x0 !== undefined && o.x0 === o.x1 && Math.abs(o.y1 - o.y0) > min;
+    });
+  });
+}
+function vSeg(s) {
+  var p = (s && s.path) || [];
+  for (var i = 0; i < p.length; i += 1) {
+    if (p[i].x0 !== undefined && p[i].x0 === p[i].x1) { return p[i]; }
+  }
+  return null;
+}
+function hoverDot() {
+  /* 那颗被擦亮的点：系统色的圆弧填充，取最后一笔（划过的标记画在最上面） */
+  var hits = AX.fills.filter(function (f) {
+    return f.style === TOK['--math-primary'] &&
+      (f.path || []).some(function (o) { return o.r !== undefined; });
+  });
+  if (!hits.length) { return null; }
+  var arc = hits[hits.length - 1].path.filter(function (o) { return o.r !== undefined; })[0];
+  return arc || null;
+}
+
+TK.fit();
+ctxReset(AX); TK.redraw();
+var baseV = primaryV().length;          /* 不划过时的基线：只有"当前学习"那条引线 */
+var xA = 420;
+fire(canvasEl, 'pointermove', pe(xA, 300));
+ctxReset(AX); TK.redraw();
+var linesA = primaryV();
+assert(linesA.length === baseV + 1,
+  '划过时多出一根系统色竖线（' + baseV + ' → ' + linesA.length + '，多的那根就是划过标记）');
+var segA = vSeg(linesA[linesA.length - 1]);
+var dotA = hoverDot();
+/* 屏幕 → 世界的换算要连 view.x 一起算：指针在屏幕 420，世界坐标是 (420 − view.x) ÷ scale */
+function worldOf(sx) { return (sx - TK.view.x) / TK.view.scale; }
+assert(segA && Math.abs(segA.x0 - worldOf(xA)) < 1,
+  '竖线落在指针所在的那一格（世界 x ' + (segA && segA.x0.toFixed(1)) + ' vs 指针 ' +
+  worldOf(xA).toFixed(1) + '）');
+assert(!!dotA && Math.abs(dotA.x - segA.x0) < 1e-9,
+  '亮起来的那颗点与竖线同在一格（名字指的是谁，这两样一起指）');
+assert(!!dotA && dotA.r * TK.view.scale > TK.dotR,
+  '那颗点确实更大更亮（屏幕半径 ' + (dotA ? (dotA.r * TK.view.scale).toFixed(1) : '?') +
+  ' > 普通一颗 ' + TK.dotR + '）');
+assert(Math.abs((segA.x0 - Math.floor(segA.x0)) - 0.5) < 1e-9,
+  '而且落在格中心（i + 0.5），不是格边线上');
+/* 线要"短、精致、上下都穿轴"（用户 2026-09-30："这根线太长了，光往上太长了……
+   不光往上，还可以往下降，但是短一点，感觉精致一点"）：
+   穿过 y=0 那条轴，且比"当前学习"那条引线短得多。 */
+assert(segA.y0 < 0 && segA.y1 > 0,
+  '划过那根竖线穿过零轴（上端 ' + segA.y0.toFixed(1) + ' < 0 < 下端 ' + segA.y1.toFixed(1) + '）');
+var baseLine = vSeg(primaryV(40)[0]);
+assert(!baseLine || (segA.y1 - segA.y0) < (baseLine.y1 - baseLine.y0) * 0.5,
+  '而且明显比"当前学习"那条引线短（划过 ' + (segA.y1 - segA.y0).toFixed(1) + ' vs 引线 ' +
+  (baseLine ? (baseLine.y1 - baseLine.y0).toFixed(1) : '?') + '）');
+
+/* 换一格划 → 竖线跟着走到那一格 */
+var xB = 700;
+fire(canvasEl, 'pointermove', pe(xB, 300));
+ctxReset(AX); TK.redraw();
+var segB = vSeg(primaryV().pop());
+assert(segB && Math.abs(segB.x0 - worldOf(xB)) < 1, '换个位置划，竖线跟着到对应的格（不再赖着不动）');
+/* 划出画布 → 收回（回到基线，不留残影） */
+fire(canvasEl, 'pointerleave', pe(xB, 300));
+ctxReset(AX); TK.redraw();
+assert(primaryV().length === baseV, '鼠标离开画布，那根竖线收回（剩回基线的 ' + baseV + ' 条）');
+
+/* 光标三态：默认小圆圈（CSS 给，不是小手）、滚轮方向换双箭头、拖动时"移动" */
+fire(canvasEl, 'wheel', pe(500, 300, { deltaY: -120 }));
+assert(canvasEl.classList.contains('is-zoom-in'),
+  '往上滚（放大）→ 光标换成"往外张"的双箭头（class is-zoom-in）');
+fire(canvasEl, 'wheel', pe(500, 300, { deltaY: 120 }));
+assert(canvasEl.classList.contains('is-zoom-out') && !canvasEl.classList.contains('is-zoom-in'),
+  '往下滚（缩小）→ 换成"往中间收"的双箭头（class is-zoom-out）');
+TK.fit();
+fire(canvasEl, 'pointerdown', pe(500, 300, { button: 2 }));
+assert(canvasEl.classList.contains('is-panning'), '按下拖动 → 光标是"移动"四向箭头（class is-panning）');
+fire(canvasEl, 'pointerup', pe(500, 300, { button: 2 }));
+assert(!canvasEl.classList.contains('is-panning'), '松手 → 光标交回默认那个小圆圈（不是小手）');
+assert(!canvasEl.classList.contains('is-zoom-in') && !canvasEl.classList.contains('is-zoom-out'),
+  '松开后缩放那双箭头也收回');
+TK.fit();
 
 /* ------------------------------------------------------------ *
  * 4. 点击 · 卡片 · 筛选四维
@@ -242,9 +383,18 @@ TK.setFilter(['已掌握'], [], [], []);
 assert(TK.filtered() === N - hitStatus, '掌握度这一维：筛掉 ' + TK.filtered() + ' 格（= 769 - 43 格已掌握）');
 assert(TK.axis.items.length === N, '筛选只是**变淡**：轴上的格子一个都没少');
 
-var hitMark = matchCount(function (r) { return r.mark === 'key'; });
+/* 标记这一维：一格可以挂好几个标（多选）—— **沾上一个就算命中**，不是只比第一个 */
+var hitMark = matchCount(function (r) { return TK.marksOf(r).indexOf('key') >= 0; });
 TK.setFilter([], [], ['key'], []);
 assert(TK.filtered() === N - hitMark, '标记这一维：只看标了"重点"的（筛掉 ' + TK.filtered() + ' 格）');
+var multi = matchCount(function (r) { return TK.marksOf(r).length > 1; });
+assert(multi > 0, '演示数据里真的有"一格挂好几个标记"的（' + multi + ' 格，不是只会挂一个）');
+var hitAny = matchCount(function (r) {
+  var m = TK.marksOf(r); return m.indexOf('key') >= 0 || m.indexOf('hard') >= 0;
+});
+TK.setFilter([], [], ['key', 'hard'], []);
+assert(TK.filtered() === N - hitAny,
+  '一维里选两个（重点 或 难点）= 沾上哪个都算（筛掉 ' + TK.filtered() + ' 格）');
 
 var hitMonth = matchCount(function (r) { return r.month === '2026-03'; });
 TK.setFilter([], [], [], ['2026-03']);
@@ -331,6 +481,12 @@ assert(elFor('#tk-grids').children.length === 3 && elFor('#tk-bar-levels').child
 fire(elFor('#tk-filter'), 'click', {});
 var stageBox = elFor('[data-tk-stage-chips]');
 assert(elFor('[data-tk-filters]').hidden === false, '点右侧那颗「筛选」把筛选卡打开');
+/* 面板开着，那颗按钮就得亮着（用户 2026-09-30："激活筛选面板的时候，筛选按钮还是不显示的状态，
+   这不对的"）—— 空筛选也要亮：亮 = "这个面板开着"，不只是"有筛的维度"。 */
+assert(elFor('#tk-filter').classList.contains('is-on'),
+  '筛选面板开着，那颗「筛选」按钮是亮着的（要点亮的是"面板开着"这件事）');
+assert(elFor('#tk-filter').getAttribute('aria-expanded') === 'true',
+  '而且 aria-expanded 也报了"展开"（读屏同样看得出）');
 assert(stageBox.children.length === 1 + SEGS[0].length,
   '筛选卡最上面那行是"阶段"：全部 + 四个学段（' + stageBox.children.length + ' 个胶囊）');
 var beforeStage = TK.view.scale;
@@ -347,6 +503,8 @@ assert(TK.filtered() === 0, '点阶段不产生筛选（筛掉 0 格 —— 阶�
 TK.focusStage('');
 fire(elFor('[data-tk-filters-close]'), 'click', {});
 assert(elFor('[data-tk-filters]').hidden === true, '× 收起筛选卡');
+assert(!elFor('#tk-filter').classList.contains('is-on') && TK.filtered() === 0,
+  '收起面板、又没筛任何一维 → 那颗按钮熄掉（不留"亮着但什么都没发生"的假状态）');
 
 /* 「学习计划设定」还只是个占位按钮（需求待定，§2.11 ⑤）—— 点了要给一句实话 */
 fire(elFor('#tk-plan'), 'click', {});
@@ -369,7 +527,8 @@ var a1 = window.WK_LEARNING.build(items, { seed: 7, progress: 0.5 });
 var a2 = window.WK_LEARNING.build(items, { seed: 7, progress: 0.5 });
 var same = true;
 for (var z = 0; z < a1.length; z += 1) {
-  if (a1[z].mastery !== a2[z].mastery || a1[z].month !== a2[z].month || a1[z].mark !== a2[z].mark) { same = false; break; }
+  if (a1[z].mastery !== a2[z].mastery || a1[z].month !== a2[z].month ||
+      a1[z].marks.join() !== a2[z].marks.join() || a1[z].blocked !== a2[z].blocked) { same = false; break; }
 }
 assert(same, '同一个种子生成的数据一字不差（演示数据可复现，接后端时换掉这一层即可）');
 var a3 = window.WK_LEARNING.build(items, { seed: 8, progress: 0.5 });
@@ -389,6 +548,146 @@ var fourColors = ['key', 'hard', 'review', 'block'].map(function (k) { return TK
 var uniq = {};
 fourColors.forEach(function (c) { uniq[c] = 1; });
 assert(Object.keys(uniq).length === 4, '四类标记四个色，互不相同');
+
+/* ------------------------------------------------------------ *
+ * 3c. 标记的加 / 改 / 撤（用户 2026-09-30 定的四个口径）
+ *   在卡片里打 · 可以挂好几个 · "前置未满足"只读 · 再点一次 = 取消
+ * ------------------------------------------------------------ */
+out('---- 标记的加改撤 ----');
+TK.setFilter([], [], [], []);
+TK.fit();
+
+/* 哪几类归学员自己定（`own` 字段就是那四个口径的落点） */
+var ownList = TK.ownMarks();
+assert(ownList.join() === 'key,hard,review',
+  '学员能改的是重点 / 难点 / 待复习三类（实际 ' + ownList.join() + '）');
+var allMarks = window.WK_LEARNING.marks;
+assert(allMarks.length === 4 && allMarks[3].key === 'block' && allMarks[3].own === false,
+  '"前置未满足"归**系统**（own:false —— 学员改不了）');
+
+/* 在卡片里走一遍真实的点击路径：卡片 DOM → 按钮 click → 数据 → 再重画卡片 */
+function walkAttr(root, attr) {
+  var found = [];
+  (function go(n) {
+    (n.children || []).forEach(function (c) {
+      if (c._attrs && c._attrs[attr] !== undefined) { found.push(c); }
+      go(c);
+    });
+  }(root));
+  return found;
+}
+function markChips() { return walkAttr(elFor('[data-tk-card-body]'), 'data-tk-mark'); }
+function markChip(key) {
+  var list = markChips();
+  for (var i = 0; i < list.length; i += 1) {
+    if (list[i]._attrs['data-tk-mark'] === key) { return list[i]; }
+  }
+  return null;
+}
+function isOn(key) { var c = markChip(key); return !!c && c._attrs['aria-pressed'] === 'true'; }
+function kidOf(i) { var s = String(i + 1); while (s.length < 4) { s = '0' + s; } return 'MATH-KP-' + s; }
+
+var target = -1;
+for (var t0 = 0; t0 < LEARN.length; t0 += 1) {
+  if (LEARN[t0] && LEARN[t0].status !== '未开始') { target = t0; break; }
+}
+TK.select(target);
+var chipEls = markChips();
+assert(chipEls.length === 3,
+  '卡片里那排"我的标记"恰好三颗（实际 ' + chipEls.length + '）');
+assert(chipEls.map(function (c) { return c._attrs['data-tk-mark']; }).join() === 'key,hard,review',
+  '三颗的次序与 MARKS 一致（key,hard,review）');
+assert(isOn('key') === (LEARN[target].marks.indexOf('key') >= 0),
+  '进卡片时按下态与数据一致（这一格原本' + (LEARN[target].marks.indexOf('key') >= 0 ? '有' : '没有') + '重点）');
+
+/* 先清成一张白纸：三颗都点掉 */
+['key', 'hard', 'review'].forEach(function (k) { if (isOn(k)) { fire(markChip(k), 'click', {}); } });
+assert(LEARN[target].marks.length === 0 && !isOn('key') && !isOn('hard') && !isOn('review'),
+  '把亮着的都点一遍 → 三颗全灭、数据里也空了（"撤销"就是再点一下同一颗）');
+assert(TK.marksOf(LEARN[target]).length === (LEARN[target].blocked ? 1 : 0),
+  '清完之后这一格只剩可能有的那一颗系统标记（自评那几类都摘干净了）');
+
+/* 点一下贴上；再点一下摘掉 */
+fire(markChip('key'), 'click', {});
+assert(LEARN[target].marks.join() === 'key' && isOn('key'),
+  '点一下「重点」→ 贴上了（数据与按钮的亮灭一起变）');
+assert(TK.markEdits()[kidOf(target)].join() === 'key',
+  '改过的这一格进了本机那份覆盖表（键是知识点编号 ' + kidOf(target) + '）');
+assert(!!__store['wkmath.timeline.marks.v1'],
+  '而且立刻落了盘（wkmath.timeline.marks.v1 —— 刷新之后还在）');
+fire(markChip('key'), 'click', {});
+assert(LEARN[target].marks.length === 0 && !isOn('key'),
+  '再点一次同一颗 → 摘掉（用户定的"撤销 = 再点一下"，不用另做一个删除键）');
+
+/* 多选：连点两颗，谁也别把谁顶掉 */
+fire(markChip('hard'), 'click', {});
+fire(markChip('review'), 'click', {});
+var pair = LEARN[target].marks;
+assert(pair.join() === 'hard,review',
+  '可以同时挂好几个标记（点第二颗不会把第一颗顶掉，实际 ' + pair.join('+') + '）');
+assert(isOn('hard') && isOn('review') && !isOn('key'),
+  '两颗亮着、没点的那颗暗着');
+assert(TK.marksOf(LEARN[target]).join() ===
+  (LEARN[target].blocked ? 'hard,review,block' : 'hard,review'),
+  '画布 / 筛选那边拿到的是"全部标记"（自评的 + 系统那颗，实际 ' +
+  TK.marksOf(LEARN[target]).join('+') + '）');
+
+/* 系统那颗：卡片里不出按钮，只出一行说明；硬塞也不生效 */
+var blk = -1;
+for (var b0 = 0; b0 < LEARN.length; b0 += 1) {
+  if (LEARN[b0] && LEARN[b0].blocked) { blk = b0; break; }
+}
+assert(blk >= 0, '演示数据里有被系统标了"前置未满足"的格子（第 ' + blk + ' 格）');
+TK.select(blk);
+assert(markChip('block') === null,
+  '那一格的卡片里**没有**"前置未满足"这颗按钮（它不归学员改）');
+var sysRow = elFor('[data-tk-card-body]').querySelectorAll('.tk-card__mark-sys');
+assert(sysRow.length === 1 && sysRow[0].textContent.indexOf('前置未满足') >= 0 &&
+  sysRow[0].textContent.indexOf('不能自己改') >= 0,
+  '卡片里改用一行说明摆着："前置未满足 · 系统判定，不能自己改"');
+assert(TK.marksOf(LEARN[blk]).indexOf('block') >= 0,
+  '但它照样算这一格的标记（筛选 / 画布认得它 —— 只是只读）');
+TK.tapMark(blk, 'block');
+assert(LEARN[blk].marks.indexOf('block') < 0 && LEARN[blk].blocked === true,
+  '硬把系统那颗当成自评塞进去也不生效（blocked 只由系统那一条说了算）');
+
+/* 轴上：一格挂两颗就**并排画两个**图标（不是只画第一颗） */
+var two = -1;
+for (var t1 = 0; t1 < LEARN.length; t1 += 1) {
+  if (LEARN[t1] && LEARN[t1].marks.length >= 2) { two = t1; break; }
+}
+assert(two >= 0, '演示数据里有一格挂着两个自评标记（第 ' + two + ' 格）');
+TK.zoomBy(1e9);                       /* 放到最大：一格宽远超一排图标需要的宽度 */
+TK.view.x = TK.view.w / 2 - (two + 0.5) * TK.view.scale;
+ctxReset(AX); TK.redraw();
+var markToks = ['--math-mark-key', '--math-mark-hard', '--math-mark-review', '--math-mark-block']
+  .map(function (k) { return TOK[k]; });
+var gotMarks = AX.strokes.filter(function (s) { return markToks.indexOf(s.style) >= 0; }).length;
+/* 引擎只画"看得见的那几格"（visibleIndexRange，两头各多留一格）—— 照同一条公式算出应该有几笔 */
+function shouldDraw(v) {
+  var from = Math.max(0, Math.floor(-v.x / v.scale) - 1);
+  var to = Math.min(N - 1, Math.ceil((v.w - v.x) / v.scale) + 1);
+  var n = 0;
+  for (var i = from; i <= to; i += 1) {
+    var ks = TK.marksOf(LEARN[i]);
+    var need = 10 * ks.length + 3 * (ks.length - 1);
+    if (ks.length && v.scale >= need) { n += ks.length; }
+  }
+  return n;
+}
+assert(gotMarks === shouldDraw(TK.view) && gotMarks >= 2,
+  '轴上的标记图标按"一格挂几个就并排画几个"来（应画 ' + shouldDraw(TK.view) + ' 笔，实际 ' + gotMarks + ' 笔）');
+var drawnStyles = {};
+AX.strokes.forEach(function (s) { if (markToks.indexOf(s.style) >= 0) { drawnStyles[s.style] = 1; } });
+var twoColors = LEARN[two].marks.map(function (k) { return TOK[['--math-mark-key', '--math-mark-hard', '--math-mark-review']
+  [['key', 'hard', 'review'].indexOf(k)]]; });
+assert(twoColors.every(function (c) { return !!drawnStyles[c]; }),
+  '那一格挂的两种标记都真的画出来了（' + LEARN[two].marks.join('+') + ' 两支色都在）');
+
+/* 收尾：收起卡片、清掉筛选、回到适配档，别把状态留给后面的断言 */
+TK.closeCard();
+TK.setFilter([], [], [], []);
+TK.fit();
 
 out('----');
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

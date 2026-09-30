@@ -117,4 +117,52 @@ eq(accentChips[0]._pressed, 'false', '同时「松绿」被松开（同一组里
 accentChips[0].click();
 eq(__html.hasAttribute('data-wk-accent'), false, '点回「松绿」→ 属性被摘掉（不是写成 green）');
 
+/* ------------------------------------------------------------ *
+ * 掌握度色彩方案（用户 2026-09-30）
+ *   "底部设置你可以多搞几个色彩方案……默认有 6 个色彩方案。点击色彩方案，
+ *    相当于改了筛选里面那个掌握对应的色彩方案。"
+ *   它改的是轴上彩条那七个 --math-bar-*；默认那套（松绿）与字号 / 高亮色同一套规矩：不写属性。
+ * ------------------------------------------------------------ */
+out('---- 掌握度色彩方案 ----');
+eq(window.WK_DISPLAY.get().scheme, 'green', '默认那套是松绿（与 :root 里那一套是同一个）');
+eq(__html.hasAttribute('data-wk-scheme'), false, '默认那套不写属性（"没设过"与"设成默认"在 DOM 上一样）');
+eq(window.WK_DISPLAY.schemes.length, 6, '给了六套方案（用户点名"默认有 6 个色彩方案"）');
+eq(window.WK_DISPLAY.schemes[0], 'green', '第一个就是默认那档');
+eq(window.WK_DISPLAY.schemes[5], 'a11y', '最后一套是"无障碍"（色觉友好 + 转灰度也分得开）');
+eq(window.WK_DISPLAY.schemeLabel.a11y, '无障碍', '每套都有中文名（按钮上要写）');
+eq(window.WK_DISPLAY.keys.scheme, 'wkmath.display.scheme', '本机存储有自己的名字空间（不撞字号 / 配色 / 高亮色）');
+
+var beforeScheme = __events.length;
+var afterScheme = window.WK_DISPLAY.set({ scheme: 'blue' });
+eq(__html.getAttribute('data-wk-scheme'), 'blue', '选了靛蓝 → <html> 上挂着 data-wk-scheme="blue"');
+eq(__store['wkmath.display.scheme'], 'blue', '选了靛蓝 → 记在本机');
+eq(afterScheme.scheme, 'blue', 'set 返回最新状态');
+eq(__events.length, beforeScheme + 1, '改一次色彩方案广播一次');
+eq(__events[__events.length - 1].detail.scheme, 'blue', '事件里带的是最新色彩方案');
+
+/* 只改色彩方案不许把别的碰掉 —— 四组设置各自独立 */
+eq(window.WK_DISPLAY.get().accent, 'green', '只改色彩方案，高亮色保持不变');
+eq(window.WK_DISPLAY.get().fs, 'lg', '字号也保持不变');
+
+/* 认不出来的值一律忽略 / 回落 */
+window.WK_DISPLAY.set({ scheme: 'rainbow' });
+eq(window.WK_DISPLAY.get().scheme, 'blue', '不认识的方案被忽略（当次不生效）');
+__store['wkmath.display.scheme'] = 'rainbow';
+var fallenScheme = window.WK_DISPLAY.read();
+eq(fallenScheme.scheme, 'green', '盘里存了坏方案 → 回落松绿');
+eq(__html.hasAttribute('data-wk-scheme'), false, '回落之后属性也是干净的');
+
+/* 设置页那一行：按下态跟着状态走，同一组只亮一个 */
+window.WK_DISPLAY.set({ scheme: 'green' });
+document.handlers.DOMContentLoaded();
+eq(schemeChips[0]._pressed, 'true', '进页面时「松绿」是按下态（与当前色彩方案一致）');
+eq(schemeChips[1]._pressed, 'false', '其余几个是松开的');
+schemeChips[1].click();
+eq(window.WK_DISPLAY.get().scheme, 'blue', '点「靛蓝」→ 方案真的切了');
+eq(__html.getAttribute('data-wk-scheme'), 'blue', '点「靛蓝」→ <html> 上跟着变');
+eq(schemeChips[1]._pressed, 'true', '「靛蓝」自己亮起');
+eq(schemeChips[0]._pressed, 'false', '同时「松绿」被松开（同一组里只许亮一个）');
+schemeChips[0].click();
+eq(__html.hasAttribute('data-wk-scheme'), false, '点回「松绿」→ 属性被摘掉（不是写成 green）');
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

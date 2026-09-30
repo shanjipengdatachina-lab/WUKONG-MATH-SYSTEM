@@ -193,7 +193,26 @@
             <button type="button" class="seg__item" data-wk-accent="red" aria-pressed="false"><span class="disp-dot disp-dot--red" aria-hidden="true"></span>中国红</button>
           </div>
         </div>
-        <p class="fsec__hint">字号把整站文字一起放大（含侧栏与按钮）。配色换的是整站的底色与文字色 —— 白板与图谱的底色也跟着换，选了暗色白板就是黑板。高亮色换的是按钮、选中态、链接、焦点圈这些"可点的东西"的颜色（默认松绿就是 Trae 的品牌绿）；它不跟着配色走，亮底与暗底各有一档专门调过的，都是"字看得清"的那一档。</p>
+        <!-- 掌握度色彩方案（用户 2026-09-30）：换的是"掌握度"那一层七档状态色的一整套 ——
+             时间轴轴上的彩条、图例条、筛选里的胶囊、卡片上的徽标、缩略条，全跟着换。
+             每颗按钮自带 data-wk-scheme，于是里面那七个色块读到的**就是该方案自己的令牌**
+             （tokens.css 里方案块的选择器写了两条：`html[…]` 管全站、`html […]` 管这里的预览；
+             默认那套另外有一条 `[data-wk-scheme="green"]`，七个值全是 var() 引用）——
+             预览与真效果是同一份色值，不会"预览里一个样、选完又一个样"。
+             七个色块是**七个不同的色相**，不是一族色的深浅 —— 七档状态得一眼分得出来
+             （版本日志 §2.11 ㉑ 记了这一条与它的守线）。 -->
+        <div class="frow">
+          <span class="frow__label">掌握度色彩</span>
+          <div class="seg" id="set-scheme" role="group" aria-label="掌握度色彩方案">
+            <button type="button" class="seg__item set-scheme" data-wk-scheme="green" aria-pressed="true"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>松绿</button>
+            <button type="button" class="seg__item set-scheme" data-wk-scheme="blue" aria-pressed="false"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>靛蓝</button>
+            <button type="button" class="seg__item set-scheme" data-wk-scheme="violet" aria-pressed="false"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>紫罗兰</button>
+            <button type="button" class="seg__item set-scheme" data-wk-scheme="amber" aria-pressed="false"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>琥珀</button>
+            <button type="button" class="seg__item set-scheme" data-wk-scheme="cyan" aria-pressed="false"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>青碧</button>
+            <button type="button" class="seg__item set-scheme" data-wk-scheme="a11y" aria-pressed="false"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>无障碍</button>
+          </div>
+        </div>
+        <p class="fsec__hint">字号把整站文字一起放大（含侧栏与按钮）。配色换的是整站的底色与文字色 —— 白板与图谱的底色也跟着换，选了暗色白板就是黑板。高亮色换的是按钮、选中态、链接、焦点圈这些"可点的东西"的颜色（默认松绿就是 Trae 的品牌绿）；它不跟着配色走，亮底与暗底各有一档专门调过的，都是"字看得清"的那一档。掌握度色彩换的是"学会没有"那七档的颜色（彩条、图例、筛选里的胶囊、卡片徽标）—— 每套里的七个颜色都是<b>七个明显不同的色相</b>，一眼就能分辨状态；六套方案里<b>无障碍</b>那套是给色觉障碍与黑白打印挑的，红绿不分也读得出来。</p>
       </section>
 
       <section class="fsec">
@@ -296,12 +315,24 @@ body{font-variant-numeric:tabular-nums}
 /* 阅读与显示：字号 / 配色两组按钮。
    选中态用 [aria-pressed="true"] 驱动 —— 读屏和眼睛看到的是同一个状态，
    不用再额外挂一个只有视觉层知道的类。 */
-/* 阅读与显示：字号 / 配色 / 高亮色三组按钮 —— 长相同一套，只是分组不同。 */
-#set-fs .seg__item,#set-theme .seg__item,#set-accent .seg__item{cursor:pointer;border:0;background:none;font-family:var(--math-font-sans)}
-#set-fs .seg__item[aria-pressed="true"],#set-theme .seg__item[aria-pressed="true"],#set-accent .seg__item[aria-pressed="true"]{color:var(--math-primary);font-weight:500;background:var(--math-primary-soft)}
-#set-fs .seg__item:hover,#set-theme .seg__item:hover,#set-accent .seg__item:hover{color:var(--math-ink-2)}
-#set-fs .seg__item[aria-pressed="true"]:hover,#set-theme .seg__item[aria-pressed="true"]:hover,#set-accent .seg__item[aria-pressed="true"]:hover{color:var(--math-primary)}
-#set-fs .seg__item:focus-visible,#set-theme .seg__item:focus-visible,#set-accent .seg__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+/* 阅读与显示：字号 / 配色 / 高亮色 / 掌握度色彩四组按钮 —— 长相同一套，只是分组不同。 */
+#set-fs .seg__item,#set-theme .seg__item,#set-accent .seg__item,#set-scheme .seg__item{cursor:pointer;border:0;background:none;font-family:var(--math-font-sans)}
+#set-fs .seg__item[aria-pressed="true"],#set-theme .seg__item[aria-pressed="true"],#set-accent .seg__item[aria-pressed="true"],#set-scheme .seg__item[aria-pressed="true"]{color:var(--math-primary);font-weight:500;background:var(--math-primary-soft)}
+#set-fs .seg__item:hover,#set-theme .seg__item:hover,#set-accent .seg__item:hover,#set-scheme .seg__item:hover{color:var(--math-ink-2)}
+#set-fs .seg__item[aria-pressed="true"]:hover,#set-theme .seg__item[aria-pressed="true"]:hover,#set-accent .seg__item[aria-pressed="true"]:hover,#set-scheme .seg__item[aria-pressed="true"]:hover{color:var(--math-primary)}
+#set-fs .seg__item:focus-visible,#set-theme .seg__item:focus-visible,#set-accent .seg__item:focus-visible,#set-scheme .seg__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+/* 掌握度色彩方案：每颗按钮里那七个小色块 = **该方案自己的七档状态色**。
+   颜色不写死 —— 读的就是 --math-bar-* 这七个令牌，而按钮自带 data-wk-scheme，
+   tokens.css 里方案块的选择器有一条 `[data-wk-scheme=…]`（不带 html 前缀），
+   于是令牌在这颗按钮里就被换成了那个方案的七色。预览与真效果永远同一份色值。 */
+.set-scheme__bar{display:inline-flex;gap:2px;margin-right:7px;vertical-align:-2px}
+.set-scheme__bar i{width:7px;height:13px;border-radius:2px;background:var(--math-bar-idle)}
+.set-scheme__bar i:nth-child(1){background:var(--math-bar-ok)}
+.set-scheme__bar i:nth-child(2){background:var(--math-bar-gold)}
+.set-scheme__bar i:nth-child(3){background:var(--math-bar-first)}
+.set-scheme__bar i:nth-child(4){background:var(--math-bar-learn)}
+.set-scheme__bar i:nth-child(5){background:var(--math-bar-review)}
+.set-scheme__bar i:nth-child(6){background:var(--math-bar-weak)}
 /* 那两个小圆点是"那一档长什么样"的实物样本，所以写死颜色、也不跟字号缩放。
    上面三颗是底色样本（亮 / 中 / 暗），下面六颗是高亮色样本。 */
 .disp-dot{width:12px;height:12px;border-radius:999px;border:1px solid var(--math-line-strong);margin-right:6px}

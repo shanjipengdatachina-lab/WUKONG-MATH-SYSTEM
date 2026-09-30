@@ -77,17 +77,28 @@ function mkCtx(tag) {
   c.restore = function () { if (c._stack.length) { c._tf = c._stack.pop(); } };
   c.clearRect = function () { c.clears += 1; };
   c.fillRect = function (x, y, w, h) { c.fillRects.push({ x: x, y: y, w: w, h: h, style: c.fillStyle }); };
-  c.beginPath = function () { c._pt = null; };
+  c.beginPath = function () { c._pt = null; c._path = []; };
   c.closePath = function () {};
   c.moveTo = function (x, y) { c._pt = { x: x, y: y }; };
+  /* 画了哪条线要跟着这条线一起记下来（`path`）：不然"这条竖线是谁画的、什么颜色"
+     就只能靠 segs 与 strokes 两个数组各自的顺序去猜 —— 划过那一格的竖线正好
+     跟别的线叠在同一帧里，猜不出来。 */
   c.lineTo = function (x, y) {
-    if (c._pt) { c.segs.push({ x0: c._pt.x, y0: c._pt.y, x1: x, y1: y }); }
+    if (c._pt) {
+      var s = { x0: c._pt.x, y0: c._pt.y, x1: x, y1: y };
+      c.segs.push(s);
+      if (c._path) { c._path.push(s); }
+    }
     c._pt = { x: x, y: y };
   };
   c.quadraticCurveTo = function () {};
-  c.arc = function (x, y, r) { c.arcs.push({ x: x, y: y, r: r }); };
-  c.fill = function () { c.fills.push({ style: c.fillStyle }); };
-  c.stroke = function () { c.strokes.push({ style: c.strokeStyle, width: c.lineWidth }); };
+  c.arc = function (x, y, r) {
+    var a = { x: x, y: y, r: r };
+    c.arcs.push(a);
+    if (c._path) { c._path.push(a); }
+  };
+  c.fill = function () { c.fills.push({ style: c.fillStyle, path: c._path || [] }); };
+  c.stroke = function () { c.strokes.push({ style: c.strokeStyle, width: c.lineWidth, path: c._path || [] }); };
   c.setLineDash = function (a) { c.dashes.push(a); };
   c.translate = function () {};
   c.scale = function () {};
@@ -272,6 +283,10 @@ var window = {
   },
   /* 同步跑：scheduleRedraw 里有 rafPending 挡重复，不会递归 */
   requestAnimationFrame: function (fn) { fn(); return 1; },
+  /* 只给滚轮光标的"220ms 后收回"用。**只登记、不真触发** ——
+     所以断言里能看到"滚过之后光标类是那个双箭头"这个状态，不会被自动复位掉。 */
+  setTimeout: function () { return 1; },
+  clearTimeout: function () {},
   addEventListener: function (t, fn) { __docHandlers['w:' + t] = fn; },
   getComputedStyle: function (el) {
     var color = (el && el.style && el.style.color) || '';

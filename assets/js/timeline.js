@@ -319,6 +319,90 @@
     return { seed: s.seed, progress: s.progress };
   }
 
+  /* ------------------------------------------------------------------ *
+   * 1c. 学员自己贴的标记（用户 2026-09-30 定的四个口径）
+   *   · **在哪里打** —— 在知识点卡片里打（点一格弹出卡片，卡片里那排开关）；
+   *   · **能打几个** —— 可以同时挂几个（"既难点又待复习"是常态，不是二选一）；
+   *   · **"前置未满足"** —— 系统算的，学员改不了（见 timeline-data.js 的 MARKS.own）；
+   *   · **怎么撤销** —— 再点一次同一颗就是取消。
+   *
+   * 存法：演示数据是**确定性生成**的，学员改过的那几格单独记一份"覆盖表"在本机
+   * （`wkmath.timeline.marks.v1`），键是知识点编号（MATH-KP-0234 那种）而不是格子序号 ——
+   * 序号会随视图 / 数据重排而漂，编号是跟着那**一个知识点**走的。
+   * 表里只放"学员动过手"的格子；没动过的那些仍旧完全由演示规则说了算。
+   * ------------------------------------------------------------------ */
+  var MARKS_KEY = 'wkmath.timeline.marks.v1';
+  var markEdits = loadMarkEdits();
+
+  /* 学员能改的只有 `own` 那三类；先把表里认不出来的值剔掉（手改 localStorage / 旧版本留下的） */
+  function ownMarkKeys() {
+    var list = (window.WK_LEARNING && window.WK_LEARNING.ownMarks)
+      ? window.WK_LEARNING.ownMarks() : [];
+    return list.map(function (m) { return m.key; });
+  }
+
+  function loadMarkEdits() {
+    var raw = null;
+    try { raw = window.localStorage.getItem(MARKS_KEY); } catch (err) { raw = null; }
+    var obj = null;
+    try { obj = raw ? JSON.parse(raw) : null; } catch (err) { obj = null; }
+    if (!obj || typeof obj !== 'object') { return {}; }
+    var allow = ownMarkKeys();
+    var out = {};
+    Object.keys(obj).forEach(function (id) {
+      var v = obj[id];
+      if (!v || typeof v.length !== 'number') { return; }
+      var keep = [];
+      for (var i = 0; i < v.length; i += 1) {
+        if (allow.indexOf(v[i]) >= 0 && keep.indexOf(v[i]) < 0) { keep.push(v[i]); }
+      }
+      out[id] = keep;
+    });
+    return out;
+  }
+
+  function saveMarkEdits() {
+    try { window.localStorage.setItem(MARKS_KEY, JSON.stringify(markEdits)); }
+    catch (err) { /* 存不了也照样当场生效，只是刷新后回到演示规则 */ }
+  }
+
+  /* 把覆盖表盖到这一份记录上（每次重建记录都要再盖一次：换学生 / 换账号时 LEARN 会重算） */
+  function applyMarkEdits() {
+    if (!LEARN) { return; }
+    Object.keys(markEdits).forEach(function (id) {
+      var parts = id.split('-');
+      var n = parseInt(parts[parts.length - 1], 10);
+      if (!isFinite(n) || n < 1 || n > LEARN.length) { return; }
+      LEARN[n - 1].marks = markEdits[id].slice();
+    });
+  }
+
+  /* 这一格挂着的**全部**标记（学员自评那几类 + 系统算的"前置未满足"）——
+     画布、筛选、卡片三处都从这一个口子拿，别各自去摸 marks / blocked 两个字段。 */
+  function marksOf(rec) {
+    if (!rec) { return []; }
+    var out = (rec.marks || []).slice();
+    if (rec.blocked) { out.push('block'); }
+    return out;
+  }
+
+  /* 点一下卡片里那颗标记：没打就贴上、打了就摘掉（再点一次 = 撤销），然后立刻落盘 */
+  function toggleMark(index, key) {
+    var it = ITEMS[index];
+    if (!it || !it.rec) { return null; }
+    if (ownMarkKeys().indexOf(key) < 0) { return it.rec.marks; }   /* 系统那颗不许改 */
+    var cur = (it.rec.marks || []).slice();
+    var at = cur.indexOf(key);
+    if (at >= 0) { cur.splice(at, 1); } else { cur.push(key); }
+    /* 按 MARKS 的固定顺序排一下：不然"先点难点再点重点"和反过来在轴上画出来的次序不一样 */
+    var order = ownMarkKeys();
+    cur.sort(function (a, b) { return order.indexOf(a) - order.indexOf(b); });
+    it.rec.marks = cur;
+    markEdits[idOf(index)] = cur.slice();
+    saveMarkEdits();
+    return cur;
+  }
+
   /* 把一份学习记录接到轴上：每格挂自己的，每一"段"再汇总一份（轴上的点按这份上色） */
   function applyLearn() {
     if (!LEARN) { return; }
@@ -328,6 +412,7 @@
         seg.rec = window.WK_LEARNING.rollup(LEARN, seg.start, seg.end);
       });
     });
+    applyMarkEdits();
   }
 
   applyLearn();
@@ -467,6 +552,8 @@
     if (state.levels) { drawMinor(); }
     drawMarks();
     drawNodes();
+    /* 划过那一格的竖线 + 亮起来的那颗点画在最上面（它是"名字指着谁"的答案，不能被压住） */
+    drawHoverMark();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     syncReadout();
     syncStageChips();
@@ -921,6 +1008,7 @@
      那种缩放档要看"哪些格被标了"，用右侧的筛选（标记那一维）。 */
   var MARK_MIN_W = 12;          /* 一格宽到这么多屏幕像素才画它的标记图标 */
   var MARK_ICON_SIZE = 10;      /* 图标屏幕边长（像素） */
+  var MARK_ICON_GAP = 3;        /* 一颗知识点挂了好几个标记时，图标之间的缝（像素） */
   var MARK_PATHS = {};          /* key → Path2D（lucide 是 24×24 的格子，画的时候再缩） */
 
   /* lucide 的导出名是 PascalCase（star → Star，rotate-ccw → RotateCcw） */
@@ -954,6 +1042,7 @@
     if (!N || view.scale < MARK_MIN_W) { return; }
     var range = visibleIndexRange();
     var size = px(MARK_ICON_SIZE);
+    var gap = px(MARK_ICON_GAP);
     var k = size / 24;                 /* lucide 的图标画在 24×24 的格子里 */
     ctx.save();
     /* 线宽：缩放之后还要是 1.7px —— 所以先除掉 k（见下面的 scale） */
@@ -962,16 +1051,27 @@
     ctx.lineJoin = 'round';
     for (var i = range.from; i <= range.to; i += 1) {
       var rec = ITEMS[i].rec;
-      if (!rec || !rec.mark) { continue; }
-      var p = markPath(rec.mark);
-      if (!p) { continue; }
+      var keys = marksOf(rec);
+      if (!keys.length) { continue; }
+      /* 一颗知识点可以挂好几个标记（用户 2026-09-30 定的"多选"）—— 它们并排排在格子上方。
+         一整排要占 `MARK_ICON_SIZE × n + 缝`，这一格在屏幕上装不下就**整排不画**：
+         宁可空着，也不能挤到隔壁那一格的头上（挤过去就成了"这一格被标了"，是假的）。 */
+      var need = MARK_ICON_SIZE * keys.length + MARK_ICON_GAP * (keys.length - 1);
+      if (view.scale < need) { continue; }
       ctx.save();
       ctx.globalAlpha = passFilter(rec) ? 1 : FILTER_ALPHA;
-      ctx.strokeStyle = markColor(rec.mark);
-      /* 落在彩条顶端上面一点（世界坐标），再缩到屏幕上那 10px */
-      ctx.translate(ITEMS[i].x - size / 2, -px(heightOf(rec.diff)) - px(4) - size);
-      ctx.scale(k, k);
-      ctx.stroke(p);
+      var span = keys.length * size + (keys.length - 1) * gap;   /* 整排的世界宽 */
+      var top = -px(heightOf(rec.diff)) - px(4) - size;          /* 落在彩条顶端上面一点 */
+      for (var m = 0; m < keys.length; m += 1) {
+        var p = markPath(keys[m]);
+        if (!p) { continue; }
+        ctx.save();
+        ctx.strokeStyle = markColor(keys[m]);
+        ctx.translate(ITEMS[i].x - span / 2 + m * (size + gap), top);
+        ctx.scale(k, k);
+        ctx.stroke(p);
+        ctx.restore();
+      }
       ctx.restore();
     }
     ctx.restore();
@@ -1097,14 +1197,43 @@
 
   function onDown(e) {
     if (pinching) { return; }
-    if (e.pointerType === 'mouse' && typeof e.button === 'number' && e.button !== 0) { return; }
+    /* 鼠标：**左键**与**右键**都接（右键 = 平移时间轴，用户 2026-09-30："时间轴上的刻度
+       相当于右键拖动时间轴"）；中键 / 侧键不理。
+       左键眼下与右键一样是平移，另外"点一下 = 弹卡片"（见 onUp）—— 用户说
+       "左键现在是一会儿再设置"，所以先维持现状，等他定了再改这里。 */
+    if (e.pointerType === 'mouse' && typeof e.button === 'number' && e.button !== 0 && e.button !== 2) { return; }
     if (typeof e.preventDefault === 'function') { e.preventDefault(); }
     if (typeof canvas.setPointerCapture === 'function') {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
     var p = canvasPoint(e);
-    drag = { id: e.pointerId, x: p.x, y: p.y, moved: 0 };
-    if (canvas.style) { canvas.style.cursor = 'grabbing'; }
+    drag = { id: e.pointerId, x: p.x, y: p.y, moved: 0, button: e.button === undefined ? 0 : e.button };
+    setCanvasCursor('is-panning');
+  }
+
+  /* 光标跟着手势换（用户 2026-09-30："图标默认不应该是小手"，滚轮时要"向左右双箭头，
+     滚回去就是往里收、表示缩小"）。三态：
+       · 空       → 交给 CSS，即那个**小圆圈**（默认态）
+       · is-zoom-in  → 左右双箭头**往外张**（放大，见 timeline.html 里的 data-URI 光标）
+       · is-zoom-out → 左右双箭头**往中间收**（缩小）
+       · is-panning  → 四向"移动"（正在拖视野）
+     滚轮没有"结束"事件，所以配一个小定时器：220ms 没再滚就把光标收回默认。 */
+  var zoomCursorTimer = 0;
+  function setCanvasCursor(name) {
+    if (!canvas.classList) { return; }
+    canvas.classList.remove('is-zoom-in');
+    canvas.classList.remove('is-zoom-out');
+    canvas.classList.remove('is-panning');
+    if (name) { canvas.classList.add(name); }
+  }
+  function flashZoomCursor(zoomingIn) {
+    setCanvasCursor(zoomingIn ? 'is-zoom-in' : 'is-zoom-out');
+    if (zoomCursorTimer && window.clearTimeout) { window.clearTimeout(zoomCursorTimer); }
+    if (!window.setTimeout) { return; }
+    zoomCursorTimer = window.setTimeout(function () {
+      zoomCursorTimer = 0;
+      if (!drag) { setCanvasCursor(''); }
+    }, 220);
   }
 
   function onMove(e) {
@@ -1125,38 +1254,44 @@
     view.x += dx;
     view.y += dy;
     if (hoverEl) { hoverEl.hidden = true; }
-    retargetCard();
+    /* 这里**不**改"观察点"。用户 2026-09-30："我右键拖动的时候，我已经选中的那观察点
+       不应该移动，不应该跟随我的鼠标移动" —— 拖视野只动视野，观察点是你**点**出来的，
+       只有再点一格（或方阵上点一格）才换。原先跟到"视野正中那一格"是第 8 条的旧口径
+       （"滑动的时候，卡片面板要不断刷新"），它跟"观察点"这个记号打架：拖着拖着，
+       空心环开始自己一路跳，学生就不知道自己看的是哪一个了。 */
     scheduleRedraw();
   }
 
   function onUp(e) {
     if (!drag || drag.id !== e.pointerId) { return; }
     var moved = drag.moved;
+    var which = drag.button;
     drag = null;
     if (typeof canvas.releasePointerCapture === 'function') {
       try { canvas.releasePointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
-    if (canvas.style) { canvas.style.cursor = 'grab'; }
-    /* 几乎没动 = 点了一下：这一格成为观察节点，弹出它的知识点卡片 */
-    if (moved < 5) {
+    if (canvas.style) { canvas.style.cursor = ''; }
+    setCanvasCursor('');
+    /* 几乎没动 = 点了一下：这一格成为观察节点，弹出它的知识点卡片。
+       **只认左键**：右键从头到尾都是"拖动时间轴"那一件事（用户 2026-09-30），
+       右键松开不该顺手弹出卡片。 */
+    if (moved < 5 && which === 0) {
       var p = canvasPoint(e);
       select(indexAt(p.x));
     }
   }
 
+  /* 滚轮 = 放大缩小（用户 2026-09-30："鼠标滚轮的滚轮是用来放大缩小的"）。
+     原来"滚轮平移、⌘/Ctrl+滚轮才缩放"那一套撤了 —— 平移交给右键拖动。
+     锚点是指针：指针底下那一格不动，往哪滚就是围着哪儿放大 / 缩小。
+     ⌘/Ctrl + 滚轮照旧也走这一条（触控板捏合一直走的就是它），不让老习惯落空。 */
   function onWheel(e) {
     if (typeof e.preventDefault === 'function') { e.preventDefault(); }
     var p = canvasPoint(e);
-    if (e.ctrlKey || e.metaKey) {
-      var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      zoomAt(p.x, Math.pow(1.0018, -dy));
-      return;
-    }
-    var dx = e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX;
-    var dyy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-    view.x -= dx;
-    view.y -= dyy;
-    scheduleRedraw();
+    var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    if (!dy) { return; }
+    flashZoomCursor(dy < 0);     /* 往上滚 = 放大（往外张），往下滚 = 缩小（往中间收） */
+    zoomAt(p.x, Math.pow(1.0018, -dy));
   }
 
   var pinch = null;
@@ -1246,6 +1381,8 @@
 
   /* 光标旁的小气泡：只有名字和一行状态，别挡住轴 */
   function showHover(index, sx, sy) {
+    /* 换格才重画：划过时鼠标一动就是几十次 pointermove，格没换还重画白烧帧 */
+    if (index !== hoverIndex) { scheduleRedraw(); }
     hoverIndex = index;
     var it = ITEMS[index];
     if (!it || !hoverEl) { return; }
@@ -1265,8 +1402,10 @@
   }
 
   function hideHover() {
+    var was = hoverIndex >= 0;
     hoverIndex = -1;
     if (hoverEl) { hoverEl.hidden = true; }
+    if (was) { scheduleRedraw(); }
     syncReadout();
   }
 
@@ -1417,16 +1556,6 @@
     });
   }
 
-  /* 拖动视野时把卡片刷到"视野正中那一格"；只有跨到新的一格才重排 DOM */
-  function retargetCard() {
-    if (pin < 0) { return; }
-    var next = indexAt(view.w / 2);
-    if (next !== pin && next >= 0) {
-      pin = next;
-      renderCard(pin);
-    }
-  }
-
   function renderCard(index) {
     var it = ITEMS[index];
     if (!it || !cardBox) { return; }
@@ -1456,6 +1585,47 @@
     fill.style.background = statusColor(rec.status);
     bar.appendChild(fill);
     cardBox.appendChild(bar);
+
+    /* 标记（用户 2026-09-30）：**学员自己贴的**（重点 / 难点 / 待复习）点一下就贴上、
+       再点一下摘掉，几个可以同时挂着；"前置未满足"是**系统算的**，只当一行说明摆着 ——
+       点不动、也摘不掉（它是提醒，不是自评）。 */
+    var markBox = el('div', 'tk-card__marks');
+    markBox.appendChild(el('div', 'tk-card__label', '我的标记'));
+    var chips = el('div', 'tk-card__marks-row');
+    var mine = rec.marks || [];
+    ((window.WK_LEARNING && window.WK_LEARNING.ownMarks) ? window.WK_LEARNING.ownMarks() : [])
+      .forEach(function (m) {
+      var on = mine.indexOf(m.key) >= 0;
+      var b = el('button', 'tk-mark' + (on ? ' is-on' : ''));
+      b.type = 'button';
+      b.setAttribute('data-tk-mark', m.key);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      var ic = document.createElement('i');
+      ic.setAttribute('data-lucide', m.icon);
+      ic.setAttribute('aria-hidden', 'true');
+      if (on) { ic.style.color = readColor(m.token); }
+      b.appendChild(ic);
+      b.appendChild(document.createTextNode(m.name));
+      b.addEventListener('click', (function (k) {
+        return function () { tapMark(index, k); };
+      }(m.key)));
+      chips.appendChild(b);
+    });
+    markBox.appendChild(chips);
+    if (rec.blocked) {
+      var sys = markOf('block');
+      var sysRow = el('div', 'tk-card__mark-sys');
+      var sIcon = document.createElement('i');
+      sIcon.setAttribute('data-lucide', sys ? sys.icon : 'lock');
+      sIcon.setAttribute('aria-hidden', 'true');
+      if (sys) { sIcon.style.color = readColor(sys.token); }
+      sysRow.appendChild(sIcon);
+      sysRow.appendChild(document.createTextNode(
+        (sys ? sys.name : '前置未满足') + ' · 系统判定，不能自己改'));
+      markBox.appendChild(sysRow);
+    }
+    cardBox.appendChild(markBox);
+    refreshIcons();
 
     /* 五因子：掌握度是这五项加权出来的 —— 权重与分数都摆出来，别让它像个黑箱 */
     if (rec.factors && window.WK_LEARNING && window.WK_LEARNING.factors) {
@@ -1509,6 +1679,14 @@
       });
       cardBox.appendChild(list);
     }
+  }
+
+  /* 卡片里点一下某颗标记：改数据 → 重画卡片（按下态）→ 重画轴（那一格的小图标）。
+     两处都要刷：卡片是"我改了没有"的回执，轴上是这个改动的**结果**。 */
+  function tapMark(index, key) {
+    if (toggleMark(index, key) === null) { return; }
+    renderCard(index);
+    scheduleRedraw();
   }
 
   /* ------------------------------------------------------------------ *
@@ -1610,6 +1788,42 @@
     if (pin >= 0 && pin !== now) {
       markNode(pin, C.ink, '观察 ' + idOf(pin).slice(-4), false, tagY + px(24));
     }
+  }
+
+  /* 划过的那一格：**一根竖线 + 把那一颗点擦亮**（用户 2026-09-30：
+     "他不是一个点吗？然后可以用根线……随着 hover 激活那个点的颜色，或者说让那个点亮一点……
+      给人一个提示：我 hover 的时候，对应的那个点在变 —— 要不然名字变，他也不知道是啥意思"）。
+     为什么非要有这个：划过时名字会变（光标旁的气泡 + 左上角两行读数），可名字指的是哪一格，
+     屏幕上没有任何东西在动 —— 学生只看得出"字变了"。竖线指位置、亮起来的那颗点指对象，
+     两样凑齐，名字才有着落。
+     点用**系统色**（`--math-primary`）：与"当前学习"那颗节点同一支色，换高亮色它跟着换。
+     一格都没有时（N = 0）恒不画；正在拖视野时也不画（那时候指针是在"推视野"，不是在指某一格）。 */
+  function drawHoverMark() {
+    if (!N || drag || hoverIndex < 0 || !ITEMS[hoverIndex]) { return; }
+    var x = ITEMS[hoverIndex].x;
+    var y = px(DOT_ROW);
+    ctx.save();
+    /* 竖线：**短一些、精致一些**，且上下都穿过轴（用户 2026-09-30："这根线太长了，
+       往上太长了……不光往上，还可以往下降，但是短一点，感觉精致一点"）。
+       所以只从轴上方 26px 拉到轴下那排点再往下一点，不再一路顶到彩条顶上。 */
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = C.primary;
+    ctx.lineWidth = px(1);
+    ctx.beginPath();
+    ctx.moveTo(x, px(-26));
+    ctx.lineTo(x, px(DOT_ROW + 7));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    /* 那颗点：先用底色擦掉原来那颗（不然两颗挤在一起像重影），再画一颗更大、更亮的 */
+    ctx.fillStyle = C.background;
+    ctx.beginPath();
+    ctx.arc(x, y, px(DOT_R + 3.2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = C.primary;
+    ctx.beginPath();
+    ctx.arc(x, y, px(DOT_R + 1.4), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   /* ------------------------------------------------------------------ *
@@ -1720,8 +1934,17 @@
     var f = state.filter;
     if (f.status.length && f.status.indexOf(rec.status) < 0) { return false; }
     if (f.diff.length && f.diff.indexOf(diffBucket(rec.diff)) < 0) { return false; }
-    /* 标记这一维：没被标过的格子 mark 是空串，选了标记就留不下来（"只看我标过的"） */
-    if (f.mark.length && f.mark.indexOf(rec.mark || '') < 0) { return false; }
+    /* 标记这一维：一格可能同时挂着好几个标记（多选），**沾上一个就算命中** ——
+       选了"难点"就该把它也捞出来，哪怕它还同时挂着"重点"。没标过的自然一个都不沾，
+       也就留不下来（"只看我标过的"）。 */
+    if (f.mark.length) {
+      var mk = marksOf(rec);
+      var hit = false;
+      for (var q = 0; q < f.mark.length; q += 1) {
+        if (mk.indexOf(f.mark[q]) >= 0) { hit = true; }
+      }
+      if (!hit) { return false; }
+    }
     /* 时间段这一维：没学过的格子没有日期（month 空串），选了月份就留不下来 */
     if (f.month.length && f.month.indexOf(rec.month || '') < 0) { return false; }
     return true;
@@ -1816,16 +2039,20 @@
     }
     if (btnFilter) {
       btnFilter.setAttribute('data-tk-tip', filterOn() ? '筛选 · 已筛掉 ' + n + ' 格' : '筛选');
-      if (filterOn()) { btnFilter.classList.add('is-on'); } else { btnFilter.classList.remove('is-on'); }
     }
+    syncFilterButton();    /* 亮不亮由它统一算：面板开着 或 有筛的维度 */
     syncMonths();          /* 时间段对比卡里的"选中"状态与筛选是同一份数据 */
     scheduleRedraw();
   }
 
+  /* 筛选按钮的亮/暗有**两个**来源（用户 2026-09-30 报的："激活筛选面板的时候，
+     筛选按钮还是不显示的状态，这不对"）：一是面板开着，二是筛里确实选了维度。
+     两条都归这里算 —— 分两处各管一半，迟早会出现"关了面板但还在筛，按钮灭了"这种错。 */
   function syncFilterButton() {
-    if (btnFilter) {
-      btnFilter.setAttribute('aria-expanded', filtersEl && !filtersEl.hidden ? 'true' : 'false');
-    }
+    if (!btnFilter) { return; }
+    var open = !!filtersEl && !filtersEl.hidden;
+    btnFilter.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open || filterOn()) { btnFilter.classList.add('is-on'); } else { btnFilter.classList.remove('is-on'); }
   }
 
   function setFilterPanel(on) {
@@ -2393,6 +2620,11 @@
     canvas.addEventListener('pointermove', onMove);
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onUp);
+    /* **右键拖动 = 平移时间轴**（用户 2026-09-30），所以画布上得把浏览器的右键菜单按住 ——
+       不然一按右键就弹出菜单，拖不动。 */
+    canvas.addEventListener('contextmenu', function (e) {
+      if (typeof e.preventDefault === 'function') { e.preventDefault(); }
+    });
     canvas.addEventListener('pointerleave', hideHover);
     if (btnCardClose) { btnCardClose.addEventListener('click', function () { closeCard(); }); }
 
@@ -2487,7 +2719,7 @@
   findNow();
   if (elNow) { elNow.textContent = nowText(); }
   if (elProgress) { elProgress.textContent = progressText(); }
-  if (canvas.style) { canvas.style.cursor = 'grab'; }
+  /* 光标不用 JS 起手：默认那个小圆圈写在 CSS 的 #tk-canvas 上（滚动 / 拖动时再加类换） */
   buildGridChips();
   buildBarChips();
   syncGridButton();
@@ -2508,6 +2740,7 @@
   /* 对外接口：自查与将来的跨页点名都要用（图谱页的 mindmap 也是这么留的） */
   window.WK_TIMELINE = {
     axis: axis,
+    dotR: DOT_R,      /* 一颗点的屏幕半径 —— 划过时那颗要画得更大更亮，自检拿它当基准 */
     learn: LEARN,
     summary: SUMMARY,
     view: view,
@@ -2543,6 +2776,11 @@
       syncFilters();
     },
     markColor: markColor,
+    /* 标记那一套（用户 2026-09-30）：一格挂哪些标、学员能改哪几类、点一下改成什么 */
+    marksOf: marksOf,
+    ownMarks: ownMarkKeys,
+    tapMark: tapMark,
+    markEdits: function () { return markEdits; },
     months: monthList,
     setMonthsPanel: setMonthsPanel,
     setMatrixPanel: setMatrixPanel,

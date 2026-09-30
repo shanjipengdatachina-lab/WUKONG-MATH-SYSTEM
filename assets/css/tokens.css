@@ -82,9 +82,18 @@
      新增状态色时照这个规矩办：能引用就引用，不能引用才写值、并补齐另外两包。 */
   --math-bar-ok: var(--math-state-success);
   --math-bar-gold: var(--math-state-warning);
-  --math-bar-first: #b06a12;
-  --math-bar-learn: #2f6fb5;
-  --math-bar-review: #6b46b8;
+  /* 初步掌握：**橄榄黄绿**。原来跟"已掌握"（金）几乎同一个色相（深金），
+     七档里这两档根本分不出来（用户 2026-09-30：'要不然分不清问题的状态'）——
+     所以挪到黄绿那一档，与金差 44°、与"学习中"（蓝）差 128°。
+     这三档按主题各有一份值，所以先落在 `--math-scheme-*` 上、再由 `--math-bar-*` 引用：
+     设置页第一颗预览按钮（默认方案）要 `var()` 取到**当前主题**那一份，
+     直接写死的话，暗色下它会显示亮色那一套（详见下面"掌握度色彩方案"那节的说明）。 */
+  --math-scheme-first: #608f19;
+  --math-scheme-learn: #2f6fb5;
+  --math-scheme-review: #6b46b8;
+  --math-bar-first: var(--math-scheme-first);
+  --math-bar-learn: var(--math-scheme-learn);
+  --math-bar-review: var(--math-scheme-review);
   --math-bar-weak: var(--math-state-error);
   --math-bar-idle: var(--math-ink-4);
 
@@ -221,9 +230,12 @@ html[data-wk-theme="mid"] {
   --math-state-error: #a63a2b;
 
   /* 掌握度里那三个"必须写值"的档（见 :root 的同名注释）；ok / gold / weak / idle 引用状态色，自动跟随 */
-  --math-bar-first: #a2610f;
-  --math-bar-learn: #2b66a8;
-  --math-bar-review: #63409f;
+  --math-scheme-first: #62901c;
+  --math-scheme-learn: #2b66a8;
+  --math-scheme-review: #63409f;
+  --math-bar-first: var(--math-scheme-first);
+  --math-bar-learn: var(--math-scheme-learn);
+  --math-bar-review: var(--math-scheme-review);
 
   --math-mark-key: #b8790a;
   --math-mark-hard: #b03a35;
@@ -282,9 +294,12 @@ html[data-wk-theme="dark"] {
   --math-state-error: #f87171;
 
   /* 掌握度里那三个"必须写值"的档在暗底上要提亮（深色压纯黑 = 隐形），所以与亮底那三档不是同一组数 */
-  --math-bar-first: #e8b45c;
-  --math-bar-learn: #6fb2f0;
-  --math-bar-review: #b79bf7;
+  --math-scheme-first: #c3d84a;
+  --math-scheme-learn: #6fb2f0;
+  --math-scheme-review: #b79bf7;
+  --math-bar-first: var(--math-scheme-first);
+  --math-bar-learn: var(--math-scheme-learn);
+  --math-bar-review: var(--math-scheme-review);
 
   --math-mark-key: #f0b64a;
   --math-mark-hard: #f08b85;
@@ -373,6 +388,110 @@ html[data-wk-theme="dark"][data-wk-accent="red"] {
   --math-primary: #ff4d4f;
   --math-primary-foreground: #000000;
   --math-primary-strong: #ff8082;
+}
+
+/* ==========================================================================
+   掌握度色彩方案（用户 2026-09-30："底部设置你可以多搞几个色彩的方案，
+   默认搞个 6 个 …… 改了那个筛选里掌握这个知识点对应的色彩方案"）
+   --------------------------------------------------------------------------
+   一个方案 = **那七档状态色的一整套**（精通 → 已掌握 → 初步掌握 → 学习中 →
+   待复习 → 薄弱 → 未开始）。换的是"掌握度"那一层颜色：轴上的彩条、图例条、
+   筛选里的胶囊、卡片上的徽标、缩略条 —— 它们全都只读这几个令牌，所以换方案
+   一行绘制代码都不用改。
+
+   默认那一套（松绿）的值仍旧住在上面 :root 里（它的 ok / gold / weak / idle 是
+   `var(--math-state-*)` 引用，跟着主题走），**全站不写属性**："从没设过"与"设回默认"
+   在 DOM 上完全一样，不留灰区（跟高亮色同一个口径）。
+
+   **每个方案里的七个色必须是七个不同的色相**（用户 2026-09-30 报的：
+   "预设方案一定要色相区分非常明显；要不然分不清问题的状态"）。
+   第一版栽在这儿：一套里七个色做成"同一色相的明度梯度"（靛蓝那套全蓝、紫罗兰那套全紫），
+   好看是好看，可用起来七档状态压根分不出来 —— 而彩条存在的全部意义就是"一眼看出学得怎么样"。
+   所以这里的规矩是：**同套内相邻两档色相差 ≥ 30°**，且六个彩色档压在纯白 / 纯黑上都 ≥ 3:1
+   （`verify_display` 逐套逐档算，谁把它们改回"同色系渐变"就报错）。
+   语义锚不动：ok 永远是"好"的一端（绿 / 青 / 蓝），weak 永远是"警告"的一端（红 / 朱红），
+   idle 恒为灰（跟主题走）；中间四档在各自方案里换色相。
+
+   选择器写成两条（**两条都带 `html`，别写成裸 `[data-wk-scheme=…]`**）：
+     · `html[data-wk-scheme=…]` 管全站生效 —— 排在主题包之后，靠顺序压过主题包里
+       first / learn / review 那三条（同特异度，后写的赢）；
+     · `html [data-wk-scheme=…]`（中间有个空格）管设置页那排**预览按钮** ——
+       按钮自己带属性，于是能用**真令牌**预览各自的七个颜色，不必再抄一份色值到页面里。
+       为什么非要 `html ` 这个前缀：不带它就只有 `[data-wk-scheme=…]` 那么点特异度，
+       暗色主题下会被 `html[data-wk-theme="dark"]`（同特异度、但前面写的那个赢不了）压住，
+       于是"暗色下预览出来的是亮色那一套"。
+   ========================================================================== */
+/* 默认那一套（松绿）**也**得有一条能命中 `[data-wk-scheme="green"]` 的规则 ——
+   设置页第一颗预览按钮自带这个属性。不补这一条的话，它会一路继承 `<html>` 上
+   **当前选中的那个方案**，于是"点别的方案，第一颗跟着变"（用户 2026-09-30 报的）。
+
+   这条**七个值全写成 `var()` 引用**，一个色值都不写死：按钮上的声明是**直接命中**的，
+   直接命中永远赢过"从 `<html>` 继承来的"，所以写死就等于把预览钉死在某一个主题上
+   （实测：写死亮色那组之后，暗色主题下第一颗预览的还是亮色那一套，而选中后实际拿到的是
+   暗色包那一组 —— 预览和结果对不上）。写成引用之后，`--math-state-*` / `--math-scheme-*` /
+   `--math-ink-4` 都还是从 `<html>` 继承来的**当前主题那一份**，预览跟结果就一致了。
+   （另外五套的七个值三包通用，本来就没有这个问题。） */
+[data-wk-scheme="green"] {
+  --math-bar-ok: var(--math-state-success);
+  --math-bar-gold: var(--math-state-warning);
+  --math-bar-first: var(--math-scheme-first);
+  --math-bar-learn: var(--math-scheme-learn);
+  --math-bar-review: var(--math-scheme-review);
+  --math-bar-weak: var(--math-state-error);
+  --math-bar-idle: var(--math-ink-4);
+}
+/* 靛蓝：好端从绿挪到**青**，中段走靛，差端正红 */
+html[data-wk-scheme="blue"], html [data-wk-scheme="blue"] {
+  --math-bar-ok: #147b7b;      /* 精通：青 */
+  --math-bar-gold: #9e6a10;    /* 已掌握：金 */
+  --math-bar-first: #6b9518;   /* 初步掌握：黄绿 */
+  --math-bar-learn: #495ddf;   /* 学习中：亮靛 */
+  --math-bar-review: #9b40c4;  /* 待复习：品紫 */
+  --math-bar-weak: #c0332b;    /* 薄弱：正红 */
+  --math-bar-idle: var(--math-ink-4);
+}
+/* 紫罗兰：主调偏紫，差端用**玫红**（跟正红拉开） */
+html[data-wk-scheme="violet"], html [data-wk-scheme="violet"] {
+  --math-bar-ok: #1d8a72;      /* 精通：青绿 */
+  --math-bar-gold: #9c6a0e;    /* 已掌握：金 */
+  --math-bar-first: #6b8f1a;   /* 初步掌握：黄绿 */
+  --math-bar-learn: #3f6ec4;   /* 学习中：宝蓝 */
+  --math-bar-review: #7c3ec4;  /* 待复习：紫罗兰 */
+  --math-bar-weak: #cc3060;    /* 薄弱：玫红 */
+  --math-bar-idle: var(--math-ink-4);
+}
+/* 琥珀：整体偏暖，好端用橄榄绿、中段走青 -> 蓝 -> 紫，差端砖红 */
+html[data-wk-scheme="amber"], html [data-wk-scheme="amber"] {
+  --math-bar-ok: #6b8f1a;      /* 精通：橄榄绿 */
+  --math-bar-gold: #bd6e0f;    /* 已掌握：橙金 */
+  --math-bar-first: #17828f;   /* 初步掌握：青 */
+  --math-bar-learn: #3a63b8;   /* 学习中：蓝 */
+  --math-bar-review: #7a3fc0;  /* 待复习：紫 */
+  --math-bar-weak: #b8501f;    /* 薄弱：砖红 */
+  --math-bar-idle: var(--math-ink-4);
+}
+/* 青碧：主调青绿 */
+html[data-wk-scheme="cyan"], html [data-wk-scheme="cyan"] {
+  --math-bar-ok: #188073;      /* 精通：青绿 */
+  --math-bar-gold: #a6820f;    /* 已掌握：金 */
+  --math-bar-first: #6b9518;   /* 初步掌握：黄绿 */
+  --math-bar-learn: #3568bd;   /* 学习中：蓝 */
+  --math-bar-review: #7a3ec2;  /* 待复习：紫 */
+  --math-bar-weak: #c04a1f;    /* 薄弱：橙红 */
+  --math-bar-idle: var(--math-ink-4);
+}
+/* 无障碍：色觉友好的一套（Okabe–Ito 那族色）——
+   不是按"好看"排的，是按"红绿色盲也分得出、转成灰度后仍然分得开"挑的。
+   所以这里不追求"同一色相的深浅"，而是**深蓝 / 蓝绿 / 暗黄 / 天蓝 / 玫紫 / 朱红**六个
+   色相各占一档：色相环上两两错开，明度也错开，两层保险。 */
+html[data-wk-scheme="a11y"], html [data-wk-scheme="a11y"] {
+  --math-bar-ok: #0072b2;      /* 精通：深蓝 */
+  --math-bar-gold: #009e73;    /* 已掌握：蓝绿 */
+  --math-bar-first: #8a790f;   /* 初步掌握：暗黄 */
+  --math-bar-learn: #2b95ca;   /* 学习中：天蓝（Okabe 的原色 #56b4e9 压白底只有 2.3:1，压暗一档） */
+  --math-bar-review: #cc79a7;  /* 待复习：玫紫 */
+  --math-bar-weak: #d55e00;    /* 薄弱：朱红 */
+  --math-bar-idle: #999999;
 }
 
 /* ==========================================================================

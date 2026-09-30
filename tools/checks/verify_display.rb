@@ -228,10 +228,129 @@ issues << '默认高亮色会往 <html> 上写属性（"没设过"与"设成默�
 # 选择器后面必须是 `,` 或 `{` —— `:hover` 那条也以同样的选择器开头，
 # 只匹配前缀的话把主规则删掉这条守护照样是绿的（第一版两次都栽在这：先被 `:hover` 骗过，
 # 改成连 `{` 又漏了"三条挤在一行、后面跟逗号"的前两组）。
-%w[fs theme accent].each do |g|
+# 四组按钮共用同一套"按下"样式（2026-09-30 加了第四组「掌握度色彩」）。
+%w[fs theme accent scheme].each do |g|
   rule = /#set-#{g} \.seg__item\[aria-pressed="true"\][,{]/
   issues << "设置页「#{g}」那一组没有按下样式（选中了也看不出来）" unless set =~ rule
 end
+
+# ---------- 6c. 掌握度色彩方案（用户 2026-09-30）----------
+# 用户原话："底部设置，你可以多搞几个色彩方案……默认有 6 个色彩方案。点击色彩方案，
+#           相当于改了筛选里面那个掌握对应的色彩方案。"
+# 它改的是轴上彩条那七个 --math-bar-*；默认那套（松绿）的全站值住在 :root，不写属性。
+#
+# 2026-09-30 又补了两句，这两句各对应下面一段守线：
+#   · "预设方案一定要色相区分非常明显；要不然分不清问题的状态" —— 第一版把一套里的七个色
+#     做成了"同一色相的明暗梯度"（靛蓝那套全蓝、紫罗兰那套全紫），七档状态压根分不出来。
+#     所以这里逐套逐档量**色相差**（相邻两档要 ≥ 30°）与**对比度**（压白 / 压黑都要 ≥ 3:1）。
+#   · "点击其他的色彩方案，第一个方案就变" —— 设置页第一颗预览按钮自带
+#     `data-wk-scheme="green"`，而 tokens.css 里当时没有一条规则命中它，
+#     于是它一路继承 <html> 上**当前选中的方案**。下面钉住"默认那套也必须有自己的一条"。
+SCHEMES = %w[green blue violet amber cyan a11y].freeze
+BAR_TOKENS = %w[--math-bar-ok --math-bar-gold --math-bar-first --math-bar-learn
+                --math-bar-review --math-bar-weak --math-bar-idle].freeze
+COLOR_BARS = (BAR_TOKENS - ['--math-bar-idle']).freeze   # 未开始那档是灰，不参与色相检查
+
+# 色相 0–360；灰（R=G=B）没有色相，返回 nil
+def hue_of(hex)
+  c = rgb_of(hex)
+  return nil if c.nil?
+  r, g, b = c.map { |v| v / 255.0 }
+  return nil if (r - g).abs < 0.02 && (g - b).abs < 0.02
+  mx = [r, g, b].max
+  mn = [r, g, b].min
+  d = mx - mn
+  h = if mx == r then ((g - b) / d) % 6
+      elsif mx == g then ((b - r) / d) + 2
+      else ((r - g) / d) + 4
+      end
+  ((h * 60).round % 360)
+end
+
+# 把 `var(--x)` 追到字面量（默认那套的 ok / gold / weak / idle 都是引用，链长 ≤ 2）
+def resolve_tok(value, root)
+  seen = 0
+  while value.to_s =~ /var\(\s*(--[a-z0-9-]+)\s*\)/ && seen < 8
+    value = root[Regexp.last_match(1)]
+    seen += 1
+  end
+  value.to_s.strip
+end
+
+issues << '设置页缺「掌握度色彩」那一行（#set-scheme）' unless set.include?('id="set-scheme"')
+SCHEMES.each do |s|
+  issues << "设置页缺色彩方案「#{s}」" unless set.include?(%(data-wk-scheme="#{s}"))
+end
+issues << "色彩方案按钮没有 aria-pressed（读屏看不出当前是哪套，实际 #{set.scan(/data-wk-scheme="\w+" aria-pressed=/).size} 个）" unless
+  set.scan(/data-wk-scheme="\w+" aria-pressed=/).size == SCHEMES.size
+
+# 每一套的选择器：全站那条 `html[…]` + 设置页预览那条 `html […]`（**带空格那个前缀不能省**：
+# 不带就只有 (0,1,0) 的特异度，暗色主题下会被 `html[data-wk-theme="dark"]` 压住，
+# 于是"暗色下预览出来的是亮色那一套"）。默认那套的预览走 `:root, [data-wk-scheme="green"]`。
+(SCHEMES - ['green']).each do |s|
+  issues << "tokens.css 缺色彩方案「#{s}」（全站生效的那条 html[…]）" unless
+    tokens.include?(%(html[data-wk-scheme="#{s}"]))
+end
+(SCHEMES - ['green']).each do |s|
+  issues << "色彩方案「#{s}」的设置页预览选择器没带 `html ` 前缀（暗色下会被主题包压住，" \
+            '预览出来的不是实际生效的那一套）' unless tokens.include?(%(html [data-wk-scheme="#{s}"]))
+end
+
+# 默认那套也必须有一条能命中 `[data-wk-scheme="green"]` 的规则 ——
+# 没有它，设置页第一颗预览按钮会继承 <html> 上当前的方案（用户报的"点别的方案第一颗跟着变"）。
+GREEN_SEL = '[data-wk-scheme="green"]'
+green_block = block_of(tokens, GREEN_SEL)
+issues << '默认方案（松绿）缺一条命中 [data-wk-scheme="green"] 的规则 —— ' \
+          '设置页第一颗预览按钮会继承 <html> 上当前的方案，点别的方案它跟着变' if green_block.empty?
+# 而且这条里**不许写死色值**：按钮上的声明是直接命中，写死就会盖掉从 <html> 继承来的
+# 主题值，暗色下第一颗预览的还是亮色那一套（预览与结果对不上）。
+# 所以七个值都得是 var() 引用。
+green_pal_raw = tokens_in(green_block)
+BAR_TOKENS.each do |t|
+  issues << "默认方案预览里的 #{t} 写死了色值（#{green_pal_raw[t]}）—— 应当写 var() 引用，" \
+            '否则暗色下预览的与选中后实际拿到的不是同一组' unless
+    green_pal_raw[t].to_s.start_with?('var(')
+end
+root_bar = {}
+BAR_TOKENS.each { |t| root_bar[t] = resolve_tok(root_tokens[t], root_tokens) }
+green_pal = tokens_in(green_block)
+BAR_TOKENS.each do |t|
+  got = resolve_tok(green_pal[t], root_tokens)
+  issues << "默认方案的 #{t} 与 :root 里那一份对不上（#{got} vs #{root_bar[t]}）—— " \
+            '同一份值抄在两处，改一处忘另一处' unless got == root_bar[t]
+end
+
+# 逐套：七个令牌齐全 + 六个彩色档压白 / 压黑都 ≥ 3:1 + 相邻两档色相差 ≥ 30°
+SCHEMES.each do |s|
+  sel = s == 'green' ? GREEN_SEL : %(html[data-wk-scheme="#{s}"], html [data-wk-scheme="#{s}"])
+  pal = tokens_in(block_of(tokens, sel))
+  BAR_TOKENS.each do |t|
+    issues << "色彩方案「#{s}」缺 #{t}（缺一个就会退回上一层的色，方案就不成一套）" unless
+      pal[t] && !pal[t].to_s.empty?
+  end
+  vals = COLOR_BARS.map { |t| resolve_tok(pal[t], root_tokens) }
+  COLOR_BARS.zip(vals).each do |t, v|
+    w = contrast(v, '#ffffff')
+    k = contrast(v, '#000000')
+    issues << format('方案「%s」的 %s(%s) 压在白底上只有 %.2f:1（要 ≥ 3.0）', s, t, v, w) if w && w < 3.0
+    issues << format('方案「%s」的 %s(%s) 压在黑底上只有 %.2f:1（要 ≥ 3.0）', s, t, v, k) if k && k < 3.0
+  end
+  hs = vals.map { |v| hue_of(v) }
+  hs.each_cons(2).with_index do |(a, b), i|
+    next if a.nil? || b.nil?
+    d = (a - b).abs
+    d = 360 - d if d > 180
+    issues << format('方案「%s」里 %s 与 %s 只差 %d° 色相（要 ≥ 30°）—— 七档状态会分不清',
+                     s, COLOR_BARS[i], COLOR_BARS[i + 1], d) if d < 30
+  end
+end
+
+%w[SCHEME_KEY SCHEME_ATTR SCHEMES SCHEME_DEFAULT].each do |needle|
+  issues << "display.js 缺 #{needle}（掌握度色彩没接上）" unless disp.include?(needle)
+end
+issues << 'display.js 的色彩方案没用自己的名字空间属性' unless disp.include?("SCHEME_ATTR = 'data-wk-scheme'")
+issues << '默认那套色彩方案会往 <html> 上写属性（"没设过"与"设成默认"就区分不开了）' unless
+  disp.include?('if (state.scheme === SCHEME_DEFAULT) el.removeAttribute(SCHEME_ATTR)')
 
 # ---------- 7. 白板与图谱跟随 ----------
 %w[DISPLAY_TO_BOARD BOARD_TO_DISPLAY function reconcileTheme function pushThemeToDisplay].each do |needle|

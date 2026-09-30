@@ -173,6 +173,48 @@ issues << 'timeline.js 没有双指捏合' unless js.include?('onTouchMove') && 
 issues << 'timeline.js 没有滚轮处理' unless js.include?("addEventListener('wheel'")
 issues << 'timeline.js 没有拖动平移（pointerdown/pointermove）' unless
   js.include?("addEventListener('pointerdown'") && js.include?("addEventListener('pointermove'")
+# 2026-09-30 用户定下鼠标分工："滚轮 = 放大缩小 / 时间轴上的刻度相当于右键拖动 / 左键一会儿再设置"。
+# 所以：① 滚轮里不许再有 ctrl / meta 分支（原来那套"滚轮平移、⌘+滚轮才缩放"撤了）；
+#       ② 右键要能进拖动（放行 button 2），且画布上要把浏览器右键菜单按住，不然一按就弹菜单；
+#       ③ 右键松开不许弹卡片（那是左键的事）。
+issues << '滚轮又变回"带 ⌘ 才缩放"了（用户："滚轮是用来放大缩小的"）' if
+  js[/function onWheel[\s\S]{0,700}?(ctrlKey|metaKey)/]
+issues << '滚轮缩放没锚在指针上（应该围着指针底下那一格放大 / 缩小）' unless
+  js[/function onWheel[\s\S]{0,700}?zoomAt\(p\.x, Math\.pow\(1\.0018, -dy\)\)/]
+issues << '右键没能进拖动（用户："时间轴上的刻度相当于右键拖动时间轴"）' unless
+  js.include?('e.button !== 0 && e.button !== 2')
+issues << '右键菜单没按住（一按右键先弹菜单，时间轴拖不动）' unless
+  js.include?("addEventListener('contextmenu'")
+issues << '右键松开也会弹卡片（不该 —— 右键只管拖动）' unless
+  js.include?('if (moved < 5 && which === 0)')
+
+# 2026-09-30 同一轮的另外两条：**默认光标不是小手**（一个小圆圈），滚轮时换左右双箭头
+# （往外张 = 放大 / 往中间收 = 缩小）；**划过的那一格**要有"竖线 + 亮起来的点"，
+# 否则名字在变、学生却看不出名字指的是哪一格。
+issues << '默认光标还是小手（用户："图标默认不应该是小手"）' if
+  page[/#tk-canvas \{[\s\S]{0,900}?cursor: grab/]
+issues << '默认光标不是那个小圆圈（CSS 里要有一支 data-URI 的圈光标）' unless
+  page.include?("cursor: url(\"data:image/svg+xml,%3Csvg") && page.include?("r='4' fill='none'")
+issues << '滚轮的两支双箭头光标缺了（往外张 / 往中间收）' unless
+  page.include?('#tk-canvas.is-zoom-in') && page.include?('#tk-canvas.is-zoom-out') &&
+  page[/#tk-canvas\.is-zoom-in \{[\s\S]{0,400}?cursor: url\("data:image\/svg\+xml/]
+issues << '拖动时的"移动"光标缺了' unless page.include?('#tk-canvas.is-panning { cursor: move; }')
+issues << '光标三态的类没有 JS 去加（setCanvasCursor / flashZoomCursor）' unless
+  js.include?('function setCanvasCursor(') && js.include?('function flashZoomCursor(')
+issues << '滚轮没换光标（往上滚该是往外张的那支）' unless
+  js[/function onWheel[\s\S]{0,700}?flashZoomCursor\(dy < 0\)/]
+issues << '划过那一格的竖线 / 亮点没画（用户："他不是一个点吗？可以用根线……让那个点亮一点"）' unless
+  js.include?('function drawHoverMark(') && js.include?('drawHoverMark();')
+issues << '划过标记没用系统色（应与"当前学习"那颗节点同一支色）' unless
+  js[/function drawHoverMark[\s\S]{0,1400}?strokeStyle = C\.primary/] &&
+  js[/function drawHoverMark[\s\S]{0,1400}?fillStyle = C\.primary/]
+issues << '划过换格时没触发重画（竖线不会跟着走）' unless
+  js.include?('if (index !== hoverIndex) { scheduleRedraw(); }')
+# 竖线要短、要"上下都穿轴"（用户 2026-09-30："这根线太长了，光往上太长了……
+# 不光往上，还可以往下降，但是短一点，感觉精致一点"）：上端固定 26px，不再一路上顶到彩条顶。
+issues << '划过那根竖线又拉长了（应只到轴上方 26px，别顶到彩条）' unless
+  js[/function drawHoverMark[\s\S]{0,900}?ctx\.moveTo\(x, px\(-26\)\)/] &&
+  js[/function drawHoverMark[\s\S]{0,900}?ctx\.lineTo\(x, px\(DOT_ROW \+ 7\)\)/]
 issues << 'timeline.js 没有缩放上下限（MIN_SCALE / MAX_SCALE）' unless
   js.include?('MIN_SCALE') && js.include?('MAX_SCALE')
 issues << '适配按钮没有接 fitContent' unless js.include?('btnFit') && js.include?('fitContent()')
@@ -200,10 +242,13 @@ issues << '划过时读数不跟着换（应报"划过 · …"那一格）' unle
 issues << '页面没有知识点卡片面板（data-tk-card）' unless page.include?('data-tk-card')
 issues << '点击没有弹卡片（缺 select / renderCard）' unless
   js.include?('function select') && js.include?('function renderCard')
-issues << '点击判定丢掉了（应按拖动距离区分"点一下"与"拖了"）' unless
-  js.include?('if (moved < 5)')
-issues << '卡片面板没有随视野刷新（用户第 8 条："滑动的时候，卡片面板要不断刷新"）' unless
-  js.include?('function retargetCard') && js[/function onMove[\s\S]{0,900}?retargetCard\(\)/]
+issues << '点击判定丢掉了（应按拖动距离区分"点一下"与"拖了"，且只认左键）' unless
+  js.include?('if (moved < 5 && which === 0)')
+# 观察点不该跟着拖视野跑（用户 2026-09-30 推翻了第 8 条旧口径：
+# "我右键拖动的时候，我已经选中的那观察点不应该移动，不应该跟随我的这个鼠标移动"）。
+# 观察点是**点**出来的；拖视野只动视野。原来那个 retargetCard 已删除，别让他复活。
+issues << '拖视野时又去挪观察点了（观察点只能"点"出来，不该跟鼠标跑；retargetCard 不该复活）' if
+  js.include?('function retargetCard') || js[/function onMove[\s\S]{0,900}?pin\s*=/]
 issues << '两种节点没有分开画（缺 findNow / drawNodes / markNode）' unless
   %w[findNow drawNodes markNode].all? { |fn| js.include?("function #{fn}") }
 issues << '当前学习节点没在启动时算出来（findNow 定义了却没调用，now 一直是 -1）' unless
@@ -408,9 +453,16 @@ issues << '右侧那条不是照白板的样式（不悬停时淡着、同底色
   page[/\.tk-side \{[\s\S]{0,700}?opacity: \.34/]
 issues << '右侧那条的提示气泡没改到左边（默认"上方居中"会顶出屏幕）' unless
   page[/\.tk-side \[data-tk-tip\]::after \{[\s\S]{0,200}?right: calc\(100% \+ 16px\)/]
-%w[filter tags panel-right-open].each do |icon|
+# 图标是用户 2026-09-30 点名换掉的："那个刻度和文字，这个图标你给换一下。现在设了个标签，
+# 这是不对的"（刻度和文字 → ruler 尺子，不再是 tags 标签）；"信息面板你也换个图标"
+# （panel-right-open 那个"边栏"看着像展开面板，换成 info）。
+%w[filter ruler info].each do |icon|
   issues << "右侧那条缺图标 #{icon}" unless page.include?("data-lucide=\"#{icon}\"")
 end
+issues << '刻度那个按钮又用回标签图标了（用户点名：刻度和文字该是尺子）' if
+  page.include?('data-lucide="tags"')
+issues << '信息面板那个按钮又用回"展开边栏"图标了（用户点名要换）' if
+  page.include?('data-lucide="panel-right-open"')
 # 2026-09-30 用户："阶段可以整合到筛选里" —— 原来那颗独立的「阶段」按钮与它的浮层一起撤了，
 # 那排"全部 / 小学 / 初中 / 高中 / 竞赛"搬进筛选卡当最上面那一行。
 issues << '「阶段」还有一颗独立按钮 / 一个浮层（用户："阶段可以整合到筛选里"）' if
@@ -439,6 +491,13 @@ issues << '信息面板没有开关（应能整块藏起来）' unless
   js.include?('function setReadout') && js.include?('leftEl.hidden = !state.readout')
 issues << '筛选卡不是与知识点卡片同一套浮层（可拖、位置记住）' unless
   js.include?('var winAt = { card: null, filter: null, months: null, matrix: null }')
+# 筛选按钮的"亮不亮"只算一遍，且**面板开着也算亮**（用户 2026-09-30："激活筛选面板的时候，
+# 筛选按钮还是不显示的状态，这不对的"）。以前那颗按钮只在"有筛的维度"时才亮，
+# 于是空筛选打开面板时按钮是暗的 —— 看着像没生效。
+issues << '筛选按钮的亮灭没统一算（应交给 syncFilterButton 一处去算）' unless
+  js.include?('function syncFilterButton') && js.include?('syncFilterButton();')
+issues << '筛选面板开着时筛选按钮还是不亮（用户点名要它亮：面板开着 或 有筛的维度）' unless
+  js[/function syncFilterButton[\s\S]{0,600}?if \(open \|\| filterOn\(\)\)/]
 
 # ---------- 4e. 时间段对比（用户第 13 条）与方阵（用户第 18 条）----------
 issues << 'timeline-data.js 没有按月的汇总（months）' unless
@@ -533,7 +592,11 @@ issues << '筛选里没有"标记"这一维（四类标记也要能筛）' unles
 issues << 'timeline-data.js 没有四类特殊标记（MARKS / marks）' unless
   data.include?('MARKS') && data.include?('marks:') &&
   %w[重点 难点 待复习 前置未满足].all? { |n| data.include?(n) }
-issues << '学习记录上没有 mark 字段（标记接不到轴上）' unless data.include?('mark: mark')
+# 记录上是 `marks`（数组，可多选）+ `blocked`（系统算的），不是老的单个 `mark` 字符串
+# —— 用户 2026-09-30 定的四个口径见 §2.11 ⑧ / ⑳。
+issues << '学习记录上没有 marks 数组 / blocked 字段（标记接不到轴上）' unless
+  data.include?('marks: marks') && data.include?('blocked: false') &&
+  data.include?('blocked: markRoll(') && !data.include?('mark: mark')
 issues << '四类标记的颜色令牌不齐（亮 / 中 / 暗三包各要一份）' unless
   %w[--math-mark-key --math-mark-hard --math-mark-block].all? { |t| css.include?("#{t}:") }
 issues << '轴上没有画标记的小图标（用户："轴上也在对应知识点上画小图标"）' unless
@@ -542,6 +605,46 @@ issues << '轴上的标记图标与图例里不是同一份（应从页面那份
   js.include?('window.lucide[iconKey(') && js.include?('new Path2D(')
 issues << '格子太窄也在硬画标记图标（769 格挤进 1200px 会成噪声）' unless
   js.include?('view.scale < MARK_MIN_W')
+# 一颗知识点可以挂好几个标记，图标得**并排排**（不能只画第一颗），
+# 且一排装不下就整排不画（挤到隔壁那格头上 = 说假话）
+issues << '一格挂几个标记时只画了第一颗（图标要并排排开）' unless
+  js[/function drawMarks[\s\S]{0,1600}?for \(var m = 0; m < keys\.length/] &&
+  js.include?('var MARK_ICON_GAP')
+issues << '一排图标装不下还硬画（应整排跳过，别挤到隔壁那一格头上）' unless
+  js[/function drawMarks[\s\S]{0,1400}?if \(view\.scale < need\) \{ continue; \}/]
+# 哪几类归学员自己定、哪一类归系统算 —— `own` 这个字段是那四个口径的落点
+# 数的是 MARKS 数组里那四条（`own: … }`），不是注释里那两行说明
+issues << '标记没有区分"学员自评 / 系统判定"（MARKS 上要有 own）' unless
+  data.scan(/own: (true|false) \}/).size == 4 && data.include?('function ownMarks')
+issues << '"前置未满足"被写成学员能改的了（它必须是系统算的：own: false）' unless
+  data[/key: 'block'[\s\S]{0,200}?own: false/]
+issues << '前置未满足没记成系统字段（应是 blocked 布尔，不是 marks 里的一项）' unless
+  data[/marks: \[\],\s*\n\s*blocked:/] && data.include?('blocked: markRoll(') &&
+  js[/function marksOf[\s\S]{0,300}?out\.push\('block'\)/]
+# 筛选：一格挂好几个标记时，**沾上一个就算命中**（不能只比第一个）
+issues << '筛选的标记那一维还是"只比第一个"（多选之后要比有没有交集）' unless
+  js[/function passFilter[\s\S]{0,900}?var mk = marksOf\(rec\)/]
+
+# ---------- 4d-2. 标记的加 / 改 / 撤（用户 2026-09-30：在卡片里点、可多选、再点一次取消）----------
+issues << '知识点卡片里没有"我的标记"那一排（用户定的入口：在卡片里打标）' unless
+  js.include?("'tk-card__marks'") && js.include?("'tk-card__marks-row'")
+issues << '卡片里那排标记只按"学员能改的"排（系统那颗不该出成按钮）' unless
+  js.include?('window.WK_LEARNING.ownMarks')
+issues << '卡片里那颗标记点不动（缺 data-tk-mark 命中的点击处理）' unless
+  js.include?("'data-tk-mark'") && js.include?('function tapMark')
+issues << '点一下不改数据（缺 toggleMark：没打就贴上、打了就摘掉）' unless
+  js[/function toggleMark[\s\S]{0,900}?if \(at >= 0\) \{ cur\.splice\(at, 1\); \} else \{ cur\.push\(key\); \}/]
+issues << '点完不落盘（刷新就回到演示规则了）' unless
+  js.include?("var MARKS_KEY = 'wkmath.timeline.marks.v1'") &&
+  js.include?('function saveMarkEdits') && js.include?('window.localStorage.setItem(MARKS_KEY')
+issues << '覆盖表没有盖回记录（换学生 / 换账号重建记录后，学员改过的标记就丢了）' unless
+  js.include?('function applyMarkEdits') && js[/function applyLearn[\s\S]{0,600}?applyMarkEdits\(\)/]
+issues << '覆盖表按格子序号存（序号会漂，应按知识点编号 MATH-KP-… 存）' unless
+  js.include?('markEdits[idOf(index)] = cur.slice()')
+issues << '系统那颗标记在卡片里只是一行说明（点不动、摘不掉）' unless
+  js.include?("'tk-card__mark-sys'") && js.include?('系统判定，不能自己改')
+issues << '系统那颗标记还能被改（toggleMark 要先挡掉不在 own 名单里的 key）' unless
+  js[/function toggleMark[\s\S]{0,400}?if \(ownMarkKeys\(\)\.indexOf\(key\) < 0\) \{ return/]
 
 # ---------- 5. 令牌纪律 ----------
 # 颜色只能从 CSS 令牌读 —— 写死一套就等于把亮 / 中 / 暗与七个高亮色锁死了
@@ -575,6 +678,43 @@ end
   end
 end
 
+# ---------- 4g. 掌握度色彩方案（用户 2026-09-30）----------
+# "底部设置，你可以多搞几个色彩方案……默认有 6 个色彩方案。点击色彩方案，相当于改了
+#  筛选里面那个掌握……对应的色彩方案。"
+settings = read('settings.html')
+disp     = read('assets/js/display.js')
+SCHEMES  = %w[green blue violet amber cyan a11y].freeze
+issues << '设置页没有"掌握度色彩"这一行（6 个方案点着选）' unless
+  settings.include?('id="set-scheme"') &&
+  SCHEMES.all? { |s| settings.include?("data-wk-scheme=\"#{s}\"") }
+issues << '色彩方案不是 6 个（用户点名"默认有 6 个色彩方案"）' unless
+  disp[/var SCHEMES = \[[\s\S]{0,200}?\]/].to_s.scan(/'[a-z0-9]+'/).size == 6
+# 六个方案都得把七个掌握度令牌配齐 —— 缺一个就退回上一层的色，方案就不成一套了。
+# 默认那套（松绿）不写属性，直接住在 :root，所以不在这里查。
+(SCHEMES - ['green']).each do |s|
+  block = css[/\[data-wk-scheme="#{s}"\]\s*\{(.*?)\n\}/m, 1].to_s
+  issues << "tokens.css 的色彩方案 #{s} 解析不出来（守线要跟着改）" if block.empty?
+  BAR_TOKENS.each do |tok|
+    issues << "色彩方案 #{s} 缺 #{tok}" unless block.include?("#{tok}:")
+  end
+end
+issues << '色彩方案没有落成 data-wk-scheme 属性（令牌要靠它生效）' unless
+  disp.include?("var SCHEME_ATTR = 'data-wk-scheme'") &&
+  disp.include?("localStorage.setItem(SCHEME_KEY")
+issues << '默认那套色彩方案也写属性了（默认不写属性才不留灰区）' unless
+  disp.include?('if (state.scheme === SCHEME_DEFAULT)') &&
+  disp.include?('el.removeAttribute(SCHEME_ATTR)')
+issues << '色彩方案没进显示设置的绑定组（点了不会落盘、也不会套到页面上）' unless
+  disp[/GROUPS[\s\S]{0,900}?attr: 'scheme'/] && disp.include?("dom: 'data-wk-scheme'")
+# 设置页那排按钮自己带着 data-wk-scheme，得有一条选择器**直接命中按钮**去接它 ——
+# 光有 `html[data-wk-scheme=…]` 那条（管全站的）接不住按钮，七个预览色块会一路继承
+# `<html>` 上当前的方案，六颗按钮长得一模一样（用户 2026-09-30 报的"第一个方案跟着变"）。
+# 预览那条写成 `html [data-wk-scheme=…]`：既命中按钮，又靠多出来的一层把特异度提到
+# (0,1,1)，暗色下才不会被主题包压住。默认那套则靠 `:root, [data-wk-scheme="green"]` 接。
+issues << '设置页方案预览读不到自己那一套色（tokens.css 缺直接命中按钮的 html [data-wk-scheme=…]）' unless
+  %w[blue violet amber cyan a11y].all? { |s| css.include?(%(html [data-wk-scheme="#{s}"])) } &&
+  css.include?('[data-wk-scheme="green"] {')
+
 # ---------- 5. 无障碍 ----------
 issues << '画布没有点名（aria-label）' unless page.include?('data-tk-canvas aria-label')
 issues << '工具条按钮缺 aria-label（图标按钮读屏要能读出来）' unless
@@ -587,7 +727,7 @@ issues << '网格疏密三档没有 role / aria（读屏看不出选的是哪一
 
 puts "时间轴页体检：本页 1 个，带侧栏的页面 #{with_rail.size} 个（逐个核对「时间轴」入口）"
 puts "刻度契约：六级（分段 / 年级 / 册·板块 / 章 / 节 / 知识点）逐条核对"
-puts "交互契约：悬停报名字 / 点击弹卡片 / 面板随视野刷新 / 观察节点标记逐条核对"
+puts "交互契约：悬停报名字 / 点击弹卡片 / 观察节点只点不移 / 标记的加改撤逐条核对"
 puts "视图契约：拖动 / 滚轮 / 双指 / 适配 / 网格三档 / 缩放读数逐条核对"
 if issues.empty?
   puts '时间轴体检全部通过 ✓'

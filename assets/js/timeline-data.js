@@ -32,17 +32,29 @@
     { name: '未开始',   min: 0,  token: '--math-bar-idle' }
   ];
 
-  /* 学员自己打的那四类**特殊标记**（用户 2026-09-29 补的口径 + 参考图里那一栏）
-     —— 与"掌握度"是两回事：掌握度是系统判定的学习成果，标记是学员自己贴的标签。
+  /* 那四类**特殊标记**（用户 2026-09-29 补的口径 + 参考图里那一栏）
+     —— 与"掌握度"是两回事：掌握度是系统判定的学习成果，标记是贴在知识点上的标签。
      `icon` 直接写 lucide 的名字：图例条与筛选用 `data-lucide`，画布从同一个 lucide 里
      取路径（`Path2D`），所以两处的图标是同一份，不会一个圆一个尖。
-     `token` 指 tokens.css 里的颜色（亮 / 中 / 暗三包齐全）。 */
+     `token` 指 tokens.css 里的颜色（亮 / 中 / 暗三包齐全）。
+     `own` 说的是**这颗标记归谁定**（用户 2026-09-30 定的口径）：
+       · `own: true`（重点 / 难点 / 待复习）—— 学员自己的判断，卡片里点一下就改；
+       · `own: false`（前置未满足）—— **系统算出来的**，学员改不了。
+         它是"前置知识还没掌握，所以这一格现在别碰"的提示，不是自评。
+         混在一起让学员能删，就会出现"把最该提醒他的那一条关掉了"。 */
   var MARKS = [
-    { key: 'key',    name: '重点',       icon: 'star',       token: '--math-mark-key' },
-    { key: 'hard',   name: '难点',       icon: 'flame',      token: '--math-mark-hard' },
-    { key: 'review', name: '待复习',     icon: 'rotate-ccw', token: '--math-mark-review' },
-    { key: 'block',  name: '前置未满足', icon: 'lock',       token: '--math-mark-block' }
+    { key: 'key',    name: '重点',       icon: 'star',       token: '--math-mark-key',    own: true },
+    { key: 'hard',   name: '难点',       icon: 'flame',      token: '--math-mark-hard',   own: true },
+    { key: 'review', name: '待复习',     icon: 'rotate-ccw', token: '--math-mark-review', own: true },
+    { key: 'block',  name: '前置未满足', icon: 'lock',       token: '--math-mark-block',  own: false }
   ];
+
+  /** 学员自己可改的那几类（卡片里的开关就按这一份排）。 */
+  function ownMarks() {
+    var out = [];
+    for (var i = 0; i < MARKS.length; i += 1) { if (MARKS[i].own) { out.push(MARKS[i]); } }
+    return out;
+  }
 
   var DAY = 86400000;
   var PROGRESS = 0.437;          /* 演示学生学到哪（43.7%），设计稿的原话 */
@@ -141,13 +153,17 @@
 
   /* "这一格带不带标记"用**另一个不占主随机流**的散列来定：
      主随机流一挪，整份演示数据（掌握度、学习日、卡片）就全跟着变，
-     已经对过账的数字（43.7% / 平均掌握 67%）就白对了。 */
-  function markRoll(seed0, i) {
-    var h = (seed0 + Math.imul(i + 1, 2654435761)) >>> 0;
+     已经对过账的数字（43.7% / 平均掌握 67%）就白对了。
+     `salt` 是**第几条流**（用户 2026-09-30 允许一颗知识点同时挂几个标记之后加的）：
+     四类标记共用一条骰子的话，"既待复习又难点"永远不会同时出现 —— 每一类得有自己的骰子。
+     `salt` 缺省 = 0，而 `imul(0, x) = 0`，所以老的那条流一个数都没动。 */
+  function markRoll(seed0, i, salt) {
+    var h = (seed0 + Math.imul(i + 1, 2654435761) + Math.imul(salt || 0, 974634319)) >>> 0;
     h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0;
     h = (h ^ (h >>> 13)) >>> 0;
     return (h % 1000) / 1000;
   }
+  var MARK_SALT = { block: 0, review: 1, hard: 2, key: 3 };
 
   /**
    * 按图谱摊平出来的 items 顺序铺一份学习记录。
@@ -158,7 +174,8 @@
    *   cards    这个知识点名下的卡片数（未学为 0）
    *   diff     难度 1.0–5.0（**综合判定**：这个点有多硬）—— 轴上条子的高矮就是它
    *   month    'YYYY-MM'，按时间段对比要用
-   *   mark     学员自己贴的标记（四类之一，或空串）—— 见 MARKS
+   *   marks    **学员自己贴的标记**（`'key' / 'hard' / 'review'` 的任意组合，可以几个同时挂）
+   *   blocked  **系统算的**"前置未满足"（布尔）—— 学员改不了，见 MARKS 上的 `own`
    */
   function build(items, opts) {
     /* opts 可以覆盖"学到哪儿 / 种子 / 起止日" —— 未登录时用默认那一份（设计稿的 43.7%），
@@ -195,8 +212,9 @@
         out.push({
           mastery: 0, status: '未开始', learnedAt: '', reviewAt: '',
           diff: diff, month: '', cards: [], factors: null,
-          /* 还没学的格子只可能被标"前置未满足"（就是这一档的意思） */
-          mark: markRoll(seed0, i) < MARK_RATE.block ? 'block' : ''
+          /* 还没学的格子带不出自评标记，只可能被系统标"前置未满足"（就是这一档的意思） */
+          marks: [],
+          blocked: markRoll(seed0, i, MARK_SALT.block) < MARK_RATE.block
         });
         continue;
       }
@@ -255,22 +273,27 @@
          东西是说得通的：待复习 / 薄弱 → 待复习；硬骨头（难度 ≥ 4）→ 难点；
          其余被挑中的 → 重点（重点本来就是主观的："这一课我觉得要紧"）。
          三档给不同的比例：该复习的与硬骨头本来就该多标一些，
-         "重点"是学员自己划的，本来就少。 */
-      var roll = markRoll(seed0, i);
-      var mark = '';
-      if (status === '待复习' || status === '薄弱') {
-        if (roll < MARK_RATE.review) { mark = 'review'; }
-      } else if (diff >= 4) {
-        if (roll < MARK_RATE.hard) { mark = 'hard'; }
-      } else if (roll < MARK_RATE.key) {
-        mark = 'key';
+         "重点"是学员自己划的，本来就少。
+         **可以叠**（用户 2026-09-30 定的"多选"口径）：一条 45% 的"待复习"同时又是
+         4.2 的硬骨头、还被学员自己划了重点，三个标一起挂着才是真实的用法 ——
+         所以每类各掷各的骰子（见 markRoll 的 salt）。 */
+      var marks = [];
+      if ((status === '待复习' || status === '薄弱') &&
+          markRoll(seed0, i, MARK_SALT.review) < MARK_RATE.review) {
+        marks.push('review');
+      }
+      if (diff >= 4 && markRoll(seed0, i, MARK_SALT.hard) < MARK_RATE.hard) {
+        marks.push('hard');
+      }
+      if (markRoll(seed0, i, MARK_SALT.key) < MARK_RATE.key) {
+        marks.push('key');
       }
 
       out.push({
         mastery: mastery, status: status,
         learnedAt: dayText(at), reviewAt: reviewAt,
         factors: factors, cards: cards, diff: diff, month: dayText(at).slice(0, 7),
-        mark: mark
+        marks: marks, blocked: false
       });
     }
     return out;
@@ -368,6 +391,7 @@
     factors: FACTORS,
     cardTypes: CARD_TYPES,
     marks: MARKS,
+    ownMarks: ownMarks,
     students: DEMO_STUDENTS,
     forAccount: forAccount,
     stateOf: stateOf,

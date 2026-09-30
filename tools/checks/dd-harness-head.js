@@ -53,6 +53,7 @@ function chipSet(attr, values) {
 var fsChips = chipSet('data-wk-fs', ['std', 'lg', 'xl']);
 var themeChips = chipSet('data-wk-theme', ['light', 'mid', 'dark']);
 var accentChips = chipSet('data-wk-accent', ['green', 'blue', 'violet', 'amber', 'cyan', 'rose', 'red']);
+var schemeChips = chipSet('data-wk-scheme', ['green', 'blue', 'violet', 'amber', 'cyan', 'a11y']);
 
 var __html = {
   _attrs: {},
@@ -71,6 +72,7 @@ var document = {
     if (sel === '#set-fs [data-wk-fs]') return fsChips;
     if (sel === '#set-theme [data-wk-theme]') return themeChips;
     if (sel === '#set-accent [data-wk-accent]') return accentChips;
+    if (sel === '#set-scheme [data-wk-scheme]') return schemeChips;
     return [];
   }
 };
