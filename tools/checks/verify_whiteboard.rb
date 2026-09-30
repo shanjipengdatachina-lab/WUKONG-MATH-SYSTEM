@@ -6,8 +6,28 @@ html = File.read(File.join(ROOT, 'whiteboard.html'), encoding: 'UTF-8')
 # 原来它读在中段，前面某条守线用到 wbjs 就 `NameError` 崩了，
 # 而崩掉的体检脚本一行 ✗ 都不打，"没跑完"被当成了"没红灯"（2026-09-29 真踩过这一下）。
 wbjs = File.read(File.join(ROOT, 'assets/js/whiteboard.js'), encoding: 'UTF-8')
-
 issues = []
+# 滚轮 = 放大缩小（用户 2026-09-30："白板和图谱的滚轮也应该设置成放大缩小，而不是现在的上下移动"）：
+# 原来 onWheel 里分两支 —— ⌘ / Ctrl + 滚轮才缩放，光滚轮是上下平移；那条口径撤了。
+wb_wheel = wbjs[/function onWheel\(e\) \{[\s\S]{0,600}?\n  \}/].to_s
+issues << '白板里找不到 onWheel（守线要跟着改）' if wb_wheel.empty?
+issues << '白板的滚轮又变回"带 ⌘ / Ctrl 才缩放"了（用户："滚轮也应该设置成放大缩小"）' if
+  wb_wheel[/ctrlKey|metaKey/]
+issues << '白板的滚轮缩放没锚在指针上（应围着指针那个点放大 / 缩小）' unless
+  wb_wheel.include?('zoomAt(cx.sx, cx.sy')
+
+# 右键 = 平移板面（用户 2026-09-30："白板右键可以拖动画板"）——
+# 跟时间轴一条口径：鼠标三个键里只有左键落笔，中键与右键都归平移。
+wb_down = wbjs[/function onDown\(e\) \{[\s\S]{0,4000}?\n  \}/].to_s
+issues << '白板里找不到 onDown（守线要跟着改）' if wb_down.empty?
+issues << '白板的右键又被挡在门外了（用户："右键可以拖动画板"）' if
+  wb_down[/e\.button !== 0 && e\.button !== 1\)\s*return;/]
+issues << '白板的右键没有进平移分支（中键 / 右键都该是平移）' unless
+  wb_down[/e\.button === 1 \|\| e\.button === 2/]
+issues << '白板的左键被顺手改成平移了（左键得留着落笔）' if
+  wb_down[/e\.button === 0[^\n]*startPan/]
+issues << '板面没屏蔽浏览器右键菜单（菜单一弹就把 pointerup 抢走，拖动会断在半路）' unless
+  wbjs[/addEventListener\('contextmenu'[\s\S]{0,160}?preventDefault/]
 %w[header nav main aside section div ul li button canvas label p a].each do |tag|
   o = html.scan(/<#{tag}[\s>]/i).length
   c = html.scan(%r{</#{tag}>}i).length

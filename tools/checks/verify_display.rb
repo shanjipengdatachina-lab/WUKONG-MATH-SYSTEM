@@ -75,11 +75,21 @@ end
 color_names = root_tokens.select { |_k, v| color_token?(v) }.keys.sort
 issues << '在 tokens.css 里没找到颜色令牌（解析失败）' if color_names.empty?
 
+# 掌握度那七档**豁免**这条规则（用户 2026-09-30，撤掉深色底板之后的版本）：
+# 六个彩色档同时压在纯白与纯黑上都 ≥ 3:1，所以三个主题共用同一份值 ——
+# 它们不跟主题走，不该被要求在中色 / 暗色包里再写一遍（写了反而是走回头路）。
+THEME_FREE = %w[--math-bar-ok --math-bar-gold --math-bar-first --math-bar-learn
+                --math-bar-review --math-bar-weak].freeze
+
 { 'mid' => '中色', 'dark' => '暗色' }.each do |theme, cn|
   block = block_of(tokens, %(html[data-wk-theme="#{theme}"]))
   issues << "tokens.css 里没有 #{cn} 那一包（html[data-wk-theme=\"#{theme}\"]）" if block.empty?
   have = tokens_in(block)
-  miss = color_names.reject { |k| have.key?(k) }
+  THEME_FREE.each do |k|
+    issues << "#{cn}里重写了 #{k} —— 这一档压白压黑都达标，三包共用一份值（见 tokens.css 的说明）" if
+      have.key?(k)
+  end
+  miss = color_names.reject { |k| have.key?(k) || THEME_FREE.include?(k) }
   issues << "#{cn}缺 #{miss.size} 个颜色令牌：#{miss.join('、')}（深色下会留着亮色，可能白底白字）" unless miss.empty?
   extra = have.keys.reject { |k| root_tokens.key?(k) }
   issues << "#{cn}里出现了 :root 没有的令牌：#{extra.join('、')}（大概是写错了名字）" unless extra.empty?
@@ -242,10 +252,12 @@ end
 # 2026-09-30 又补了两句，这两句各对应下面一段守线：
 #   · "预设方案一定要色相区分非常明显；要不然分不清问题的状态" —— 第一版把一套里的七个色
 #     做成了"同一色相的明暗梯度"（靛蓝那套全蓝、紫罗兰那套全紫），七档状态压根分不出来。
-#     所以这里逐套逐档量**色相差**（相邻两档要 ≥ 30°）与**对比度**（压白 / 压黑都要 ≥ 3:1）。
+#     所以这里逐套逐档量**色相差**（相邻两档要 ≥ 30°）。
 #   · "点击其他的色彩方案，第一个方案就变" —— 设置页第一颗预览按钮自带
 #     `data-wk-scheme="green"`，而 tokens.css 里当时没有一条规则命中它，
 #     于是它一路继承 <html> 上**当前选中的方案**。下面钉住"默认那套也必须有自己的一条"。
+#   · 同日最末一轮：用户看完"亮纯色 + 深色底板"那版说"改颜色之后就成黑色背景了，改回去啊"，
+#     底板撤掉 —— 于是对比度又回到"同时压在**纯白**（亮色主题）与**纯黑**（暗色主题）上 ≥ 3:1"。
 SCHEMES = %w[green blue violet amber cyan a11y].freeze
 BAR_TOKENS = %w[--math-bar-ok --math-bar-gold --math-bar-first --math-bar-learn
                 --math-bar-review --math-bar-weak --math-bar-idle].freeze
@@ -302,15 +314,10 @@ GREEN_SEL = '[data-wk-scheme="green"]'
 green_block = block_of(tokens, GREEN_SEL)
 issues << '默认方案（松绿）缺一条命中 [data-wk-scheme="green"] 的规则 —— ' \
           '设置页第一颗预览按钮会继承 <html> 上当前的方案，点别的方案它跟着变' if green_block.empty?
-# 而且这条里**不许写死色值**：按钮上的声明是直接命中，写死就会盖掉从 <html> 继承来的
-# 主题值，暗色下第一颗预览的还是亮色那一套（预览与结果对不上）。
-# 所以七个值都得是 var() 引用。
-green_pal_raw = tokens_in(green_block)
-BAR_TOKENS.each do |t|
-  issues << "默认方案预览里的 #{t} 写死了色值（#{green_pal_raw[t]}）—— 应当写 var() 引用，" \
-            '否则暗色下预览的与选中后实际拿到的不是同一组' unless
-    green_pal_raw[t].to_s.start_with?('var(')
-end
+# 而且七个值必须与 :root 里那一份**逐个对上**：同一份值抄在两处，改一处忘另一处，
+# 第一颗预览按钮就会与实际生效的颜色对不上。
+# （2026-09-30 撤掉深色底板之后这条更简单了：那七档压白压黑都达标、不跟主题走，
+#   三包共用一份值，所以这里直接比字面值即可。只有 idle 仍是 var(--math-ink-4)。）
 root_bar = {}
 BAR_TOKENS.each { |t| root_bar[t] = resolve_tok(root_tokens[t], root_tokens) }
 green_pal = tokens_in(green_block)
@@ -320,7 +327,8 @@ BAR_TOKENS.each do |t|
             '同一份值抄在两处，改一处忘另一处' unless got == root_bar[t]
 end
 
-# 逐套：七个令牌齐全 + 六个彩色档压白 / 压黑都 ≥ 3:1 + 相邻两档色相差 ≥ 30°
+# 逐套：七个令牌齐全 + 六个彩色档**同时**压白 / 压黑 ≥ 3:1 + 相邻两档色相差 ≥ 30°
+SCHEME_VALS = {}
 SCHEMES.each do |s|
   sel = s == 'green' ? GREEN_SEL : %(html[data-wk-scheme="#{s}"], html [data-wk-scheme="#{s}"])
   pal = tokens_in(block_of(tokens, sel))
@@ -329,11 +337,15 @@ SCHEMES.each do |s|
       pal[t] && !pal[t].to_s.empty?
   end
   vals = COLOR_BARS.map { |t| resolve_tok(pal[t], root_tokens) }
+  SCHEME_VALS[s] = vals
+  # 两个底都要量：亮色主题的底是纯白、暗色主题的底是纯黑。彩条**没有**深色底板垫
+  # （用户 2026-09-30："加了颜色，改颜色之后就成黑色背景了，改回去啊"），
+  # 所以"看得清"就得是它自己挣来的 —— 两边都到 3:1 才叫真的看得清。
   COLOR_BARS.zip(vals).each do |t, v|
-    w = contrast(v, '#ffffff')
-    k = contrast(v, '#000000')
-    issues << format('方案「%s」的 %s(%s) 压在白底上只有 %.2f:1（要 ≥ 3.0）', s, t, v, w) if w && w < 3.0
-    issues << format('方案「%s」的 %s(%s) 压在黑底上只有 %.2f:1（要 ≥ 3.0）', s, t, v, k) if k && k < 3.0
+    [[ '#ffffff', '纯白' ], [ '#000000', '纯黑' ]].each do |bg, cn|
+      c = contrast(v, bg)
+      issues << format('方案「%s」的 %s(%s) 压在%s上只有 %.2f:1（要 ≥ 3.0）', s, t, v, cn, c) if c && c < 3.0
+    end
   end
   hs = vals.map { |v| hue_of(v) }
   hs.each_cons(2).with_index do |(a, b), i|
@@ -343,6 +355,22 @@ SCHEMES.each do |s|
     issues << format('方案「%s」里 %s 与 %s 只差 %d° 色相（要 ≥ 30°）—— 七档状态会分不清',
                      s, COLOR_BARS[i], COLOR_BARS[i + 1], d) if d < 30
   end
+end
+
+# ③ 套与套之间也得"一眼看得出不一样"（用户 2026-09-30："这颜色是不是一模一样，这六组"）。
+#    只靠色相做不到 —— 六套都得铺满色环，必然撞车；所以明度与饱和度也要参与区分（见 tokens.css 的说明）。
+#    量法：按槽位比 RGB 欧氏距离，≥60 算"看得出不同"，要求任意两套至少 4 个槽位不同。
+#    只查"相邻两档"是不够的：第二版六套各自都合规，但六套互相像，用户照样一眼看不出区别。
+WANT_APART = 4
+SCHEMES.combination(2) do |a, b|
+  diffs = [a, b].map { |s| SCHEME_VALS[s].map { |v| rgb_of(v) } }
+  far = 0
+  COLOR_BARS.each_index do |i|
+    d = Math.sqrt(diffs[0][i].zip(diffs[1][i]).sum { |x, y| (x - y)**2 })
+    far += 1 if d >= 60
+  end
+  issues << "色彩方案「#{a}」与「#{b}」太像（六个槽位里只有 #{far} 个颜色明显不同，要 ≥ #{WANT_APART}）—— " \
+            '两组摆在设置页上会"一模一样"' if far < WANT_APART
 end
 
 %w[SCHEME_KEY SCHEME_ATTR SCHEMES SCHEME_DEFAULT].each do |needle|

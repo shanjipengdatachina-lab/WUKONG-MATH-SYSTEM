@@ -256,10 +256,17 @@ winFire('pointerup');
 assert(isFinite(MM.view().tx) && MM.view().tx !== vAfterDeep.tx,
   '定位之后画布照样能拖（用户报的就是这里拖不动；实际 tx=' + MM.view().tx + '）');
 var kAfterDeep = MM.view().k;
-/* 缩放是 ⌘/Ctrl + 滚轮（光滚轮是平移，见画布那段滚轮处理器） */
-fire(canvasEl, 'wheel', ev({ x: 600, y: 400, target: worldEl, deltaY: -240, ctrl: true }));
-assert(isFinite(MM.view().k) && MM.view().k !== kAfterDeep,
-  '定位之后滚轮照样能缩放（实际 k=' + MM.view().k + '，缩放前 ' + kAfterDeep + '）');
+/* 滚轮 = 放大缩小，**不用按 ⌘/Ctrl**（用户 2026-09-30："图谱的滚轮也应该设置成放大缩小，
+   而不是现在的上下移动"）；平移还是拖画布。 */
+fire(canvasEl, 'wheel', ev({ x: 600, y: 400, target: worldEl, deltaY: -240 }));
+assert(isFinite(MM.view().k) && MM.view().k > kAfterDeep,
+  '定位之后滚轮往上滚 = 放大（实际 k=' + MM.view().k + '，缩放前 ' + kAfterDeep + '）');
+var kAfterWheel = MM.view().k;
+var tAfterWheel = MM.view().tx;
+fire(canvasEl, 'wheel', ev({ x: 600, y: 400, target: worldEl, deltaY: 240 }));
+assert(MM.view().k < kAfterWheel, '往下滚 = 缩小（滚轮的上下就是放大 / 缩小）');
+assert(MM.view().tx !== tAfterWheel || MM.view().ty !== 0,
+  '缩放锚在指针上，平移量跟着变（不是"整张图不动地缩放"）');
 
 /* 画面上那条 transform 永远得是能解析的有限数 —— 浏览器解析不了就整条丢掉，图会瞬移回左上角 */
 assert(/^translate\(-?[\d.]+,-?[\d.]+\) scale\([\d.]+\)$/.test(worldEl.getAttribute('transform') || ''),

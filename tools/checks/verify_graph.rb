@@ -371,6 +371,18 @@ issues << 'insideOverlay 没把浮层类名列全（应含 .mm-card / .mm-dock /
 issues << '拖浮窗时没有阻止事件冒泡（stopPropagation）' unless
   mini.include?('if (event.stopPropagation) event.stopPropagation();')
 
+# ---------- 11b. 滚轮 = 放大缩小（用户 2026-09-30）----------
+# "白板和图谱的滚轮也应该设置成放大缩小，而不是现在的上下移动"。
+# 原来图谱那支要按 ⌘/Ctrl 才缩放、光滚轮是平移 —— 那条口径撤了（时间轴也撤过同一条）。
+mm_wheel = mini[/addEventListener\('wheel'[\s\S]{0,700}?\}, \{ passive: false \}\);/].to_s
+issues << '图谱里找不到滚轮处理器（守线要跟着改）' if mm_wheel.empty?
+issues << '图谱的滚轮又变回"带 ⌘ / Ctrl 才缩放"了（用户："图谱的滚轮也应该设置成放大缩小"）' if
+  mm_wheel[/ctrlKey|metaKey/]
+issues << '图谱的滚轮缩放没锚在指针上（应围着指针那个点放大 / 缩小）' unless
+  mm_wheel.include?('zoomAt(event.clientX - rect.left, event.clientY - rect.top')
+issues << '删滚轮平移时把"拖画布"也一起删了（平移还得能拖）' unless
+  mini.include?('view.tx = dragStart.tx + dx')
+
 # 提示气泡：生成器只改选择器、不改声明体里的属性名，会让 content 变成空串 ——
 # 表现就是"鼠标滑过底部按钮，一条提示都看不见"（真出过这个 bug）。
 # 这里盯死：图谱里不许再出现 wb- 前缀的属性引用，且提示规则必须读 data-mm-tip。

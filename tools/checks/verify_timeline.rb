@@ -149,14 +149,23 @@ issues << '屏幕外的名字又被夹到左边缘了（会在左边糊成一团
   js.include?('名字本身就落在屏幕外')
 issues << 'timeline.js 没有"格内再分小刻度"（放大时的细分）' unless js.include?('function drawMinor')
 
-# 最细那一档：把一格（一个知识点）展开成它名下的卡片（参考图知识点视图那三条规则：
-# 宽度 = 卡片权重、高度 = 卡片难度、颜色 = 卡片状态）
+# 最细那一档：把一格（一个知识点）展开成它名下的卡片（参考图知识点视图的三条规则：
+# 宽度 = 卡片权重、高度 = 卡片难度、颜色 = 卡片状态）。
+# 2026-09-30 用户看过之后改了两条口径：
+#   · 高度那一维去掉 —— 同一格里的卡片**齐平**，都取这个知识点自己的难度
+#     （原来每张卡各自的高度参差、区间还跟知识点对不上，会出现"卡片比整格还高"）；
+#   · 掌握度没开就**整层不画**（原来"关了只画结构、统一涂中性灰"，用户放大后看见一排灰条）。
 issues << '最细那一档没有把一格展开成卡片（drawCards）' unless
   js.include?('function drawCards') && js[/function redraw[\s\S]{0,1600}?drawCards\(\)/]
 issues << '卡片的宽度不是按卡片权重分的' unless
   js.include?('usable * card.weight / sum')
-issues << '卡片的高度不是按卡片难度给的' unless js.include?('heightOf(card.diff)')
-issues << '卡片的颜色不是按卡片状态给的' unless js.include?('state.mastery ? statusColor(card.status)')
+issues << '同一格里卡片的高度没齐平（用户："高度应该是一致的"）' unless
+  js.include?('var h = px(heightOf(rec.diff))')
+issues << '卡片又回去按每张卡自己的难度取高了（会参差、还可能高过整格）' if
+  js.include?('heightOf(card.diff)')
+issues << '卡片的颜色不是按卡片状态给的' unless js.include?('var color = statusColor(card.status)')
+issues << '掌握度关掉时卡片层还在画（用户："没开这个条，它就不该出现"）' unless
+  js[/function drawCards\(\) \{[\s\S]{0,400}?if \(!state\.mastery/]
 issues << '拆了卡片之后还叠着画整格那根柱子' unless
   js[/function drawBars[\s\S]{0,900}?if \(cardsOpen\(rec\)\) \{ continue; \}/]
 
@@ -317,7 +326,9 @@ issues << '图例又变成可拖的浮层了（用户定的：它不是面板，
   page.include?('data-tk-legend-bar') &&
   # 它住在"工具条正上方那一列"里（.tk-above），不再是各自绝对定位 —— 与缩略条同一列往上排
   page[/\.tk-above \{[\s\S]{0,520}?bottom: 78px/] &&
-  page[/<div class="tk-above"[\s\S]{0,2400}?data-tk-legend-bar/]
+  # 窗口给宽一点：.tk-above 里先排着"网格与尺寸"那个弹层，再是缩略条，图例条在它们后面 ——
+  # 弹层加了「整体」那一行之后这段变长了（一次误报，就是窗口卡在 2400 上）
+  page[/<div class="tk-above"[\s\S]{0,4000}?data-tk-legend-bar/]
 issues << '图例条里没把四类标记排进去（应带小图标）' unless
   js[/function buildLegend[\s\S]{0,1400}?data-lucide/] && js.include?('legendMarks')
 issues << '图例卡的七档色块不是从令牌解出来的（应走 statusColor）' unless
@@ -612,6 +623,10 @@ issues << '一格挂几个标记时只画了第一颗（图标要并排排开）
   js.include?('var MARK_ICON_GAP')
 issues << '一排图标装不下还硬画（应整排跳过，别挤到隔壁那一格头上）' unless
   js[/function drawMarks[\s\S]{0,1400}?if \(view\.scale < need\) \{ continue; \}/]
+# 图标的位置跟着掌握度那一层走（用户 2026-09-30 定的）：开着 → 落在彩条顶端上面一点；
+# 关着 → **贴轴**。原来只有"彩条顶端"那一种，彩条不画时图标就悬在半空。
+issues << '标记图标的位置没跟着掌握度走（彩条关着时图标会悬在半空）' unless
+  js[/var top = state\.mastery \? \(-px\(heightOf\(rec\.diff\)\) - px\(4\) - size\) : \(-px\(6\) - size\)/]
 # 哪几类归学员自己定、哪一类归系统算 —— `own` 这个字段是那四个口径的落点
 # 数的是 MARKS 数组里那四条（`own: … }`），不是注释里那两行说明
 issues << '标记没有区分"学员自评 / 系统判定"（MARKS 上要有 own）' unless
@@ -664,18 +679,13 @@ issues << "时间轴页还有 #{naked_fs} 处 font-size 没乘 --math-fs（选�
 issues << '时间轴页有写死的白底 / 白字（深色下会突兀）' if
   page.scan(/(?:background|color):\s*(?:#fff|rgba\(\s*255\s*,\s*255\s*,\s*255)/i).any?
 
-# 掌握度令牌（彩条要用）三包齐全 —— 亮 / 中 / 暗各一份，缺一个深色下就会留亮色
+# 掌握度令牌（彩条要用）。
+# **2026-09-30 起这七档不再分三包写**：六个彩色档同时压白压黑都达标，
+# 三个主题共用同一份值 —— 所以这里只查"令牌存在"。
 BAR_TOKENS = %w[--math-bar-ok --math-bar-gold --math-bar-first --math-bar-learn
                 --math-bar-review --math-bar-weak --math-bar-idle].freeze
 BAR_TOKENS.each do |tok|
   issues << "tokens.css 缺掌握度令牌 #{tok}" unless css.include?("#{tok}:")
-end
-%w[mid dark].each do |theme|
-  block = css[/html\[data-wk-theme="#{theme}"\]\s*\{(.*?)\n\}/m, 1].to_s
-  issues << "tokens.css 的 #{theme} 那一包里解析不出令牌（守线要跟着改）" if block.empty?
-  %w[--math-bar-first --math-bar-learn --math-bar-review].each do |tok|
-    issues << "#{theme} 那一包缺 #{tok}（深色下会留下亮底那一组色）" unless block.include?("#{tok}:")
-  end
 end
 
 # ---------- 4g. 掌握度色彩方案（用户 2026-09-30）----------
@@ -714,6 +724,54 @@ issues << '色彩方案没进显示设置的绑定组（点了不会落盘、也
 issues << '设置页方案预览读不到自己那一套色（tokens.css 缺直接命中按钮的 html [data-wk-scheme=…]）' unless
   %w[blue violet amber cyan a11y].all? { |s| css.include?(%(html [data-wk-scheme="#{s}"])) } &&
   css.include?('[data-wk-scheme="green"] {')
+
+# ---------- 4h. 数轴整体大小（用户 2026-09-30）----------
+# "数轴它可以放大，但是数轴本身它大不了……他一直在中间，然后那字都还比较小……
+#  加个按钮，哪怕加个那种滑块的按钮，就可以放大缩小数轴本身。"
+# 与底部那三颗「缩小 / 100% / 放大」是**两件事**：那三颗走 view.scale（横向能看多少格），
+# 这条走 state.axis（轴本身的大小：轴 / 刻度 / 文字 / 点 / 彩条一起变）。混成一个就又回到老问题。
+issues << '页面没有「数轴整体大小」那根滑块（data-tk-axis-zoom）' unless
+  page.include?('data-tk-axis-zoom') && page.include?('type="range"')
+issues << '「网格与高度」那颗按钮没跟着改名（弹层里多了"整体"一行，应叫「网格与尺寸」）' unless
+  page.include?('aria-label="网格与尺寸"')
+issues << '整轴缩放没接到画布上（px / worldFont / barScreen 三处都要乘 state.axis）' unless
+  js.include?('return (v * state.axis) / view.scale;') &&
+  js.include?('size * FS * state.axis / view.scale') &&
+  js[/function barScreen\(\)[\s\S]{0,140}?\.screen \* state\.axis/]
+issues << '整轴缩放没有上下限（AXIS_MIN / AXIS_MAX —— 放太大轴会被挤出屏幕）' unless
+  js.include?('var AXIS_MIN') && js.include?('var AXIS_MAX')
+issues << '整轴缩放改了之后没有重排竖向（要调 recenter：轴上下留的地方跟着变了）' unless
+  js[/function setAxis[\s\S]{0,500}?recenter\(\)/]
+# 对外接口叫 axisScale 不叫 axis：`axis` 那个名字已经被**刻度数据**占了，
+# 同名会把刻度顶掉（整份自检崩在 TK.axis.items 上）。
+issues << '整轴缩放没有对外接口（自检与跨页点名要用 setAxis / axisScale）' unless
+  js.include?('setAxis: setAxis') && js.include?('axisScale: function () { return state.axis; }') &&
+  !js.include?('axis: function () { return state.axis; }')
+# 字与点变大了，"这一段放不放得下"的门槛也得跟着抬 —— 不然名字会挤在一起
+issues << '刻度门槛没跟着整轴缩放走（字大了还按老门槛判"放得下"）' unless
+  js.include?('spec.need * state.axis')
+issues << '轴上的标记图标门槛没跟着整轴缩放走（图标大了还按老门槛判"装得下"）' unless
+  js.include?('MARK_ICON_GAP * (keys.length - 1)) * state.axis')
+
+# ---------- 4h-2. 撤掉彩条底板之后的收尾（用户 2026-09-30）----------
+# "加了颜色，改颜色之后就成黑色背景了。改回去啊。" —— 那块深色底板撤掉了，
+# 跟着撤的两条：① 画布不再画底板（连令牌一起删），② 卡片的状态徽标不用再"填色块 + 深字"
+# （那套是给亮纯色准备的），又回到"这档状态色的文字"。
+issues << '时间轴又在画彩条底板了（用户："加了颜色就成黑色背景了，改回去"）' if
+  js.include?('drawChartBand') || js.include?('chartBand')
+issues << 'tokens.css 还留着 --math-chart-band（底板已撤，令牌该跟着删）' if
+  css.include?('--math-chart-band')
+issues << '卡片的状态徽标又变成"填色块"了（底板撤了、色回到看得清的明度，该走文字色）' if
+  js[/tk-card__badge[\s\S]{0,400}?badge\.style\.background = statusColor/]
+issues << '卡片的状态徽标不是"这档状态色的文字"' unless
+  js[/tk-card__badge[\s\S]{0,400}?badge\.style\.color = statusColor/]
+issues << '状态徽标还留着底板那支色（底板令牌已删，这条 CSS 会解析成空值）' if
+  page[/\.tk-card__badge \{[\s\S]{0,260}?color: var\(--math-chart-band\)/]
+
+# ---------- 4i. 卡片里那排标记要竖着排（用户 2026-09-30）----------
+# "他不是可以选三个吗？不要横着弄，竖着弄。三个图标竖着弄。"
+issues << '卡片里那排标记又横过来了（用户要求三个图标竖着排）' unless
+  page[/\.tk-card__marks-row \{[^}]*flex-direction: column/]
 
 # ---------- 5. 无障碍 ----------
 issues << '画布没有点名（aria-label）' unless page.include?('data-tk-canvas aria-label')

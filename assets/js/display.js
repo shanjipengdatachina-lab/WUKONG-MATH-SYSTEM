@@ -41,6 +41,8 @@
   var THEME_LABEL = { light: '亮色', mid: '中色', dark: '暗色' };
   var FS_LABEL = { std: '标准', lg: '大', xl: '特大' };
   var ACCENT_LABEL = { green: '松绿', blue: '靛蓝', violet: '紫罗兰', amber: '琥珀', cyan: '青碧', rose: '玫红', red: '中国红' };
+  /* 六套的名字：2026-09-30 换成亮纯色之后，六套都是"一条彩虹"，差别在**六个状态各用什么色**
+     （见 tokens.css 那一节的说明）—— 所以名字按各套的调子起，与色值一一对应。 */
   var SCHEME_LABEL = {
     green: '松绿（默认）', blue: '靛蓝', violet: '紫罗兰',
     amber: '琥珀', cyan: '青碧', a11y: '无障碍'

@@ -39,6 +39,9 @@
   var popBtn = dock.querySelector('#tk-pop-toggle');
   var gridBox = main.querySelector('#tk-grids');
   var barBox = main.querySelector('#tk-bar-levels');
+  /* 数轴整体大小（「网格与尺寸」浮层里那根滑块）—— 与横向缩放是两件事 */
+  var axisRange = main.querySelector('[data-tk-axis-zoom]');
+  var axisValue = main.querySelector('[data-tk-axis-zoom-value]');
   var btnGrid = dock.querySelector('#tk-grid');
   var btnMastery = dock.querySelector('#tk-mastery');
   var btnPlan = dock.querySelector('#tk-plan');
@@ -168,7 +171,7 @@
   /* 画布里的字号是**世界字号**：要除以当前缩放，屏幕上才是那个像素大小 ——
      于是放大缩小只改"刻度出现在哪一级"，不改字的大小。 */
   function worldFont(weight, size) {
-    return weight + ' ' + (size * FS / view.scale).toFixed(3) + 'px ' + FONT;
+    return weight + ' ' + (size * FS * state.axis / view.scale).toFixed(3) + 'px ' + FONT;
   }
 
   /* ------------------------------------------------------------------ *
@@ -441,7 +444,12 @@
   ];
 
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
-  function px(v) { return v / view.scale; }            /* 屏幕像素 → 世界单位 */
+  /* 屏幕像素 → 世界单位。
+     乘上 `state.axis` 的那一层是**数轴整体的放大倍数**（用户 2026-09-30：
+     "数轴它可以放大……但数轴本身它大不了……那字都还比较小"）：
+     横向"能看多少格"是缩放（view.scale）管的，而轴本身（线宽、点、刻度、文字、彩条）
+     由它统一放大缩小 —— 两件事分开，才既能"看得更细"又能"看得更大"。 */
+  function px(v) { return (v * state.axis) / view.scale; }
 
   /* 缩放：横向锚在鼠标那一列，**竖向不缩**。
      为什么不照白板那样连竖向一起缩：白板的板面是二维的，东西铺满整屏，缩了还看得见；
@@ -481,8 +489,13 @@
   function recenter() {
     var barH = barScreen();
     /* 刻度与文字关掉时就不用给它留那 188px 了（不然轴下面吊着一大片空白，还叫什么"干净视图"） */
-    var below = state.levels ? LABEL_BOTTOM : 26;
-    view.y = Math.max(36, (view.h - (barH + below)) / 2 + barH);
+    var below = (state.levels ? LABEL_BOTTOM : 26) * state.axis;
+    var y = (view.h - (barH + below)) / 2 + barH;
+    /* 竖向的夹取：轴上面要放得下彩条、轴下面要放得下标签。
+       整轴放大到装不下时（高彩条 × 2 倍），**保标签** —— 宁可切掉条子的顶，
+       也不能把轴和文字挤出屏幕（那时屏幕上就真的只剩一片空白了）。 */
+    var upper = Math.max(36, view.h - below);
+    view.y = clamp(y, Math.min(barH, upper), upper);
     scheduleRedraw();
   }
 
@@ -507,10 +520,16 @@
    * 3. 画：网格 → 轴 → 刻度
    * ------------------------------------------------------------------ */
 
+  /* 数轴整体大小的上下限（倍数）。上限 2 是量出来的：彩条档"高"（224px）乘 2 再加标签区，
+     一屏 700px 左右刚好放得下；再大就得靠竖向拖动去看，手感反而差。 */
+  var AXIS_MIN = 0.7;
+  var AXIS_MAX = 2;
+
   var state = {
     grid: false, gridSize: 40, bar: 1, mastery: false,
     levels: true,                       /* 刻度与文字这一层画不画（右侧那条第二颗开关） */
     readout: true,                      /* 左上角"这一轴是谁的 + 读数"显不显示 */
+    axis: 1,                            /* **数轴整体大小**（1 = 标准）：轴、刻度、文字、点、彩条一起放大缩小 */
     filter: { status: [], diff: [], mark: [], month: [] }   /* 筛选：空数组 = 这一维不筛 */
   };
   /* mastery：掌握度彩条层（条子 + 点的状态色）要不要画。
@@ -520,7 +539,8 @@
   var GRID_STEPS = [20, 40, 80];      // 网格疏密：一格 = 多少个知识点
   var rafPending = false;
 
-  function barScreen() { return (BAR_LEVELS[state.bar] || BAR_LEVELS[1]).screen; }
+  /* 彩条高度也归"数轴整体大小"管：整轴放大时条子跟着长，不然放大之后条子反而变矮了。 */
+  function barScreen() { return (BAR_LEVELS[state.bar] || BAR_LEVELS[1]).screen * state.axis; }
 
   function scheduleRedraw() {
     if (rafPending) { return; }
@@ -618,7 +638,11 @@
      参考图最细那一档（知识点视图）画的不是一根柱子，而是这个知识点名下的**那几张卡**，
      图底部自己写着三条规则：**宽度 = 卡片权重、高度 = 卡片难度、颜色 = 卡片状态**。
      一格宽到这个程度，就把它的 1 格宽度按权重分给那几张卡，并排画进去：
-     卡片太窄就只画柱子，宽一点写卡片名，再宽一点把正确率也写上。 */
+     卡片太窄就只画柱子，宽一点写卡片名，再宽一点把正确率也写上。
+
+     2026-09-30 用户看过之后改了两条口径（都在下面 drawCards 里）：
+       · **高度那一维去掉** —— 同一格里的卡**齐平**，都取这个知识点自己的难度；
+       · 掌握度没开时**整层不画**（原来"只画结构、涂中性灰"，用户放大后看见一排灰条）。 */
   var CARD_MIN_W = 56;      /* 一格宽到这么多屏幕像素才拆卡 */
   var CARD_TYPE_W = 34;     /* 一张卡宽到这么多才写得下卡片名 */
   var CARD_ACC_W = 52;      /* 再到这么多才写得下正确率 */
@@ -628,7 +652,10 @@
   }
 
   function drawCards() {
-    if (!LEARN || !N || view.scale < CARD_MIN_W) { return; }
+    /* 掌握度没开就**整层不画**（用户 2026-09-30：他在数轴上没开掌握度，放大到最细却看见
+       一排灰白色的条儿，问"这是什么东西"）。原来是"关了掌握度只画结构、统一涂中性灰" ——
+       于是没开颜色也会凭空多出一排灰条。口径改成：这一层连同颜色一起归「掌握度」管。 */
+    if (!state.mastery || !LEARN || !N || view.scale < CARD_MIN_W) { return; }
     var range = visibleIndexRange();
     var rMax = px(3.2);
     var gap = px(1.4);                   /* 卡与卡之间的缝（屏幕 1.4px） */
@@ -645,14 +672,20 @@
       for (k = 0; k < cards.length; k += 1) { sum += cards[k].weight; }
       var usable = 1 - gap * (cards.length - 1);
       if (!sum || usable <= 0.15) { continue; }
+      /* 高度**整格齐平**，都取这个知识点自己的难度（用户 2026-09-30 定的口径）。
+         原来用的是**每张卡自己的**难度（参考图那三条规则里的"高度 = 卡片难度"），
+         但卡片难度是各自掷出来的、区间还跟知识点对不上，于是同一格里高矮参差、
+         甚至某张卡比它所属的那一整格还高。改成齐平之后，这一层只回答
+         "这一格由几块组成、每块学到什么程度"（宽 = 权重、色 = 状态），
+         高度不再携带信息 —— "这一格有多硬"在整格那一层已经给过了。 */
+      var h = px(heightOf(rec.diff));
       var x = i + gap / 2;
       for (k = 0; k < cards.length; k += 1) {
         var card = cards[k];
         var w = usable * card.weight / sum;
         if (w <= 0) { continue; }
-        var h = px(heightOf(card.diff));
-        /* 掌握度没开的时候只画结构（中性灰）：这一层的颜色同样归「掌握度」那颗按钮管 */
-        var color = state.mastery ? statusColor(card.status) : C.ink4;
+        /* 颜色 = 卡片状态（整体归「掌握度」那颗按钮管：那一层不开，这里根本不画） */
+        var color = statusColor(card.status);
         ctx.fillStyle = color;
         barPath(x, w, h, rMax);
         var wPx = w * view.scale;
@@ -814,7 +847,9 @@
         if (seg.end < range.from || seg.start > range.to) { continue; }
         seen += 1;
         var screenW = (seg.end - seg.start) * view.scale;
-        if (screenW >= spec.need &&
+        /* 门槛跟着"轴整体大小"走：字大了，同一段就装不下原来那么多名字了
+           （后半句那条 measureText 里已经带着 state.axis，见 worldFont）。 */
+        if (screenW >= spec.need * state.axis &&
             screenW >= ctx.measureText(seg.name).width * view.scale * 0.5) { fit += 1; }
       }
       ctx.restore();
@@ -865,8 +900,9 @@
       var x1 = seg.end;
       var screenW = (x1 - x0) * view.scale;
       /* 这一段够不够画一眼（缩小时"只显示重要的部分"就靠这一条）。
-         够不够**画标记**看它；够不够**写名字**另外说 —— 见下。 */
-      var wide = screenW >= spec.need;
+         够不够**画标记**看它；够不够**写名字**另外说 —— 见下。
+         门槛同样随"轴整体大小"抬高：刻度点画大了，太窄的一段也就塞不下了。 */
+      var wide = screenW >= spec.need * state.axis;
       /* 视野左缘正落在这一段里 —— 更粗的那几级（面包屑）只有这一段会写名字 */
       var coversLeft = (x0 <= edge && edge <= x1);
 
@@ -1056,12 +1092,15 @@
       /* 一颗知识点可以挂好几个标记（用户 2026-09-30 定的"多选"）—— 它们并排排在格子上方。
          一整排要占 `MARK_ICON_SIZE × n + 缝`，这一格在屏幕上装不下就**整排不画**：
          宁可空着，也不能挤到隔壁那一格的头上（挤过去就成了"这一格被标了"，是假的）。 */
-      var need = MARK_ICON_SIZE * keys.length + MARK_ICON_GAP * (keys.length - 1);
+      var need = (MARK_ICON_SIZE * keys.length + MARK_ICON_GAP * (keys.length - 1)) * state.axis;
       if (view.scale < need) { continue; }
       ctx.save();
       ctx.globalAlpha = passFilter(rec) ? 1 : FILTER_ALPHA;
       var span = keys.length * size + (keys.length - 1) * gap;   /* 整排的世界宽 */
-      var top = -px(heightOf(rec.diff)) - px(4) - size;          /* 落在彩条顶端上面一点 */
+      /* 位置：掌握度开着就落在**彩条顶端**上面一点；关着就**贴轴**（用户 2026-09-30 定的）——
+         彩条不画的时候，"彩条顶端"那个高度上什么都没有，图标会悬在半空（用户放大后看见的
+         就是这种"没东西托着的图标"）。贴轴之后标记始终看得见，也不再依赖彩条那一层。 */
+      var top = state.mastery ? (-px(heightOf(rec.diff)) - px(4) - size) : (-px(6) - size);
       for (var m = 0; m < keys.length; m += 1) {
         var p = markPath(keys[m]);
         if (!p) { continue; }
@@ -1572,6 +1611,9 @@
     }
 
     var meta = el('div', 'tk-card__meta');
+    /* 状态徽标就是**这档状态色的文字**。2026-09-30 中途试过"填色块 + 深字"
+       （那会儿颜色是亮纯色，当文字压在白卡上读不清）；后来深色底板撤了、七档回到
+       "自己就看得清"的明度，这一块又不用了 —— 颜色当文字正好。 */
     var badge = el('span', 'tk-card__badge', rec.status);
     badge.style.color = statusColor(rec.status);
     meta.appendChild(badge);
@@ -1898,7 +1940,7 @@
     if (open) { btnLegend.classList.add('is-on'); } else { btnLegend.classList.remove('is-on'); }
   }
 
-  /* 打开图例条时把「网格与高度」那个浮层收掉 —— 它俩占的是同一块地方（工具条正上方），
+  /* 打开图例条时把「网格与尺寸」那个浮层收掉 —— 它俩占的是同一块地方（工具条正上方），
      一起开就会叠在一起。反过来见 togglePop()。 */
   function setLegend(on) {
     if (!legendEl) { return; }
@@ -2588,6 +2630,27 @@
     });
   }
 
+  /* ---------- 数轴整体大小（用户 2026-09-30）----------
+     "数轴它可以放大，但是数轴本身它大不了……那字都还比较小……加个按钮，哪怕加个那种滑块的按钮，
+      就可以放大缩小数轴本身。"
+     与底部那三颗「缩小 / 100% / 放大」是**两件事**，别混：
+       · 那三颗走 `view.scale` —— 横向缩放，改变的是"一屏能看多少格"（看得更细）；
+       · 这根滑块走 `state.axis` —— 轴本身的大小，轴、刻度、文字、点、彩条一起变大（看得更大）。 */
+  function syncAxisControl() {
+    var pct = Math.round(state.axis * 100);
+    if (axisRange) { axisRange.value = String(pct); }
+    if (axisValue) { axisValue.textContent = pct + '%'; }
+  }
+
+  function setAxis(scale) {
+    var next = clamp(typeof scale === 'number' ? scale : parseFloat(scale), AXIS_MIN, AXIS_MAX);
+    if (!isFinite(next)) { return state.axis; }
+    state.axis = next;
+    syncAxisControl();
+    recenter();          /* 竖向要重排：轴上下要留的地方跟着变了 */
+    return state.axis;
+  }
+
   function bind() {
     if (btnGrid) {
       btnGrid.addEventListener('click', function () {
@@ -2597,6 +2660,11 @@
       });
     }
     if (popBtn) { popBtn.addEventListener('click', function (e) { e.stopPropagation(); togglePop(); }); }
+    /* 滑块拖动过程中就实时生效（不等松手），"拖到多大的字"才看得见 */
+    if (axisRange) {
+      axisRange.addEventListener('input', function () { setAxis(parseFloat(axisRange.value) / 100); });
+      axisRange.addEventListener('change', function () { setAxis(parseFloat(axisRange.value) / 100); });
+    }
     if (btnMastery) { btnMastery.addEventListener('click', function () { toggleMastery(); }); }
     if (btnLegend) { btnLegend.addEventListener('click', function () { toggleLegend(); }); }
     if (btnHelp) { btnHelp.addEventListener('click', function (e) { e.stopPropagation(); toggleHelp(); }); }
@@ -2722,6 +2790,7 @@
   /* 光标不用 JS 起手：默认那个小圆圈写在 CSS 的 #tk-canvas 上（滚动 / 拖动时再加类换） */
   buildGridChips();
   buildBarChips();
+  syncAxisControl();
   syncGridButton();
   syncMasteryButton();
   syncLegendButton();
@@ -2764,6 +2833,11 @@
       syncMasteryButton();
       scheduleRedraw();
     },
+    /* 数轴整体大小：传倍数（1 = 标准）—— 自检与将来的跨页点名都要用。
+       注意别叫 `axis`：上面那个 `axis` 是**刻度数据**（六级刻度与它们的区间），
+       两个同名会把刻度数据顶掉（踩过一次：整份自检崩在 `TK.axis.items` 上）。 */
+    setAxis: setAxis,
+    axisScale: function () { return state.axis; },
     select: select,
     closeCard: closeCard,
     setLegend: setLegend,

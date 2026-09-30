@@ -352,6 +352,46 @@ assert(!canvasEl.classList.contains('is-zoom-in') && !canvasEl.classList.contain
 TK.fit();
 
 /* ------------------------------------------------------------ *
+ * 3d. 数轴整体大小（用户 2026-09-30）
+ *   "数轴它可以放大，但是数轴本身它大不了……他一直在中间，然后那字都还比较小……
+ *    加个按钮，哪怕加个那种滑块的按钮，就可以放大缩小数轴本身。"
+ *   —— 与底部那三颗「缩小 / 100% / 放大」是**两件事**：
+ *      那三颗走 view.scale（横向一屏看多少格），这条走 state.axis（轴本身的大小）。
+ *      最要紧的一条断言就是"改这条**不许动** view.scale"。
+ * ------------------------------------------------------------ */
+out('---- 数轴整体大小 ----');
+TK.setAxis(1);
+TK.fit();
+ctxReset(AX); TK.redraw();
+var maxArc1 = Math.max.apply(null, AX.arcs.map(function (a) { return a.r; }));
+var yAt1 = TK.view.y;
+assert(TK.axisScale() === 1, '默认是标准大小（100%）');
+
+var scaleBefore = TK.view.scale;
+TK.setAxis(2);
+ctxReset(AX); TK.redraw();
+var maxArc2 = Math.max.apply(null, AX.arcs.map(function (a) { return a.r; }));
+assert(TK.axisScale() === 2, 'setAxis(2) → 数轴整体放大到 2 倍');
+assert(TK.view.scale === scaleBefore,
+  '放大的不是横向缩放（view.scale 一动不动：' + scaleBefore.toFixed(6) + '）—— 那是底部三颗的事');
+assert(Math.abs(maxArc2 / maxArc1 - 2) < 0.02,
+  '轴上的圆点跟着大了一倍（世界半径 ' + maxArc1.toFixed(2) + ' → ' + maxArc2.toFixed(2) + '）');
+assert(TK.view.y !== yAt1, '竖向重排了（轴上下要留的地方跟着变大：y ' +
+  yAt1.toFixed(1) + ' → ' + TK.view.y.toFixed(1) + '）');
+assert(elFor('[data-tk-axis-zoom]').value === '200' &&
+  elFor('[data-tk-axis-zoom-value]').textContent === '200%',
+  '弹层里那根滑块与读数跟着一起变（200% —— 不然拖完不知道自己在哪一档）');
+
+TK.setAxis(99);
+assert(TK.axisScale() === 2, '往上封顶 2 倍（再大轴就被挤出屏幕了）');
+TK.setAxis(0.1);
+assert(TK.axisScale() === 0.7, '往下兜底 0.7 倍');
+TK.setAxis(1);
+TK.fit();
+assert(Math.abs(TK.view.scale - FIT) < 1e-9 && TK.axisScale() === 1,
+  '收回标准大小（1 倍），横向缩放不受影响');
+
+/* ------------------------------------------------------------ *
  * 4. 点击 · 卡片 · 筛选四维
  * ------------------------------------------------------------ */
 out('---- 卡片与筛选 ----');

@@ -317,12 +317,22 @@ for (var zo = 0; zo < 60; zo++) WB.zoomBy(2);
 assert(WB.state.view.scale <= 8 + 1e-6, '缩放上限生效');
 WB.resetZoom();
 
+/* 滚轮 = 放大缩小（用户 2026-09-30："白板和图谱的滚轮也应该设置成放大缩小，
+   而不是现在的上下移动"）。原来光滚轮是上下平移、要按 ⌘/Ctrl 才缩放 —— 这条口径撤了。 */
+WB.resetZoom();
 var vy0 = WB.state.view.y;
-WB.onWheel(pe(200, 200, { deltaY: 120 }));
-assert(WB.state.view.y === vy0 - 120, '普通滚轮平移画布（纵向）');
 var sc0 = WB.state.view.scale;
+WB.onWheel(pe(200, 200, { deltaY: 120 }));
+assert(WB.state.view.scale < sc0, '往下滚 = 缩小（不再拿滚轮上下平移画布）');
+assert(WB.state.view.y !== vy0, '缩放的锚点在指针上，所以纵向偏移会跟着变（这正是"围着指针缩"）');
+WB.resetZoom();
+var sc1 = WB.state.view.scale;
+WB.onWheel(pe(200, 200, { deltaY: -120 }));
+assert(WB.state.view.scale > sc1, '往上滚 = 放大');
+WB.resetZoom();
+var sc2 = WB.state.view.scale;
 WB.onWheel(pe(200, 200, { deltaY: -120, meta: true }));
-assert(WB.state.view.scale > sc0, '⌘ / Ctrl + 滚轮缩放画布');
+assert(WB.state.view.scale > sc2, '⌘ / Ctrl + 滚轮照样缩放（触控板捏合浏览器也报成这个）');
 assert(isFinite(WB.state.view.x) && isFinite(WB.state.view.y) && isFinite(WB.state.view.scale), '视图参数始终是有效数字');
 WB.resetZoom();
 WB.fitContent();
@@ -334,6 +344,25 @@ WB.onMove(pe(160, 140, { button: 1 }));
 assert(WB.state.view.x !== 16 || WB.state.view.y !== 16, '拖拽改变了视图偏移');
 WB.onUp(pe(160, 140, { button: 1 }));
 assert(WB.state.active === null, '松开结束平移');
+
+/* 右键 = 平移板面（用户 2026-09-30："白板右键可以拖动画板"）—— 跟时间轴那条口径对齐：
+   鼠标三个键里只有左键落笔，中键与右键都归平移；板面上不再弹浏览器右键菜单。
+   最后一条是"别顺手把左键也改了"的守门人。
+   下面用完把视图**还原**：再往下那些用例（Shift 正交、荧光笔）是按屏幕坐标写的，
+   多平移 50px 就会让某一笔正好压在题面把手上，变成"拖题面"—— 真踩过一次。 */
+var vxR = WB.state.view.x;
+var vyR = WB.state.view.y;
+WB.onDown(pe(100, 100, { button: 2 }));
+assert(!!WB.state.active && WB.state.active.mode === 'pan', '右键按下进入平移模式（不是落笔）');
+WB.onMove(pe(150, 130, { button: 2 }));
+assert(Math.abs(WB.state.view.x - (vxR + 50)) < 0.01, '右键拖拽真的把板面平移了');
+WB.onUp(pe(150, 130, { button: 2 }));
+assert(WB.state.active === null, '右键松开结束平移');
+WB.onDown(pe(500, 300, { button: 0 }));
+assert(!!WB.state.active && WB.state.active.mode !== 'pan', '左键仍然是落笔（右键那条没把左键带走）');
+WB.onUp(pe(500, 300, { button: 0 }));
+WB.state.view.x = vxR;
+WB.state.view.y = vyR;
 
 /* ---------- 箭头与标记 ----------
    坐标不能写死：题面上有"把手区"（左侧那一条 + 标题行），而题面落在屏幕哪个位置

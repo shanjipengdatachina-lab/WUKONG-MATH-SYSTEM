@@ -1752,13 +1752,16 @@
     if (state.active) return;
     /* 在板上落笔就算"离开那个小菜单了"—— 保存菜单跟着收起（跟系统的下拉一个脾气） */
     if (state.saveMenu) closeSaveMenu();
-    if (e.pointerType === 'mouse' && typeof e.button === 'number' && e.button !== 0 && e.button !== 1) return;
+    /* 右键也收（用户 2026-09-30："白板右键可以拖动画板"）—— 跟时间轴一条口径：
+       右键拖动 = 平移板面。鼠标三个键里只有左键落笔，中键与右键都归平移。 */
+    if (e.pointerType === 'mouse' && typeof e.button === 'number' &&
+        e.button !== 0 && e.button !== 1 && e.button !== 2) return;
     if (typeof e.preventDefault === 'function') e.preventDefault();
     if (typeof canvas.setPointerCapture === 'function') {
       try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
     }
 
-    if ((e.pointerType === 'mouse' && e.button === 1) || spaceDown) {
+    if ((e.pointerType === 'mouse' && (e.button === 1 || e.button === 2)) || spaceDown) {
       startPan(e);
       return;
     }
@@ -1967,20 +1970,16 @@
     redraw();
   }
 
+  /* 滚轮 = 放大缩小（用户 2026-09-30："白板和图谱的滚轮也应该设置成放大缩小，
+     而不是现在的上下移动"）。原来分两支：⌘ / Ctrl + 滚轮才缩放，光滚轮是上下平移 ——
+     现在跟时间轴统一成一条口径：**滚轮只管缩放，平移交给拖动**（板面本来就能拖，
+     中键与两指也都能平移）。缩放锚在指针那个点上：指着哪儿就往哪儿长，不是从板心长。 */
   function onWheel(e) {
     if (typeof e.preventDefault === 'function') e.preventDefault();
-    var v = state.view;
+    var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    if (!dy) { return; }
     var cx = canvasPoint(e);
-    if (e.ctrlKey || e.metaKey) {
-      var dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      zoomAt(cx.sx, cx.sy, Math.pow(1.0018, -dy));
-    } else {
-      var dx = e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX;
-      var dyy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      v.x -= dx;
-      v.y -= dyy;
-      scheduleRedraw();
-    }
+    zoomAt(cx.sx, cx.sy, Math.pow(1.0018, -dy));
   }
 
   /* 双指缩放 / 平移（触控） */
@@ -2040,6 +2039,11 @@
       if (state.tipAt) { state.tipAt = null; scheduleRedraw(); }
     });
     canvas.addEventListener('wheel', onWheel, { passive: false });
+    /* 右键归"平移板面"（见 onDown），所以板面上不再弹浏览器菜单 ——
+       菜单一弹就把 pointerup 抢走，拖动会断在半路。这跟时间轴画布是同一条口径。 */
+    canvas.addEventListener('contextmenu', function (e) {
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+    });
     canvas.addEventListener('touchstart', onTouchStart, { passive: false });
     canvas.addEventListener('touchmove', onTouchMove, { passive: false });
     canvas.addEventListener('touchend', onTouchEnd);

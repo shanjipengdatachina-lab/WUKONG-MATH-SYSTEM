@@ -944,17 +944,13 @@
 
   canvas.addEventListener('wheel', function (event) {
     if (insideOverlay(event.target)) return;   // 在浮层里滚轮 = 滚浮层自己的内容
-    if (event.ctrlKey || event.metaKey) {
-      event.preventDefault();
-      var rect = canvas.getBoundingClientRect();
-      zoomAt(event.clientX - rect.left, event.clientY - rect.top,
-        view.k * Math.exp(-event.deltaY * 0.0022));
-      return;
-    }
     event.preventDefault();
-    view.tx -= event.deltaX;
-    view.ty -= event.deltaY;
-    applyView();
+    /* 滚轮 = 放大缩小（用户 2026-09-30："白板和图谱的滚轮也应该设置成放大缩小，
+       而不是现在的上下移动"）。原来要按 ⌘ / Ctrl 才缩放、光滚轮是平移 —— 现在统一：
+       **滚轮只管缩放，平移还是拖画布**（下面 onDragMove 那套没动）。 */
+    var rect = canvas.getBoundingClientRect();
+    zoomAt(event.clientX - rect.left, event.clientY - rect.top,
+      view.k * Math.exp(-event.deltaY * 0.0022));
   }, { passive: false });
 
   function bindZoom(id, factor) {

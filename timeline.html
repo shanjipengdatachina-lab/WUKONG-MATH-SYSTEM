@@ -149,6 +149,18 @@
           <div class="tk-bars-levels" id="tk-bar-levels" role="radiogroup" aria-label="彩色条高度"
                title="彩色条的高度：低 / 中 / 高。条子的高度是屏幕上的高度（不跟着缩放一起长），所以放大以后剖面还是这么高。"></div>
         </div>
+        <!-- 数轴整体大小（用户 2026-09-30："数轴它可以放大，但是数轴本身它大不了……那字都还比较小……
+             加个按钮，哪怕加个那种滑块的按钮"）。
+             与底部那三颗「缩小 / 100% / 放大」是两件事：那三颗改的是**横向**能看多少格（看得更细），
+             这根滑块改的是**轴本身**的大小 —— 轴、刻度、文字、点、彩条一起变大（看得更大）。 -->
+        <div class="tk-pop__row">
+          <span class="tk-pop__label">整体</span>
+          <input type="range" class="tk-pop__range" id="tk-axis-zoom" data-tk-axis-zoom
+                 min="70" max="200" step="5" value="100"
+                 aria-label="数轴整体大小" aria-valuetext="标准"
+                 title="数轴本身放大缩小：轴、刻度、文字、彩条一起变大变小。想「一屏看更多格 / 更少格」请用底部的缩小 / 放大 / 适配。">
+          <span class="tk-pop__value tk-mono" id="tk-axis-zoom-value" data-tk-axis-zoom-value>100%</span>
+        </div>
       </div>
 
       <!-- 缩略条：整条轴压进这一条细杆里，亮着的那一段 = 屏幕上正显示的范围；
@@ -192,7 +204,7 @@
       <button type="button" class="tk-dock__btn" id="tk-grid" aria-pressed="false" data-tk-tip="网格 · 关" aria-label="网格">
         <i data-lucide="grid-3x3"></i>
       </button>
-      <button type="button" class="tk-dock__btn" id="tk-pop-toggle" aria-expanded="false" aria-controls="tk-pop" data-tk-tip="网格与高度" aria-label="网格与高度">
+      <button type="button" class="tk-dock__btn" id="tk-pop-toggle" aria-expanded="false" aria-controls="tk-pop" data-tk-tip="网格与尺寸" aria-label="网格与尺寸">
         <i data-lucide="sliders-horizontal"></i>
       </button>
       <span class="tk-dock__sep" aria-hidden="true"></span>
@@ -510,6 +522,11 @@ button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--
 
 /* 只有文字的筹码（彩色条高度那一行）：长相与网格那三个同一套，只是没有预览块 */
 .tk-bars-levels { display: flex; gap: 6px; }
+/* 「整体」那根滑块：跟弹层里其它两行一样的高度，拖柄走系统色（与缩略条那根同源）。
+   宽度给个下限，弹层本身是内容自适应宽的 —— 不给的话滑块会被压成一条缝。 */
+.tk-pop__range { flex: 1 1 auto; min-width: 150px; height: 18px; accent-color: var(--math-primary); cursor: pointer; }
+.tk-pop__range:focus-visible { outline: 2px solid var(--math-primary); outline-offset: 2px; }
+.tk-pop__value { flex: 0 0 40px; text-align: right; font-size: calc(11.5px * var(--math-fs)); color: var(--math-ink-2); }
 .tk-chip {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 34px;
@@ -578,6 +595,8 @@ button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--
 
 .tk-card__empty { margin: 8px 0 0; font-size: calc(12px * var(--math-fs)); color: var(--math-ink-3); }
 .tk-card__meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+/* 状态徽标就是**这档状态色的文字**（颜色由脚本按状态刷）—— 掌握度那七档的明度
+   是按"压白压黑都看得清"定的，当文字正好；2026-09-30 中途试过的"填色块 + 深字"已撤。 */
 .tk-card__badge { font-size: calc(12.5px * var(--math-fs)); font-weight: 600; }
 .tk-card__mastery { font-size: calc(12.5px * var(--math-fs)); color: var(--math-ink-2); }
 .tk-card__bar { height: 4px; margin-top: 7px; border-radius: 999px; background: var(--math-line); overflow: hidden; }
@@ -586,7 +605,9 @@ button.tk-who__chip:hover { border-color: var(--math-line-strong); color: var(--
 /* 我的标记：一排开关（重点 / 难点 / 待复习）—— 点一下贴上、再点一下摘掉。
    贴上的那颗点亮（底块 + 加粗），颜色仍走它自己那个令牌（与图例、轴上的小图标同一支色）。 */
 .tk-card__marks { margin-top: 12px; }
-.tk-card__marks-row { display: flex; flex-wrap: wrap; gap: 6px; }
+/* 标记**竖着排**（用户 2026-09-30："他不是可以选三个吗？不要横着弄，竖着弄。
+   三个图标竖着弄。"）：一颗一行，读起来是一条竖列，也跟卡片里别的"一行一条"的排版一致。 */
+.tk-card__marks-row { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .tk-mark {
   display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid var(--math-border); border-radius: 6px;
