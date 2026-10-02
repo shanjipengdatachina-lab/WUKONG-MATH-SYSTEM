@@ -127,7 +127,8 @@
   ];
 
   /* 新字段专用的一批散列盐（避开标记那四类用的 0–3） */
-  var TL_SALT = { first: 11, peak: 12, review: 13, examDate: 14, examScore: 15, fix: 16, scope: 17 };
+  var TL_SALT = { first: 11, peak: 12, review: 13, examDate: 14, examScore: 15, fix: 16, scope: 17,
+                  paperN: 18, paperCard: 19, cause: 20, also: 21 };
   var REVIEW_GAP = [7, 21, 45];      /* 第 1 / 2 / 3 次复习各隔多少天 */
 
   /** 一个知识点的学习轨迹。
@@ -186,7 +187,7 @@
    * 3D 那块玻璃板的宽度按**这场实际考到的考点跨度**画，所以范围不同、宽度才不一样。
    * 每道题的得分由"考试那天这个知识点的掌握度"推出来（± 一点起伏），
    * 所以这张卷子是可以对着事件流复算的 —— 3D 的考试切片要的就是这个。
-   * `paper` 里每项：{ index, full, score }，错题（不到 60%）一眼看得出来。
+   * `paper` 里每项：{ index, full, score, card }，错题（不到 60%）一眼看得出来。
    */
   function makeExams(items, records, seed0, today) {
     var groups = [];
@@ -206,14 +207,78 @@
       for (var j = grp.from; j < grp.to; j += 1) { if (!records[j].learnedAt) { return false; } }
       return true;
     }
-    /** 一场卷子：把 [from, to) 这几格按"考试那天的掌握度"打上分 */
+    /** 一场卷子：把 [from, to) 这几格按"考试那天的掌握度"打上分。
+        用户 2026-10-01："某个考点可能会对应两个题或三个题。它对应的是一样的吧？颜色也一样吧？
+        现在只出来一条线，只连接展示了一条，只对应了一道题，其实不对吧？你如果是三个题，
+        一个考点考了三次，有三道题的话，它应该出这三道题全都会出来。"
+        —— 所以**一格可能出 1~3 道题**（以前一格死死一道，点考点永远只连得出一根线）。
+        同一个考点的题**挨着排**，各自带一点起伏，所以"同一个考点、一道对一道错"也看得见。
+        `paper` 里每项：{ index, full, score, card }，`index` 还是**考点格号**（可能重复）。
+
+        `card` = **这道题考的是这个知识点里的哪一块**（`rec.cards` 的下标，0 起）。
+         用户 2026-10-01："同样的一个知识点，比如绝对值这个知识点，第七题是因为概念不清，
+         第八题是因为计算错了数……只有这样才能分清楚。" —— 光有"哪个考点错了"不够，
+         得知道"错在这个考点的哪一块"。所以每一道题都落到它考的那一块上
+         （3D 的柱子过门槛会按卡片权重切成几块，切片上的点就按 `card` 落到对应的块里）。
+         走**独立散列流**（`TL_SALT.paperCard`），不碰上面那两个已有字段的取值。
+
+         **`also`** = 这一题**还兼考了哪些考点**（用户 2026-10-01："因为它也可能会涵盖几个知识点"）。
+         一道应用题可能同时考「分数运算」和「单位换算」，所以主考点（`index`）之外再挂一个。
+
+         **`causes`** = 这道题**错在哪几条上**，只有错题才有（对的题是 `null`）。
+         数组 —— 这就是用户要的"复合叠加"：可以错在两个知识点上，也可以在同一块上同时"没懂 + 算错"。
+         每一条 = `{ k, card, key, by, acc }`：哪个考点 · 哪一块 · 什么错因 · 凭什么判成它 · 判据那个数。
+         判定走 `causeOf()`（纯函数，不掷骰子），所以块的状态、这题的对错、给的原因三者互相能解释。 */
     function paperOver(from, to, at) {
       var paper = [];
-      for (var q = from; q < to; q += 1) {
+      var q;
+      var r;
+      for (q = from; q < to; q += 1) {
         var mAt = masteryAt(records[q].events, at);
-        var noise = (markRoll(seed0, q, TL_SALT.examScore) * 2 - 1) * 12;
-        var p = Math.max(0, Math.min(1, (mAt + noise) / 100));
-        paper.push({ index: q, full: 10, score: Math.round(p * 10) });
+        var roll = markRoll(seed0, q, TL_SALT.paperN);
+        var n = roll < 0.58 ? 1 : (roll < 0.88 ? 2 : 3);      /* 1 / 2 / 3 道，平均约 1.5 */
+        var cardsN = (records[q].cards && records[q].cards.length) || 0;
+        for (r = 0; r < n; r += 1) {
+          var noise = (markRoll(seed0, q * 31 + r, TL_SALT.examScore) * 2 - 1) * 12;
+          var p = Math.max(0, Math.min(1, (mAt + noise) / 100));
+          var card = cardsN
+            ? Math.floor(markRoll(seed0, q * 31 + r, TL_SALT.paperCard) * cardsN)
+            : 0;
+          if (card >= cardsN) { card = cardsN - 1; }
+          paper.push({ index: q, full: 10, score: Math.round(p * 10), card: card, also: [] });
+        }
+      }
+      /* 第二遍：① 补"兼考考点"；② 给**错题**判错因。
+         分两遍是因为"没做完"（`late`）要看这道题在**整张卷子里的位置**，得先知道总题数。 */
+      var total = paper.length;
+      var lateFrom = Math.max(0, total - Math.max(1, Math.round(total * 0.12)));
+      for (var i = 0; i < total; i += 1) {
+        var item = paper[i];
+        var late = total >= 6 && i >= lateFrom;
+        /* 兼考考点：离主考点相邻的那一格（同一次考试的范围内），约四分之一的题有 */
+        if (markRoll(seed0, i, TL_SALT.also) < 0.26) {
+          var nb = item.index + 1 < to ? item.index + 1
+                 : (item.index - 1 >= from ? item.index - 1 : item.index);
+          if (nb !== item.index) { item.also = [nb]; }
+        }
+        var bad = item.score * 5 < item.full * 3;
+        if (!bad) { item.causes = null; continue; }
+        var list = [];
+        var ks = [item.index].concat(item.also);
+        for (var m = 0; m < ks.length; m += 1) {
+          var kk = ks[m];
+          var recK = records[kk];
+          var cardsK = (recK && recK.cards) || [];
+          var cardK = item.card;
+          if (kk !== item.index && cardsK.length) {     /* 兼考考点：它考的是哪一块也照同一把尺子挑 */
+            cardK = Math.floor(markRoll(seed0, kk * 31 + i, TL_SALT.paperCard) * cardsK.length);
+            if (cardK >= cardsK.length) { cardK = cardsK.length - 1; }
+          }
+          var c = causeOf(recK, cardK, at, item.score, item.full, late,
+                          markRoll(seed0, kk * 31 + i, TL_SALT.cause));
+          if (c) { c.k = kk; list.push(c); }
+        }
+        item.causes = list.length ? list : null;
       }
       return paper;
     }
@@ -369,6 +434,93 @@
   ];
   /* 一张知识点的卡片大致按这个次序排：先概念公式，再例题变式，最后错题复习 */
   var CARD_FLOW = ['概念', '概念', '公式', '例题', '公式', '例题', '例题', '变式', '变式', '错题', '复习'];
+
+  /* ==========================================================================
+   * 错因（用户 2026-10-01 定的口径）—— **只有错题才有**
+   * --------------------------------------------------------------------------
+   * 用户的诉求："有了错题我们需要纠结这个知识点，是概念不会，还是公式不会？肯定有个错因，分个七八种吧。
+   * 那七八种里面，他还要叠加这个知识点……而且里面这东西是复合叠加的。既然要做就要做得力度深一点。"
+   *
+   * 所以是**三轴**，别混：
+   *   ① 哪个知识点（`paper[].index` 主考点 + `paper[].also` 兼考考点，一道题可能考几个）；
+   *   ② 错在这个知识点的**哪个方面**（= 那块卡片：概念 / 公式 / 例题 / 变式 / 错题 / 复习）；
+   *   ③ 那个方面是**怎么错的**（下表）。
+   * 一条归因 = `{ k, card, key, by, acc }`，`paper[].causes` 是**数组** —— 这就是"复合叠加"。
+   *
+   * **`group` 这一刀（不会 / 失误）比种类多少更重要**：
+   *   不会 → 得回去补；失误 → 提醒就行。图与报告都靠它分流。
+   * **"注意力不集中""状态不好"这一类不进表** —— 那是从这张表**统计出来**的场级结论，
+   * 不是某一道题的原因（那一步还没做）。
+   * 词表只有这一份，2D / 3D / 面板 / 以后的报告页都从这里取。 */
+  var CAUSES = [
+    { key: 'concept',  name: '概念没懂',     group: 'unknown' },
+    { key: 'formula',  name: '公式记错',     group: 'unknown' },
+    { key: 'method',   name: '方法想不出来', group: 'unknown' },
+    { key: 'calc',     name: '算错',         group: 'slip' },
+    { key: 'read',     name: '审题不清',     group: 'slip' },
+    { key: 'careless', name: '粗心漏写',     group: 'slip' },
+    { key: 'time',     name: '没做完',       group: 'slip' }
+  ];
+  var CAUSE_GROUP = { unknown: '不会', slip: '失误' };
+
+  /* `by` = **凭什么判成这个原因**（判定依据）。留着它，界面上就能写出
+     "因为「概念」这块正确率只有 38%" —— 数据要能解释自己，不然报告页没法写。 */
+  var CAUSE_BY = {
+    unlearned: '当时还没学到这个考点',
+    'block-low': '这一块本来就没学好',
+    'block-ok': '这一块学得挺好、却做了一半就错了',
+    late: '卷面靠后的题，没做完',
+    nearly: '这一块学得挺好、只差最后一点',
+    blank: '这一块学得挺好、却几乎整道错'
+  };
+
+  /** 这一块的类型 → "不会组"里对应的那个错因（块的 acc 低时用） */
+  function gapCauseOf(typeName) {
+    if (typeName === '概念') { return 'concept'; }
+    if (typeName === '公式') { return 'formula'; }
+    return 'method';                       /* 例题 / 变式 / 错题 / 复习 → 方法想不出来 */
+  }
+
+  /** 给**一道错题**判它在某一个考点上的错因（纯函数，不掷骰子）。
+   *  @param rec    那个考点的记录（要它的 `cards` 与 `learnedAt`）
+   *  @param cardIdx 这题考的是第几块
+   *  @param at     考试那天（毫秒）
+   *  @param score/full 这道题的得分
+   *  @param late   是不是卷面靠后的题（"没做完"要它）
+   *  @param tie    0~1 的确定性散列值 —— 只在 `acc` 卡在 60 边界上时用来分边
+   *  判据只用**已经躺在数据里的两个数**（那块的 acc、这题的得分），所以块的状态、
+   *  这题的对错、给的原因，三者互相能解释；不会出现"这块 90% 却判成概念没懂"这种一眼假的数据。 */
+  function causeOf(rec, cardIdx, at, score, full, late, tie) {
+    var cards = (rec && rec.cards) || [];
+    var card = cards[cardIdx];
+    if (!card) { return null; }
+    var learned = rec.learnedAt ? parseDay(rec.learnedAt) : 0;
+    /* ① 考到的考点当时**还没学到** —— 谈不上"哪一块没学好"，就是没学过 */
+    if (learned && learned > at) {
+      return { card: cardIdx, key: 'concept', by: 'unlearned', acc: 0 };
+    }
+    var acc = card.acc;
+    /* ② acc 卡在 60 上下那一带：用确定性散列分边（保证每次进页面完全一样） */
+    var lowSide;
+    if (acc < 55) { lowSide = true; }
+    else if (acc >= 65) { lowSide = false; }
+    else { lowSide = tie < 0.5; }
+    if (lowSide) {
+      /* 这块**本来就没学好** → 错得名副其实，按块的类型给"不会组" */
+      return { card: cardIdx, key: gapCauseOf(card.type), by: 'block-low', acc: acc };
+    }
+    /* ③ 这块**学得挺好却错了** → 不是不会，是失误组。
+       失误里再分三种，**只看得分**（满分 10 分时实测分布是 5分:43 / 4分:27 / ≤3分:6）：
+         · 差一点就过线（≥ 一半）→ **粗心漏写**（漏单位 / 抄错数 / 最后一步没做完）
+         · 做了一半（≥ 35%）    → **算错**（思路对，算式本身错了）
+         · 差得多（< 35%）      → **审题不清**（这块明明学得挺好却几乎整道错，多半是没看懂题）
+       第一版这里只写了"算错"一条，结果词表里的"粗心漏写""审题不清"**永远出不来** ——
+       现在按得分分三档，七种错因才都真的用得上（tl-check 有一条守着"不许有死条目"）。 */
+    if (late) { return { card: cardIdx, key: 'time', by: 'late', acc: acc }; }
+    if (score * 2 >= full) { return { card: cardIdx, key: 'careless', by: 'nearly', acc: acc }; }
+    if (score * 20 >= full * 7) { return { card: cardIdx, key: 'calc', by: 'block-ok', acc: acc }; }
+    return { card: cardIdx, key: 'read', by: 'blank', acc: acc };
+  }
 
   function stateOf(mastery) {
     for (var i = 0; i < STATUS.length; i += 1) {
@@ -653,6 +805,11 @@
     status: STATUS,
     factors: FACTORS,
     cardTypes: CARD_TYPES,
+    /* 错因词表（用户 2026-10-01）—— **全站共用这一份**：2D / 3D / 面板 / 以后的报告页都从这里取，
+       别各自再写一套。`causeBys` 是"凭什么判成它"的那几个说法，界面上要写给人看。 */
+    causes: CAUSES,
+    causeGroups: CAUSE_GROUP,
+    causeBys: CAUSE_BY,
     marks: MARKS,
     ownMarks: ownMarks,
     students: DEMO_STUDENTS,

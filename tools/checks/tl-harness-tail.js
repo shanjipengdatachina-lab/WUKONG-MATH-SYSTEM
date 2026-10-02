@@ -647,6 +647,75 @@ var examTraceOk = plan.exams.every(function (e) {
   });
 });
 assert(examTraceOk, '考过的每一格，轨迹里都有一笔"考试"（切片能落在点上，共 ' + examSlots + ' 题）');
+
+/* ------------------------------------------------------------ *
+ * 2b. 错因（用户 2026-10-01）—— 三轴归因 + **自洽性**
+ *     用户："肯定有个错因，分个七八种吧……那七八种里面，他还要叠加这个知识点……
+ *     而且里面这东西是复合叠加的。既然要做就要做得力度深一点。"
+ *     这一组里最值钱的是最后两条"自洽性"：判成"这块没学好"的，那块 acc 必须真的低 ——
+ *     不然数据一眼就假，报告页也就没法写。
+ * ------------------------------------------------------------ */
+var CAUSE_LIST = L3.causes || [];
+var CAUSE_KEYS = {};
+CAUSE_LIST.forEach(function (c) { CAUSE_KEYS[c.key] = c; });
+assert(CAUSE_LIST.length === 7,
+  '错因词表七种（' + CAUSE_LIST.map(function (c) { return c.name; }).join(' / ') + '）');
+var gUnknown = CAUSE_LIST.filter(function (c) { return c.group === 'unknown'; }).length;
+var gSlip = CAUSE_LIST.filter(function (c) { return c.group === 'slip'; }).length;
+assert(gUnknown >= 3 && gSlip >= 3,
+  '"不会 / 失误"两组都成组（不会 ' + gUnknown + ' 种、失误 ' + gSlip + ' 种）—— 这一刀比种类多少更重要');
+assert(!CAUSE_LIST.some(function (c) { return /注意力|状态不好|发挥失常/.test(c.name); }),
+  '词表里没有"注意力不集中"这类**场级结论**（那是从错因统计出来的，不是某一道题的原因）');
+assert(!!L3.causeBys && Object.keys(L3.causeBys).length >= 4,
+  '每条错因都带一句"凭什么判成它"（causeBys ' + Object.keys(L3.causeBys || {}).length + ' 条）');
+
+var badItems = [];
+plan.exams.forEach(function (e) {
+  e.paper.forEach(function (p) { if (p.score * 5 < p.full * 3) { badItems.push(p); } });
+});
+var causeItems = [];
+badItems.forEach(function (p) { causeItems = causeItems.concat(p.causes || []); });
+assert(badItems.length > 0 && badItems.every(function (p) { return p.causes && p.causes.length; }),
+  '每一道错题都有错因（共 ' + badItems.length + ' 道错题，道道有）');
+assert(plan.exams.every(function (e) {
+  return e.paper.every(function (p) { return (p.score * 5 < p.full * 3) || p.causes === null; });
+}), '对的题没有错因（`causes` 为 null —— 错因只挂在错题上）');
+assert(causeItems.every(function (c) { return !!CAUSE_KEYS[c.key]; }),
+  '错因的 key 都在词表里（' + Object.keys(CAUSE_KEYS).length + ' 个 key）');
+assert(causeItems.every(function (c) {
+  return typeof c.k === 'number' && c.k >= 0 && c.k < recD.length;
+}), '错因指向的考点都在范围内');
+assert(causeItems.every(function (c) {
+  var rec = recD[c.k];
+  return rec && rec.cards && c.card >= 0 && c.card < rec.cards.length;
+}), '错因指的"方面"（哪一块）都在那个考点的卡片里');
+assert(causeItems.every(function (c) { return !!L3.causeBys[c.by] && typeof c.acc === 'number'; }),
+  '每一条错因都带判据（by + 那个 acc）');
+/* **自洽性**：判据与给的原因必须对得上 */
+assert(causeItems.every(function (c) { return c.by !== 'block-low' || c.acc < 65; }),
+  '判成"这一块本来就没学好"的，那块正确率确实低（全部 < 65%）');
+assert(causeItems.every(function (c) {
+  return !/^(block-ok|nearly|late|blank)$/.test(c.by) || c.acc >= 55;
+}), '判成"这一块学得挺好、却错了"（失误组）的，那块正确率确实不低（全部 ≥ 55%）');
+/* **七种错因都得真的用得上** —— 第一版里"粗心漏写""审题不清"两条**永远出不来**
+   （失误分支只写了"算错"一条），词表写着七种、实际只出五种。这条专治"死条目"。 */
+var hitKeys = {};
+causeItems.forEach(function (c) { hitKeys[c.key] = 1; });
+var deadCauses = CAUSE_LIST.filter(function (c) { return !hitKeys[c.key]; });
+assert(deadCauses.length === 0,
+  '七种错因都真的用得上（没有"写了永远出不来"的死条目）' +
+  (deadCauses.length ? '，缺：' + deadCauses.map(function (c) { return c.name; }).join('、') : ''));
+/* **复合叠加**：真有"一道错题错在两条以上"的 */
+var multiCause = badItems.filter(function (p) { return (p.causes || []).length > 1; });
+assert(multiCause.length > 0,
+  '真的出现了"复合叠加"的错题（' + multiCause.length + ' 道错在两条以上）');
+/* **兼考考点**：真有"一道题考几个知识点"的，且兼考的那个就在这一次考试的范围内 */
+assert(plan.exams.every(function (e) {
+  return e.paper.every(function (p) {
+    return (p.also || []).every(function (k) { return k >= e.from && k < e.to && k !== p.index; });
+  });
+}) && plan.exams.some(function (e) { return e.paper.some(function (p) { return (p.also || []).length; }); }),
+  '兼考考点接上了（一题可能考几个知识点，且都在这一场范围内）');
 var plannedN = recD.filter(function (r) { return !!r.plannedAt; }).length;
 assert(plannedN > 0 && /^20[0-9]{2}-/.test(recD[0].plannedAt),
   'K12 日历接上了（' + plannedN + ' 格有计划日，第一格 ' + recD[0].plannedAt + '）');

@@ -547,6 +547,50 @@ issues << '考试没有分档（单元测 / 期中 / 期末要轮着来，不然
 issues << '卷子里没记这场考了哪一段（3D 的板宽要按 from / to 算，不能按整册边界）' unless
   data.include?('from: from, to: to') && data.include?('scope: scope.key') &&
   data.include?('TL_SALT.scope')
+# **一个考点可能考 2~3 道题**（用户 2026-10-01："某个考点可能会对应两个题或三个题……
+# 你如果是三个题，一个考点考了三次，有三道题的话，它应该出这三道题全都会出来"）。
+# 原来一格死死一道，点考点永远只连得出一根斜虚线 —— 所以这里盯住"一格出 1~3 道"。
+issues << '卷面还是"一个考点只出一道题"（点考点只连得出一根线）' unless
+  data.include?('var n = roll < 0.58 ? 1 : (roll < 0.88 ? 2 : 3);') &&
+  data.include?('paperN: 18')
+# **每道题都要标出"它考的是这个知识点里的哪一块"**（用户 2026-10-01："同样的一个知识点，
+# 比如绝对值这个知识点，第七题是因为概念不清，第八题是因为计算错了数……只有这样才能分清楚"）。
+# 所以卷面每一项除了 index / full / score，还要有 `card`（`rec.cards` 的下标），
+# 而且必须走**独立散列流**（`TL_SALT.paperCard`）—— 不许蹭 examScore 那一路，否则老数据的分数会跟着变。
+issues << '卷面没标"这道题考的是哪一块"（`paper` 缺 card 字段）' unless
+  data.include?('card: card') && data.include?('TL_SALT.paperCard') &&
+  data.include?('var cardsN = (records[q].cards && records[q].cards.length) || 0;')
+issues << '卷面那道题的块号没夹在卡片数以内（会算出越界的块）' unless
+  data.include?('if (card >= cardsN) { card = cardsN - 1; }')
+# ---------- 错因（用户 2026-10-01）----------
+# "肯定有个错因，分个七八种吧……那七八种里面，他还要叠加这个知识点，是概念不会，还是公式不会，
+#  然后它里面这东西是复合叠加的。既然要做就要做得力度深一点。"
+# 三轴：**哪个知识点 · 这个知识点的哪个方面（哪一块）· 那方面是怎么错的**。
+issues << '错因词表没了（应在 timeline-data.js 里，且全站只有这一份）' unless
+  data.include?('var CAUSES = [') && data.include?('causes: CAUSES,') &&
+  data.include?('causeBys: CAUSE_BY,') && data.include?('causeGroups: CAUSE_GROUP,')
+causes_block = data[/var CAUSES = \[([\s\S]*?)\];/, 1].to_s
+issues << '错因不是七种' unless causes_block.scan(/\{ key: '/).length == 7
+# **"不会 / 失误"这一刀比种类多少更重要**：不会得回去补、失误提醒就行
+issues << '错因没分"不会 / 失误"两组' unless
+  causes_block.scan(/group: 'unknown'/).length == 3 && causes_block.scan(/group: 'slip'/).length == 4
+issues << '错因词表里混进了"注意力不集中"这类场级结论（那是统计出来的，不是某一道题的原因）' if
+  causes_block =~ /注意力|状态不好|发挥失常/
+issues << '错因没带"凭什么判成它"（应有一条 causeBys 说明判据）' unless
+  data.include?('var CAUSE_BY = {') && data.include?("'block-low': ") && data.include?("'block-ok': ")
+# 判定走**纯函数**，不掷骰子 —— 块的状态、这题的对错、给的原因，三者必须互相能解释
+issues << '错因不是从已有数据推的（应走 causeOf() 纯函数）' unless
+  data.include?('function causeOf(rec, cardIdx, at, score, full, late, tie)') &&
+  data.include?('item.causes = list.length ? list : null;')
+# **只有错题才有错因**
+issues << '对的题也挂了错因（错因只挂在错题上）' unless
+  data.include?('if (!bad) { item.causes = null; continue; }')
+# **兼考考点**（用户："因为它也可能会涵盖几个知识点"）—— 单独开 `also`，不去动 index
+issues << '卷面没标"这一题还兼考了哪些考点"（`paper` 缺 also）' unless
+  data.include?('also: []') && data.include?('item.also = [nb];') && data.include?('TL_SALT.also')
+# 反向：判定用的散列流必须各自独立，不许蹭 examScore / paperCard（蹭了老字段取值会跟着变）
+issues << '错因 / 兼考的判定蹭了老散列流（应各自独立：TL_SALT.cause / TL_SALT.also）' unless
+  data.include?('cause: 20, also: 21')
 # 还要有**最长的那种**：上下两册都学完就来一场跨册的"学年考"
 # （用户 2026-09-30："这个长的考试，就涵盖范围长的考试，这样我就可以看到长的是什么样子"）。
 issues << '没有跨册的"学年考"（最长的那种面板 —— 上下两册连着考）' unless

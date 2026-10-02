@@ -300,6 +300,34 @@ end
 issues << "色彩方案按钮没有 aria-pressed（读屏看不出当前是哪套，实际 #{set.scan(/data-wk-scheme="\w+" aria-pressed=/).size} 个）" unless
   set.scan(/data-wk-scheme="\w+" aria-pressed=/).size == SCHEMES.size
 
+# ---------- 6e. 面板透明度（用户 2026-10-01）----------
+# "无论是白板还是数轴，都可以在设置里调整透明度……默认设为 90%。"
+# 三件事一起盯：① 设置页有这颗滑块；② display.js 把它落成 `--math-panel-a`；
+# ③ 三包配色各自有 `--math-panel` / `--math-panel-bg`，且浮窗真的改用它（不是还写 popover）。
+issues << '设置页缺「面板透明度」那颗滑块（#set-panel-range）' unless
+  set.include?('id="set-panel-range"') && set.include?('id="set-panel-out"')
+issues << '面板透明度滑块没给默认值 90 / 范围 40–100' unless
+  set =~ /id="set-panel-range"[^>]*min="40"[^>]*max="100"[^>]*value="90"/
+issues << 'display.js 没有把面板透明度落成 --math-panel-a（tokens.css 拼不出半透明的底）' unless
+  disp.include?("setProperty('--math-panel-a'") && disp.include?('PANEL_DEFAULT = 90')
+issues << '面板透明度没有跟着广播/落盘（改完别的页面不知道）' unless
+  disp.include?("keys: { theme: THEME_KEY, fs: FS_KEY, accent: ACCENT_KEY, scheme: SCHEME_KEY, panel: PANEL_KEY }") &&
+  disp.include?('window.localStorage.setItem(PANEL_KEY, String(next.panel));')
+issues << ':root 没有 --math-panel-a 的默认值与两个面板底色令牌' unless
+  block_of(tokens, ':root').include?('--math-panel-a: .9;') &&
+  block_of(tokens, ':root').include?('--math-panel:') &&
+  block_of(tokens, ':root').include?('--math-panel-bg:')
+%w[mid dark].each do |th|
+  blk = block_of(tokens, %(html[data-wk-theme="#{th}"]))
+  issues << "#{th} 那包没重定义面板底色令牌（浮窗在那一包下会退回亮色）" unless
+    blk.include?('--math-panel:') && blk.include?('--math-panel-bg:')
+end
+# 浮窗真的改用面板令牌了（白板的题库 / 分析 / 菜单 / 设置浮窗 + 数轴的分析与考点浮窗）。
+{ 'whiteboard.html' => 4, 'timeline-3d.html' => 1 }.each do |file, least|
+  n = read(file).scan(/background:\s*var\(--math-panel(?:-bg)?\)/).size
+  issues << "#{file} 里只有 #{n} 处浮窗底走 --math-panel（应 ≥ #{least}：白板的题库 / 分析 / 菜单 / 设置浮窗、数轴的两个浮窗）" if n < least
+end
+
 # 每一套的选择器：全站那条 `html[…]` + 设置页预览那条 `html […]`（**带空格那个前缀不能省**：
 # 不带就只有 (0,1,0) 的特异度，暗色主题下会被 `html[data-wk-theme="dark"]` 压住，
 # 于是"暗色下预览出来的是亮色那一套"）。默认那套的预览走 `:root, [data-wk-scheme="green"]`。

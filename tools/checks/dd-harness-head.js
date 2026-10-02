@@ -57,11 +57,39 @@ var schemeChips = chipSet('data-wk-scheme', ['green', 'blue', 'violet', 'amber',
 
 var __html = {
   _attrs: {},
+  /* <html> 的 style：面板透明度是**一个数**（--math-panel-a），不是属性，
+     所以这里得有一份最小的 setProperty/removeProperty 桩，才能断言"真的写下去了"。 */
+  style: {
+    _props: {},
+    setProperty: function (k, v) { this._props[k] = String(v); },
+    removeProperty: function (k) { delete this._props[k]; },
+    getPropertyValue: function (k) { return this._props[k] === undefined ? '' : this._props[k]; }
+  },
   setAttribute: function (k, v) { this._attrs[k] = String(v); },
   removeAttribute: function (k) { delete this._attrs[k]; },
   getAttribute: function (k) { return this._attrs[k] === undefined ? null : this._attrs[k]; },
   hasAttribute: function (k) { return this._attrs[k] !== undefined; }
 };
+
+/* 面板透明度那颗滑块 + 旁边的百分数（原生 <input type="range"> 的最小桩：
+   只需要 value 读得到、input 事件点得动）。 */
+function mkRange(value) {
+  return {
+    value: String(value),
+    _attrs: {},
+    _input: null,
+    getAttribute: function (k) { return this._attrs[k] === undefined ? null : this._attrs[k]; },
+    setAttribute: function (k, v) { this._attrs[k] = String(v); },
+    addEventListener: function (t, fn) { if (t === 'input') this._input = fn; },
+    /* 模拟拖动：改 value 再把 input 事件派出去 */
+    drag: function (v) { this.value = String(v); if (this._input) this._input(); }
+  };
+}
+function mkOut() {
+  return { textContent: '', setAttribute: function () { } };
+}
+var panelRange = mkRange(90);
+var panelOut = mkOut();
 
 var document = {
   documentElement: __html,
@@ -74,6 +102,12 @@ var document = {
     if (sel === '#set-accent [data-wk-accent]') return accentChips;
     if (sel === '#set-scheme [data-wk-scheme]') return schemeChips;
     return [];
+  },
+  /* display.js 只挑两个"单个元素"：#set-panel-range / #set-panel-out */
+  querySelector: function (sel) {
+    if (sel === '#set-panel-range') return panelRange;
+    if (sel === '#set-panel-out') return panelOut;
+    return null;
   }
 };
 

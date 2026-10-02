@@ -88,53 +88,173 @@
       <canvas data-t3-canvas aria-label="知识时间轴 3D 视图，可拖动旋转"></canvas>
     </div>
 
-    <!-- 左上角：这一轴是谁的 + 读数（划过哪一格就读哪一格） -->
-    <div class="t3-left">
-      <div class="t3-who" data-t3-who role="note"></div>
-      <div class="t3-readout" aria-live="polite">
-        <div class="t3-readout__now" data-t3-now></div>
-        <div class="t3-readout__sub" data-t3-sub></div>
-      </div>
-      <div class="t3-exam" data-t3-exam hidden></div>
-    </div>
+    <!-- 2026-10-01：那条"考试切片选择器"（右侧那颗按钮 + 它左边那一摞"楼层"）**整条撤掉** ——
+         用户："考试切面选择器按钮和它左边的选择切片 删除"。
+         要挑某一场考试，走**底部时间条上方那排小圆点**（点一下 = 选中那一场），
+         或者在场景里直接点那块玻璃板。 -->
+
+    <!-- 左上角那块读数（"当前 / 划过 某某 · 多少"）整块撤掉（用户 2026-09-30："现在左上角出的
+         那些标题……都给去掉就行。原因很简单：我用鼠标滑动的这些东西都会出现，现在重复的"）——
+         划过时的信息现在只在**划过小卡**里出一次，不再两处重复。 -->
 
     <!-- 图例 2026-09-30 先撤掉（用户："先去掉……我们一个个的来做"）——
          里面的东西会一个一个重新定，定完再决定要不要有个说明条回到这里。 -->
 
     <!-- 帮助：手势与小抄 -->
     <div class="t3-help" data-t3-help hidden>
-      <div class="t3-help__row">X 轴 = 知识序列（一年级 → 六年级）· Y 轴 = 综合难度（1–5 档）· Z 轴 = 学习时间（底部那条时间条）</div>
-      <div class="t3-help__row">**右侧那排**是难度层的五个档：基础层（绿）· 概念层（蓝）· 应用层（黄）· 变化层（橙）· 综合层（红）—— 点名字就开 / 关那一层</div>
+      <div class="t3-help__row">X 轴 = 知识序列（左端是早学的、右端是晚学的，**轴上不写字**）· Y 轴 = 综合难度（1–5 档）· Z 轴 = 学习时间（底部那条时间条）</div>
+      <div class="t3-help__row">**右侧那一竖排**是**唯一不会被收走**的一排（「清爽模式」收左边与底下，不收它）：**回到总轴**（松开钉住的那一场 / 点开的考点 / 点中的题，视角铺满整根轴 —— 角度与三根轴的拉伸都留着；钉着某场时提示是「回到总轴」，已经在总轴上时是「已经在总轴」）· **难度层**（点开在**边上**弹出那五档：基础层（绿）· 概念层（蓝）· 应用层（黄）· 变化层（橙）· 综合层（红）—— 勾哪几档就画哪几层）· **考试分析**（先在图上点住一块玻璃板，再点它 → 左边弹出那一块；再点一下收起）· **清爽模式**（把左侧导航与底部工具条 / 时间条滑走，只看场景；再点一下恢复）</div>
+      <div class="t3-help__row">**底部时间条上那排小圆点** = 考试日历：一个点 = 一场考试，**压在时间条那条线上**、摆在它那一天的位置（**拖动时间条时会一场一场跟着冒出来**，跟场景里那些玻璃板同一把尺子）；两个点挨得太近（还有同一天考两场的）会把其中一个往上挪一点点。**点一下那个点就选中那一场**，当前钉住的那场点是金色的；**鼠标划过去，场景里对应那块切片会亮一下**</div>
       <div class="t3-help__row">**拖动底部时间条**：柱子那堵墙在时间里滑、颜色按那一天算，滑过哪一场的日子，那一块考试切片才冒出来</div>
-      <div class="t3-help__row">一块玻璃板 = **一次考试**：点住它 → 板上考点用曲线连到对应的柱子、底部排出一串考点点（**颜色 = 难度档、红圈 = 做错**），其余柱子灰显；旋转焦点也跟着搬到这一场</div>
-      <div class="t3-help__row">拖动 = 转视角（**不限角度**）· Shift 拖动 / 右键拖动 = 平移 · 滚轮 = 放大缩小 · 平面那一档拖动就是平移</div>
+      <div class="t3-help__row">一块玻璃板 = **一次考试**：板上按难度切出 1–5 五条刻度；**划到板上某个考点**时光标是小圆圈、那个点被圈住并写出「编号 · 名字」（红色 = 这场做错了）。**点住这块板** → 只做两件事：相机**聚焦到这一场**（缩放收敛、角度转到**俯视**；再点一下松开 —— **松开只是把钉子放开，视角原样留着**）、其余柱子灰显 —— **不弹任何浮窗**（在**总轴上**时板里的那些考点点是**不参与点击**的 —— 那么小，优先让你点到整块板；这一场钉住之后，板上的点才是主角。要看分析去右侧点「考试分析」）。**进了单个考试之后，只有右侧那颗「回到总轴」能把视角送回整根轴** —— 画布上点什么都不会把你踢出去；同时板上考点用曲线连到对应柱子，柱墙底**往场景里面**排出一排**题**（一个点 = 卷面上的一道题，整排长度 = 这块切片宽度的 3.3 倍；每个点从它在轴上的柱脚扯一条引线过来，**题号只标做错的那几道**、用虚线牵出去）。**点某一道题**（点那个点，或者点它那行「第 N 题」的字都行）→ 弹出**这个考点**的面板（面板里列着这一场考到的那几道题，点中的那道在里面也标着），画布上**只亮这一道**；**点板上的考点点 / 柱顶** → 才是"点知识点"，它那 2~3 道题一起亮。**点空白** = **取消选择**（选中的那个点 · 点开的考点 · 点中的那道题 · 钉住的这一场，一起放开；两个浮窗收起 —— **镜头不动**，你自己调好的角度和缩放都留着；要回整根轴，点右边那颗「回到总轴」）。钉住某一场时，**时间轴那根棱**上"这场考试那天"的位置会画一小道刻度 + 一个实心点，并从切片底边拉一条虚线指过去（**不再在轴上写年月日** —— 那行字跟底部时间条自己的日期挤在一起太糊；要哪一天看时间条那行）</div>
+      <div class="t3-help__row">左边那块浮窗是**两个页签**：**分析**（这一场考了哪些考点，每行写着**这一场考到第几题** · 正确率 · 小结）/ **试卷**（复刻这张卷子的每一道题：第几题 · 考点 · 难度 · 满分 / 得分 · 对错，存数据不存照片）—— 贴左上角、抓标题栏可以拖走、正文整块滚。**点其中某一道题** → 图上那道题和它对应的知识点**一起高亮**；**点某个考点** → 从这根**柱子斜着**拉几根虚线，连到这一场里它考到的那几道**题**，那些题点一起亮、并套上圈</div>
+      <div class="t3-help__row">底部那三颗是数据图层（各开各关）：**学习进度** 和 **成绩变化** 是**并排的两块图板**（横轴都是时间；左边那块纵轴 = 累计完成的格数，实线 = 实际 / 虚线 = 计划；右边那块纵轴 = 每场得分率，点一下那个点就钉住那一场）· **投入练习**（每两周的新题 / 复做题量，还在地面左端那串柱上）</div>
+      <div class="t3-help__row">**三根轴可以各自缩放**：把光标移到**某一根轴**上（那根轴会亮起来、字变"缩放"），滚轮就**只拉长 / 压短这一根** —— 时间轴拉长了，6 年就不会挤成一团；X 轴（知识）、Y 轴（难度）同理。光标**底下的那一格**会钉住不动、两边展开。拉歪了点底部工具条上那颗**「适配」**（就在 − / ＋ 旁边）：没选中东西 = 整根轴回画面；钉住某一场 = 适配这一场；点开着某个考点 = 适配这个考点那一段</div>
+      <div class="t3-help__row">**划到东西**：鼠标底下那一个点会套一个**白圈**，同时"学习时间"那条时间条的**上方**浮出一行字 —— 是**哪一道题**（`第 18 题 · 考的是「…」· 8 / 10 · 错`），或者哪个**考点**、哪一场**考试**。**点这一行** = 打开这个考点的面板，把那道题一起高亮</div>
+      <div class="t3-help__row">拖动 = 转视角（**不限角度**）· Shift 拖动 / 右键拖动 = 平移 · 滚轮 = 放大缩小（压在轴上 = 只缩那一根轴）· 平面那一档拖动就是平移</div>
       <a class="t3-help__link" href="timeline.html">回到平面时间轴 →</a>
     </div>
 
-    <!-- 划过就浮现的小卡（照参照原型那个 hover 气泡：名字 + 编号 · 难度 · 状态 + 考到哪几场） -->
-    <div class="t3-hover" data-t3-hover role="status" aria-live="off"></div>
+    <!-- 划过就浮现的一行提示（用户 2026-10-01："这个提示不要太厚，可以直接就是一排字……
+         放在学习时间的上方"＋"如果这个 hover 出现的提示在学习时间这个上方出现的话，那我们
+         右上角那个就可以直接删掉了"）—— 右上角那张卡已撤，信息只在这一行出。
+         一行字，点一下 = 打开它对应的那块考点面板、并把这一道题一起高亮。 -->
+    <button type="button" class="t3-hint" data-t3-hint hidden></button>
 
-    <!-- 考试分析：点住某一块玻璃板之后，边上弹出这一场的分析报告
-         （用户 2026-09-30："每个考试的面……点击之后呢？它会在边上弹出一个面板。
-         面板上我会出这次考试的一些分析报告。点知识点对应的知识点。然后还有难度。"） -->
-    <aside class="t3-report" data-t3-report hidden aria-label="这场考试的考点分析">
-      <div class="t3-report__head">
-        <div class="t3-report__title">
-          <div class="t3-report__name" data-t3-report-name></div>
-          <div class="t3-report__meta" data-t3-report-meta></div>
+    <!-- 考试浮窗：**一块浮窗、两个页签**（用户 2026-09-30："我点考试分析的时候，这个页面、
+         考试分析里面应该有个 tab，它还有个考卷，也就是试卷……要整合在一起，作为一个 tab 来选择"）——
+         头部照白板那块面板：抓手 + 页签 + ✕；「分析」= 这一场考了哪些考点 · 正确率 · 小结；
+         「试卷」= 复刻这张卷子的每一道题。默认落在**左边**。 -->
+    <aside class="t3-float" data-t3-examwin hidden aria-label="考试分析（分析 / 试卷）">
+      <div class="t3-float__head" data-t3-examwin-head>
+        <i data-lucide="grip-vertical" class="t3-float__grip" aria-hidden="true"></i>
+        <div class="t3-float__tabs" role="tablist">
+          <button type="button" class="t3-float__tab is-on" data-t3-exam-tab="report" role="tab"
+                  aria-selected="true">分析</button>
+          <button type="button" class="t3-float__tab" data-t3-exam-tab="paper" role="tab"
+                  aria-selected="false">试卷</button>
         </div>
-        <button type="button" class="t3-report__close" data-t3-report-close aria-label="收起分析面板">
-          <i data-lucide="x" class="t3-report__x"></i>
+        <button type="button" class="t3-float__close" data-t3-examwin-close aria-label="收起考试浮窗">
+          <i data-lucide="x" class="t3-float__x"></i>
         </button>
       </div>
-      <div class="t3-report__stats" data-t3-report-stats></div>
-      <div class="t3-report__cap">考点（点一行 → 在轴上点出那一格）</div>
-      <ul class="t3-report__list" data-t3-report-list></ul>
+      <!-- 正文整块可滚（**两张表都完整看得见** —— 用户 2026-09-30："它的'试卷'不出现"：
+           原来两张表各自 overflow:auto 挤在一个 flex 列里，后面那张被挤成 0 高；现在整块一起滚） -->
+      <div class="t3-float__body" data-t3-examwin-body>
+        <div class="t3-float__name" data-t3-examwin-name></div>
+        <div class="t3-float__meta" data-t3-examwin-meta></div>
+        <!-- 页签一：分析（考点 · 准确率 · 小结） -->
+        <div data-t3-exam-pane="report">
+          <div class="t3-float__stats" data-t3-examwin-stats></div>
+          <div class="t3-float__note" data-t3-examwin-note></div>
+          <div class="t3-float__cap" data-t3-examwin-cap></div>
+          <ul class="t3-float__list" data-t3-examwin-list></ul>
+        </div>
+        <!-- 页签二：试卷（复刻这张卷子的每一道题） -->
+        <div data-t3-exam-pane="paper" hidden>
+          <div class="t3-float__stats" data-t3-examwin-pstats></div>
+          <div class="t3-float__cap" data-t3-examwin-qcap></div>
+          <!-- 「查看原题」（用户 2026-10-01："当我点击这道题，我可以加一个按钮了，查看原题、
+               查看原卷"）—— **点住某一道题之后才出现**，而且那一道在原卷上**有框**才给
+               （后台只标批出来的错题）。 -->
+          <div class="t3-scan__openwrap">
+            <button type="button" class="t3-scan__btn" data-t3-scan-open hidden>查看原题</button>
+          </div>
+          <ul class="t3-float__list" data-t3-examwin-qlist></ul>
+        </div>
+      </div>
     </aside>
 
-    <!-- 难度层：**右侧那排竖按钮**（照白板那排按钮的样子）——
-         五个档各一个开关，点名字就开 / 关那一层（用户 2026-09-30） -->
-    <div class="t3-levels" data-t3-levels role="group" aria-label="难度层"></div>
+    <!-- 原卷（扫描件）浮层（用户 2026-10-01："这个题错了，然后就框出来……让学生给他一个错因，
+         如果学生认可，就让他点一下；或者说默认是认可，除非他自己再叠加一些原因"＋
+         "当我点击这道题，我可以加一个按钮，查看原题、查看原卷。当点击这个按钮时候，啪，
+         我们就出来这张卷子了"）。
+         这一层只负责**画**：卷名 / 正反面 / 图 / 框 / 错因 / 认可与叠加。
+         数据从 `WK_EXAM_SCAN`（后台接口的模拟）拿，**这儿不编坐标**。 -->
+    <div class="t3-scan" data-t3-scan hidden aria-label="原卷">
+      <div class="t3-scan__head">
+        <span class="t3-scan__title" data-t3-scan-title></span>
+        <div class="t3-scan__pages" data-t3-scan-pages role="tablist" aria-label="卷面正反面"></div>
+        <button type="button" class="t3-scan__close" data-t3-scan-close aria-label="收起原卷">
+          <i data-lucide="x" class="t3-float__x"></i>
+        </button>
+      </div>
+      <div class="t3-scan__stage">
+        <div class="t3-scan__shot">
+          <img class="t3-scan__img" data-t3-scan-img alt="原卷扫描件">
+          <div class="t3-scan__boxes" data-t3-scan-boxes></div>
+        </div>
+      </div>
+      <div class="t3-scan__foot">
+        <span class="t3-scan__q" data-t3-scan-q></span>
+        <span class="t3-scan__cause" data-t3-scan-cause></span>
+        <span class="t3-scan__ack" data-t3-scan-ack></span>
+        <div class="t3-scan__acts">
+          <button type="button" class="t3-scan__btn" data-t3-scan-ok>认可这个原因</button>
+          <button type="button" class="t3-scan__btn" data-t3-scan-add>再叠一个原因</button>
+        </div>
+        <div class="t3-scan__pick" data-t3-scan-pick hidden></div>
+      </div>
+    </div>
+
+    <!-- 具体某一个考点：**只有点它**的时候才出现的独立小浮窗（用户 2026-09-30：
+         "那个面板是只有在点击这个具体的某一个的时候，它出现一个单独的"） -->
+    <aside class="t3-float t3-float--node" data-t3-nodewin hidden aria-label="这个考点">
+      <div class="t3-float__head" data-t3-nodewin-head>
+        <i data-lucide="grip-vertical" class="t3-float__grip" aria-hidden="true"></i>
+        <span class="t3-float__kick">考点</span>
+        <button type="button" class="t3-float__close" data-t3-nodewin-close aria-label="收起考点浮窗">
+          <i data-lucide="x" class="t3-float__x"></i>
+        </button>
+      </div>
+      <div class="t3-float__body" data-t3-nodewin-body>
+        <div class="t3-float__name" data-t3-nodewin-name></div>
+        <div class="t3-float__meta" data-t3-nodewin-meta></div>
+        <div class="t3-float__stats" data-t3-nodewin-stats></div>
+        <div class="t3-float__cap" data-t3-nodewin-cap></div>
+        <ul class="t3-float__list" data-t3-nodewin-list></ul>
+      </div>
+    </aside>
+
+    <!-- 右侧那一竖排（用户 2026-09-30："参考那个白板，右边我们也弄上竖的那一排"）——
+         照白板那排按钮：**纯图标**，汉字 hover 才出。
+         ①「难度层」：**点开才展开**那五档 —— 而且是在**这一竖排的边上**弹出去一层，
+           不把竖排自己撑高（用户："它边上再出来几层不就行了吗？再出来几个点"）；
+         ②「考试分析」：先点住一块玻璃板，再点它 → 在**左边**弹出那块浮窗
+           （分析 + 这份试卷同在一页），再点一下收起 -->
+    <div class="t3-rail" data-t3-rail role="group" aria-label="右侧工具">
+      <button type="button" class="t3-rail__btn" data-t3-rail-home
+              data-t3-tip="回到总轴" aria-label="回到总轴">
+        <i data-lucide="axis-3d" class="t3-rail__icon"></i>
+      </button>
+      <span class="t3-rail__sep"></span>
+      <button type="button" class="t3-rail__btn" data-t3-rail-levels aria-pressed="false"
+              data-t3-tip="难度层" aria-label="难度层">
+        <i data-lucide="layers" class="t3-rail__icon"></i>
+      </button>
+      <div class="t3-levels" data-t3-levels role="group" aria-label="难度层" hidden></div>
+      <span class="t3-rail__sep"></span>
+      <button type="button" class="t3-rail__btn" data-t3-rail-report aria-pressed="false"
+              data-t3-tip="先点住一块玻璃板，再看这一场" aria-label="考试分析">
+        <i data-lucide="list-checks" class="t3-rail__icon"></i>
+      </button>
+      <span class="t3-rail__sep"></span>
+      <!-- 「实物卷」（用户 2026-10-01："右边加一个按钮，前提是当……尤且仅有他选择了单个的试卷之后，
+           然后这个按钮才出现，表示是我们这个卷子、实物的这个卷子。然后点击了之后……在立体空间当中
+           也是竖着两张卷子，一个是正面，一个是反面"）——
+           **只在钉住某一场考试之后才出现**（`hidden`），点了才把那两张卷子立起来（默认不显示）。 -->
+      <button type="button" class="t3-rail__btn" data-t3-rail-paper aria-pressed="false" hidden
+              data-t3-tip="实物卷（在立体里立起这次考的卷子）" aria-label="实物卷">
+        <i data-lucide="file-image" class="t3-rail__icon"></i>
+      </button>
+      <span class="t3-rail__sep" data-t3-rail-paper-sep hidden></span>
+      <!-- 「清爽模式」（用户 2026-10-01）：把**左边的导航**和**底部的工具条 / 时间条**滑走，
+           只留场景。**这一竖排自己不许消失** —— 否则点了就再也点不回来了（用户特别点过这一条）。 -->
+      <button type="button" class="t3-rail__btn" data-t3-rail-clean aria-pressed="false"
+              data-t3-tip="清爽模式（收起左边的导航与底下的工具条）" aria-label="清爽模式">
+        <i data-lucide="panels-top-left" class="t3-rail__icon"></i>
+      </button>
+    </div>
 
     <!-- 底部时间条：拖它把"当前"挪到某一天 —— 柱子那堵墙就在时间里滑，
          滑过哪一场的日子，那一块考试切片就冒出来（照参照原型的 timebar） -->
@@ -148,6 +268,11 @@
       </div>
       <div class="t3-timebar__slider">
         <input type="range" data-t3-day min="0" max="1" value="0" aria-label="选择学习日期">
+        <!-- 考试小圆点（用户 2026-10-01）：考过试的那一天，在时间条**上方**点一个小点 ——
+             "有考试的地方应该有那个小圆点，在上面，小圆点表示这个地方有考试。"
+             拖时间条时**跟着长**（与场景同一把尺子：只画到"当前那一天"为止），
+             而且**点一下就能选中那一场**（"这个小按键可以选择"）。 -->
+        <div class="t3-timebar__marks" data-t3-marks role="group" aria-label="考试日期"></div>
         <div class="t3-timebar__ticks" data-t3-ticks></div>
       </div>
       <button type="button" class="t3-dock__btn" data-t3-next-day data-t3-tip="后一天" aria-label="后一天">
@@ -163,7 +288,7 @@
       </button>
       <button type="button" class="t3-dock__btn" data-t3-proj aria-pressed="true"
               data-t3-tip="现在是透视 · 点一下换正交" aria-label="切换投影方式">
-        <i data-lucide="scan" class="t3-dock__icon"></i>
+        <i data-lucide="move-3d" class="t3-dock__icon"></i>
       </button>
       <button type="button" class="t3-dock__btn" data-t3-render aria-pressed="false"
               data-t3-tip="现在是柱 · 点一下切成曲线" aria-label="切换柱 / 曲线">
@@ -174,9 +299,19 @@
         <i data-lucide="eye" class="t3-dock__icon"></i>
       </button>
       <span class="t3-dock__sep"></span>
-      <button type="button" class="t3-dock__btn" data-t3-exams aria-pressed="true"
-              data-t3-tip="考试切片已开 · 点一下关掉" aria-label="切换考试切片">
-        <i data-lucide="calendar-days" class="t3-dock__icon"></i>
+      <!-- 「考试切片」那颗已挪到右侧竖排（用户 2026-10-01）—— 同一个动作全站只留一颗按钮 -->
+      <!-- 三个数据图层（照参照原型的「学习进度 / 成绩变化 / 投入练习」三个模块）—— 按钮放底部 -->
+      <button type="button" class="t3-dock__btn" data-t3-progress aria-pressed="false"
+              data-t3-tip="学习进度层关着 · 点一下开（时间 × 累计完成的图板）" aria-label="切换学习进度层">
+        <i data-lucide="chart-line" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-scores aria-pressed="false"
+              data-t3-tip="成绩变化层关着 · 点一下开（时间 × 得分率的图板）" aria-label="切换成绩变化层">
+        <i data-lucide="trending-up" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-effort aria-pressed="false"
+              data-t3-tip="投入练习层关着 · 点一下开（每两周的新题 / 复做题量）" aria-label="切换投入练习层">
+        <i data-lucide="bar-chart-3" class="t3-dock__icon"></i>
       </button>
       <span class="t3-dock__sep"></span>
       <button type="button" class="t3-dock__btn" data-t3-zoom-out data-t3-tip="缩小" aria-label="缩小">
@@ -185,6 +320,10 @@
       <span class="t3-dock__zoom" data-t3-zoom>100%</span>
       <button type="button" class="t3-dock__btn" data-t3-zoom-in data-t3-tip="放大" aria-label="放大">
         <i data-lucide="plus" class="t3-dock__icon"></i>
+      </button>
+      <button type="button" class="t3-dock__btn" data-t3-fit
+              data-t3-tip="适配画面：整根轴 / 当前这一场 / 当前这个考点" aria-label="适配画面">
+        <i data-lucide="maximize-2" class="t3-dock__icon"></i>
       </button>
       <span class="t3-dock__sep"></span>
       <button type="button" class="t3-dock__btn" data-t3-reset data-t3-tip="重置视角" aria-label="重置视角">
@@ -229,20 +368,7 @@ html, body { height: 100%; overflow: hidden; }
 [data-t3-canvas]:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
 
 /* ---------- 左上角：这一轴是谁的 + 读数 ---------- */
-.t3-left { position: absolute; left: 36px; top: 26px; z-index: 4; pointer-events: none; max-width: min(560px, 62vw); }
-.t3-who {
-  display: inline-block; margin-bottom: 9px; padding: 3px 10px;
-  border: 1px solid var(--math-border); border-radius: 999px;
-  background: var(--math-surface); color: var(--math-ink-2);
-  font-size: calc(11.5px * var(--math-fs));
-}
-.t3-readout__now { font-size: calc(15px * var(--math-fs)); font-weight: 600; color: var(--math-foreground); }
-.t3-readout__sub { margin-top: 3px; font-size: calc(11.5px * var(--math-fs)); line-height: 1.6; color: var(--math-ink-3); }
-.t3-exam {
-  display: inline-block; margin-top: 8px; padding: 3px 10px;
-  border-radius: 999px; background: var(--math-primary-tint); color: var(--math-primary);
-  font-size: calc(11.5px * var(--math-fs)); font-variant-numeric: tabular-nums;
-}
+/* 左上角那块"谁 + 读数"撤掉之后，这块位置留给浮窗（`.t3-float` 默认就落在这儿） */
 
 /* ---------- 帮助浮层 ---------- */
 .t3-help {
@@ -280,11 +406,12 @@ html, body { height: 100%; overflow: hidden; }
 
 /* ---------- 底部时间条（照参照原型：前一天 / 日期 / 滑杆 + 刻度 / 后一天） ---------- */
 .t3-timebar {
+  /* 用户 2026-09-30："这个时间轴，它外面那个框能不能去掉？你现在这样就显得好大、好蠢。"
+     —— 那圈边框 / 底色 / 投影整条撤掉，只剩底下这一行控件浮在画布上。 */
   position: absolute; left: 50%; transform: translateX(-50%); bottom: 82px; z-index: 5;
   display: flex; align-items: center; gap: 12px;
   width: min(760px, 88vw); padding: 7px 12px;
-  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
-  background: var(--math-dock); box-shadow: var(--math-shadow-2);
+  background: none; border: 0; box-shadow: none;
 }
 .t3-timebar__title {
   display: flex; flex-direction: column; gap: 2px; min-width: 92px;
@@ -294,24 +421,96 @@ html, body { height: 100%; overflow: hidden; }
   color: var(--math-primary); font-size: calc(12.5px * var(--math-fs)); font-variant-numeric: tabular-nums;
 }
 .t3-timebar__slider { flex: 1; min-width: 0; }
-.t3-timebar__slider input { width: 100%; height: 3px; margin: 0; accent-color: var(--math-primary); cursor: pointer; }
+.t3-timebar__slider input {
+  /* `display: block` 不能省：range 默认是 `inline-block`，会坐在一行文字的行盒里，
+     行盒上边留出一截"字身高"，于是上面那排小圆点的 `top: 0`（相对这一列的顶）就
+     比滑杆线高出十几像素——点就飘在线上面了。改成块级，这一列的顶 = 滑杆的顶。 */
+  display: block; width: 100%; height: 3px; margin: 0;
+  accent-color: var(--math-primary); cursor: pointer;
+}
 .t3-timebar__ticks {
   display: flex; justify-content: space-between; padding-top: 3px;
   color: var(--math-ink-4); font-size: calc(10.5px * var(--math-fs));
   font-variant-numeric: tabular-nums;
 }
+/* ---------- 时间条上的考试小圆点（用户 2026-10-01）----------
+   "有考试的地方应该有那个小圆点，在上面，小圆点表示这个地方有考试" —— 一个点 = 一场考试；
+   "我们拖动的时候，这个小圆点也会同步生成"（只画到"当前那一天"为止，与场景同一把尺子）；
+   "这个小按键可以选择"（点一下 = 选中那一场）。
+   **点就压在滑杆那条线上**（用户 2026-10-01 后补："点放在数轴上吧"）——
+   原来是浮在滑杆**上方** 19px 那一条，跟左边"Z · 学习时间 / 日期"那两行挤在同一带，糊；
+   现在**贴着线走**：`top: 0` 的容器 + `top: -2px` 的点（点直径 7px，中心正好落在滑杆那条线的中线上）。 */
+.t3-timebar__slider { position: relative; }
+.t3-timebar__marks {
+  position: absolute; left: 0; right: 0; top: 0; height: 0;
+  /* 横向行程要跟原生滑杆的**拇指**对齐：range 的行程是两端各缩进半个拇指，
+     所以这里是 `calc(拇指/2 + (100% - 拇指) × 那天在整段时间里的位置)`。
+     Chrome 默认拇指 16px —— 只想调这一处就改这个数。 */
+  --t3-thumb: 16px;
+  pointer-events: none;
+}
+.t3-timebar__mark {
+  position: absolute; top: -2px; width: 7px; height: 7px; padding: 0; border: 0;
+  border-radius: 50%; background: var(--math-primary);
+  /* 一圈画布底色的描边：压在滑杆上也看得清是个点 */
+  box-shadow: 0 0 0 1.5px var(--math-background);
+  transform: translateX(-50%); cursor: pointer; pointer-events: auto;
+  transition: transform 120ms cubic-bezier(.2,.8,.2,1), background-color 120ms linear;
+}
+.t3-timebar__mark:hover { transform: translateX(-50%) scale(1.6); }
+.t3-timebar__mark:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 2px; }
+/* 当前钉住的那一场，点换个颜色（一眼看出"现在看的是哪一次"） */
+.t3-timebar__mark.is-on { background: var(--math-bar-gold); }
 
-/* ---------- 难度层（右侧竖排：照白板那排按钮，五个档各一个开关） ---------- */
-.t3-levels {
+/* ---------- 清爽模式（用户 2026-10-01）----------
+   "然后左边，还有下边。这些按钮就给往下、下边的就往下滑动、左边的就往左滑动，就给隐藏了……
+    这个按钮如果是隐藏的话，我们就永远回不来了。我们在这个右边……右边这一排按钮是不会消失的。"
+   —— 收走的是**左边的导航**与**底部的工具条 / 时间条**（各自往自己那边滑走），
+   右边那一竖排**永远在**（它是唯一"回来的路"）。左边那条让出来的位置一并收掉，画布顺势铺满。
+
+   这条**必须带 `html` 前缀**：`ide.css` 在本页 `<style>` **之后**加载（见文档头部的 link 顺序），
+   同优先级的 `.ide-rail { transition: width, box-shadow }` 会把整条 transition 盖掉 ——
+   实测本页 `.ide-rail` 算出来的是 `width, box-shadow / 0.16s`，`translateX(-100%)` 变成**瞬移**而不是滑走
+   （用户 2026-10-01："清爽模式 要底部和左边栏目都要动画隐藏"）。加一级特异性（0,1,1）压过 ide.css 那条；
+   width / box-shadow 一起写上，侧栏 hover 展宽那条动画照旧。 */
+html .ide-rail {
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1),
+              width 160ms cubic-bezier(.2,.8,.2,1),
+              box-shadow 160ms cubic-bezier(.2,.8,.2,1);
+}
+body { transition: padding-left 260ms cubic-bezier(.2,.8,.2,1); }
+.t3-dock, .t3-timebar { transition: transform 260ms cubic-bezier(.2,.8,.2,1), opacity 200ms linear; }
+html[data-t3-clean="on"] .ide-rail { transform: translateX(-100%); }
+html[data-t3-clean="on"] body { padding-left: 0; }
+html[data-t3-clean="on"] .t3-dock { transform: translate(-50%, 170%); opacity: 0; pointer-events: none; }
+html[data-t3-clean="on"] .t3-timebar { transform: translate(-50%, 200%); opacity: 0; pointer-events: none; }
+
+/* ---------- 右侧那一竖排（照白板右侧那排按钮：纯图标 + hover 汉字）---------- */
+.t3-rail {
   position: absolute; right: 18px; top: 50%; transform: translateY(-50%); z-index: 5;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+  padding: 8px; border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
+  background: var(--math-popover); box-shadow: var(--math-shadow-2);
+}
+.t3-rail__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; padding: 0; border: 0; border-radius: var(--math-radius-md);
+  background: none; color: var(--math-ink-2); cursor: pointer;
+}
+.t3-rail__btn:hover { background: var(--math-surface); color: var(--math-foreground); }
+.t3-rail__btn:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
+.t3-rail__btn[aria-pressed="true"] { background: var(--math-primary-tint); color: var(--math-primary); }
+.t3-rail__icon { width: 16px; height: 16px; }
+.t3-rail__sep { width: 22px; height: 1px; margin: 2px 0; background: var(--math-border); }
+/* 「难度层」点开之后：**从这一竖排的左边弹出去一层**（用户 2026-09-30："它边上再出来几层
+   不就行了吗？再出来几个点"）—— 不把竖排自己撑高，勾哪几档就画哪几层。 */
+.t3-levels {
+  position: absolute; right: calc(100% + 8px); top: 0;
   display: flex; flex-direction: column; gap: 5px; padding: 9px 10px;
   border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
   background: var(--math-popover); box-shadow: var(--math-shadow-2);
 }
-.t3-levels__cap {
-  margin-bottom: 2px; color: var(--math-ink-4);
-  font-size: calc(10.5px * var(--math-fs)); text-align: center;
-}
+.t3-levels[hidden] { display: none; }
 .t3-levels__btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 5px 9px;
   border: 1px solid transparent; border-radius: var(--math-radius-md);
@@ -326,20 +525,21 @@ html, body { height: 100%; overflow: hidden; }
 }
 .t3-levels__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 
-/* ---------- 划过浮现的小卡（照参照原型：底部居中一块，pointer 不拦） ---------- */
-.t3-hover {
-  position: absolute; left: 50%; bottom: 152px; transform: translateX(-50%);
-  z-index: 5; min-width: 165px; padding: 10px 14px; pointer-events: none;
-  border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
-  background: var(--math-popover); box-shadow: var(--math-shadow-2);
-  opacity: 0; transition: opacity .12s ease;
+/* ---------- 划过的一行提示（放在"学习时间"那条时间条的**上方**）----------
+   用户 2026-10-01："这个提示不要太厚，可以直接就是一排字……放在学习时间的上方"＋
+   "那我们右上角那个就可以直接删掉了" —— 原来右上角那张小卡整块撤掉，只留这一排。 */
+.t3-hint {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 122px; z-index: 5;
+  max-width: min(760px, 88vw); padding: 5px 12px;
+  border: 1px solid var(--math-border); border-radius: 999px;
+  background: var(--math-popover); box-shadow: var(--math-shadow-1);
+  color: var(--math-ink-2); font-size: calc(11.5px * var(--math-fs));
+  font-family: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer;
 }
-.t3-hover.show { opacity: 1; }
-.t3-hover strong {
-  display: block; margin-bottom: 4px;
-  font-size: calc(13px * var(--math-fs)); font-weight: 600; color: var(--math-foreground);
-}
-.t3-hover small { display: block; font-size: calc(11.5px * var(--math-fs)); line-height: 1.6; color: var(--math-ink-3); }
+.t3-hint[hidden] { display: none; }
+.t3-hint:hover { border-color: var(--math-primary); color: var(--math-primary); }
+.t3-hint:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
 
 /* 气泡提示（与白板 / 平面那一页同一套：自绘，不吃 pointer 事件） */
 [data-t3-tip] { position: relative; }
@@ -351,52 +551,195 @@ html, body { height: 100%; overflow: hidden; }
   transition: opacity .12s ease;
 }
 [data-t3-tip]:hover::after { opacity: 1; }
+/* 右侧那一竖排的提示**出在按钮的左边**（用户 2026-09-30："它 hover 的时候出现那个字，
+   应该在他的左侧。不应该在右侧，也不应该在上面"）—— 白板那排也是这个方向。 */
+[data-t3-rail] [data-t3-tip]::after {
+  left: auto; right: calc(100% + 10px); top: 50%; bottom: auto; transform: translateY(-50%);
+}
 
-/* ---------- 考试分析面板（点住某一块玻璃板之后，弹在右边） ---------- */
-.t3-report {
-  position: absolute; right: 24px; top: 24px; z-index: 6;
+/* ---------- 浮窗（考试 = 分析 / 这份试卷；以及单个考点）----------
+   规格**照白板那块面板**（用户 2026-09-30："参考白板的面板样式……可以拖动，
+   它不应该老是在那。而且宽度你也参考一下白板那边的那个面板，它应该是一致的"）：
+   宽度走同一条令牌 `--math-float-w`（320px）、标题栏 `cursor:grab`、拖的时候显示"正抓着"、
+   跟着手指走但不许拖出画布。 */
+.t3-float {
+  /* 默认落在**左边**（用户 2026-09-30："点击考试分析，就在左边吧。对，在左边"）；
+     拖走了就记在这一次打开里。 */
+  /* 用户 2026-09-30："我点击考试分析这个面板的时候，它贴着……完全出现就行，在左边"＋
+     "所以考试分析那块就直接顶着上面，稍微有一点[边距]吗？然后就出这些" ——
+     贴着**左上角**一点点（12px），高度跟着画布收（`max-height`），不会露到画布外。 */
+  position: absolute; top: 12px; left: 12px; z-index: 6;
   display: flex; flex-direction: column;
-  width: min(322px, 80vw); max-height: calc(100% - 300px);
-  padding: 13px 4px 9px 14px;
+  width: var(--math-float-w); max-width: calc(100% - 24px);
+  max-height: calc(100% - 24px);
+  padding: 8px 10px 9px;
   border: 1px solid var(--math-border); border-radius: var(--math-radius-lg);
-  background: var(--math-popover); color: var(--math-ink-2);
-  box-shadow: var(--math-shadow-2); font-size: calc(11.5px * var(--math-fs));
+  /* 面板底走 `--math-panel`（= 本包 popover 色 × 设置页那颗「面板透明度」，默认 90%）——
+     半透的是**底**，让后面的柱子和网格透出来；面板里的字与线不透明，调低也读得清。 */
+  background: var(--math-panel); color: var(--math-ink-2);
+  box-shadow: var(--math-shadow-1);
+  font-size: calc(11.5px * var(--math-fs));
 }
-.t3-report[hidden] { display: none; }
-.t3-report__head { display: flex; align-items: flex-start; gap: 8px; padding-right: 10px; }
-.t3-report__title { min-width: 0; }
-.t3-report__name { font-size: calc(13px * var(--math-fs)); font-weight: 600; color: var(--math-foreground); }
-.t3-report__meta { margin-top: 2px; color: var(--math-ink-4); font-variant-numeric: tabular-nums; }
-.t3-report__close {
-  margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; padding: 0; border: 0; border-radius: var(--math-radius-md);
-  background: none; color: var(--math-ink-3); cursor: pointer;
+.t3-float[hidden] { display: none; }
+/* 「考点」浮窗默认落**右下角**（用户 2026-10-01："考点面板的默认位置在右下角"）。
+   `left: auto` 不能省 —— 基类 `.t3-float` 上有 `left: 12px`，不置 auto 的话 left 与 right 同时存在，
+   左边那条照样生效（面板还赖在左下角）。
+   `right: 80px` 是让开右侧那一竖排：它 `right: 18px`、宽 52px → 左边缘离舞台右边 70px，再留 10px 缝。
+   `bottom: 148px` 照旧 —— 底部时间条的顶边离底 133px，面板站在它上方一格。 */
+.t3-float--node { top: auto; left: auto; right: 80px; bottom: 148px; }
+.t3-float.is-dragging { box-shadow: var(--math-shadow-2); }
+.t3-float__head {
+  flex: none; display: flex; align-items: center; gap: 7px;
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
-.t3-report__close:hover { background: var(--math-surface); color: var(--math-foreground); }
-.t3-report__x { width: 14px; height: 14px; }
-.t3-report__stats {
-  margin: 9px 10px 0 0; padding: 6px 9px; border-radius: var(--math-radius-md);
-  background: var(--math-surface); color: var(--math-ink-2); line-height: 1.6;
+/* 拖动中整条标题栏（含页签 / ✕）都显示"正抓着" —— 用 * 压过子控件自己的 cursor:pointer */
+.t3-float.is-dragging .t3-float__head,
+.t3-float.is-dragging .t3-float__head * { cursor: grabbing; }
+.t3-float__grip { flex: none; width: 14px; height: 14px; color: var(--math-ink-4); }
+.t3-float__kick { flex: 1; min-width: 0; font-size: calc(13px * var(--math-fs)); font-weight: 600; color: var(--math-foreground); }
+/* 页签（照白板那块面板的头：抓手 + 页签 + ✕）—— 当前那一页是一块实心浅色 */
+.t3-float__tabs { flex: 1 1 auto; display: flex; gap: 2px; min-width: 0; }
+.t3-float__tab {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border: 0; border-radius: var(--math-radius-md);
+  background: none; cursor: pointer; color: var(--math-ink-3);
+  font-family: var(--math-font-sans); font-size: calc(13px * var(--math-fs)); line-height: 1;
 }
-.t3-report__cap { margin: 10px 0 4px; color: var(--math-ink-4); }
-.t3-report__list { margin: 0; padding: 0 10px 0 0; list-style: none; overflow: auto; }
-.t3-report__row {
+.t3-float__tab:hover { background: var(--math-surface); color: var(--math-foreground); }
+.t3-float__tab:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
+.t3-float__tab.is-on { background: var(--math-primary-tint); color: var(--math-primary); font-weight: 600; }
+.t3-float__close {
+  flex: none; margin-left: auto; width: 22px; height: 22px; display: grid; place-items: center;
+  border: 0; border-radius: var(--math-radius-md); background: none; color: var(--math-ink-3); cursor: pointer;
+}
+.t3-float__close:hover { background: var(--math-surface); color: var(--math-foreground); }
+.t3-float__close:focus-visible { outline: 2px solid var(--math-ring); outline-offset: 1px; }
+.t3-float__x { width: 14px; height: 14px; }
+.t3-float__name { margin: 7px 0 0; font-size: calc(13px * var(--math-fs)); font-weight: 600; color: var(--math-foreground); }
+.t3-float__meta { margin-top: 2px; color: var(--math-ink-4); font-variant-numeric: tabular-nums; }
+.t3-float__stats {
+  margin-top: 8px; padding: 6px 9px; border-radius: var(--math-radius-md);
+  background: var(--math-surface); line-height: 1.6;
+}
+.t3-float__cap { margin: 9px 0 4px; color: var(--math-ink-4); }
+/* 分析那一页的"小结"（按卷面算出来的那一行，跟统计块分开一档） */
+.t3-float__note {
+  margin-top: 6px; padding: 6px 9px; border-radius: var(--math-radius-md);
+  background: var(--math-primary-soft); color: var(--math-ink-2); line-height: 1.6;
+}
+/* 正文整块滚动：两张表（考点 / 这份试卷）都在里面，一起滚 —— 不许某一张被挤成 0 高 */
+.t3-float__body { overflow: auto; min-height: 0; }
+.t3-float__list { margin: 0; padding: 0; list-style: none; }
+.t3-float__row {
   display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px;
   border: 0; border-radius: var(--math-radius-md); background: none; color: inherit;
-  font: inherit; text-align: left; cursor: pointer;
+  font: inherit; text-align: left;
+  /* 这一行**自己那一档难度的标准色** —— JS 按 `levelColor()` 写在行上的 `--lv`
+     （那五档色见 tokens.css 的 --math-lv-1…5）；这里的值只是兜底，
+     万一某一行没写上也不至于让下面的 `color-mix` 整条失效。 */
+  --lv: var(--math-primary);
 }
-.t3-report__row:hover { background: var(--math-surface); }
-.t3-report__row:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
-.t3-report__no { color: var(--math-ink-4); font-variant-numeric: tabular-nums; }
-.t3-report__nm { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.t3-report__diff { color: var(--math-ink-3); font-variant-numeric: tabular-nums; }
-.t3-report__bad { color: var(--math-bar-weak); font-weight: 600; }
-.t3-report__ok { color: var(--math-ink-4); }
+button.t3-float__row { cursor: pointer; }
+button.t3-float__row:hover { background: var(--math-surface); }
+button.t3-float__row:focus-visible { outline: 2px solid var(--math-ring); outline-offset: -2px; }
+/* **鼠标在画布上划到它** → 面板里对应那几行跟着亮（用户 2026-10-01："鼠标在题目的点上移动的时候
+   题目面板的考点或者题目需要也有 hover 的状态"）—— 观感与"鼠标直接压在这一行上"完全一致，
+   所以两者共用一个 `--math-surface`；由 JS 在每次 hover 变化时挂 / 摘 `is-hover`（走 syncReadout）。
+   注意：**光靠 CSS 的 `:hover` 不够** —— 鼠标在画布上，指针根本不在这一行上。 */
+button.t3-float__row.is-hover { background: var(--math-surface); }
+/* 选中的那一行用**它自己那一档难度的标准色**（用户 2026-10-01："选中的时候有对应标准色的选择"）——
+   跟图上那个考点点是同一把尺子：底 = 标准色 16% 压回面板底、字 = 标准色本身。
+   这五档色（`--math-lv-1…5`）当初就是按"同时压纯白与纯黑都 ≥ 3:1"挑的，所以当字色在亮 / 暗两包下都站得住。 */
+button.t3-float__row.is-pick {
+  background: color-mix(in srgb, var(--lv) 16%, var(--math-background));
+  color: var(--lv);
+  font-weight: 600;
+}
+.t3-float__no { color: var(--math-ink-4); font-variant-numeric: tabular-nums; }
+.t3-float__nm { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.t3-float__num { color: var(--math-ink-3); font-variant-numeric: tabular-nums; }
+.t3-float__bad { color: var(--math-bar-weak); font-weight: 600; }
+.t3-float__ok { color: var(--math-ink-4); }
+/* 错因那一小列（用户 2026-10-01："肯定有个错因，分个七八种吧……而且里面这东西是复合叠加的"）。
+   **不会 / 失误 两组两种颜色** —— 这一刀比"种类多不多"更要紧：
+   "不会"得回去补 → 用"薄弱"那支强调色；"失误"提醒一下就行 → 次要灰。
+   （词表与判据在 timeline-data.js，这里只管画。） */
+.t3-float__cause { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.t3-float__cause.is-gap { color: var(--math-bar-weak); font-weight: 600; }
+.t3-float__cause.is-slip { color: var(--math-ink-4); }
+
+/* ---------- 原卷（扫描件）浮层（用户 2026-10-01）----------
+   "这个题错了，然后就框出来……让学生给他一个错因，如果学生认可就让他点一下，
+   或者说默认是认可，除非他自己再叠加一些原因"＋"当我点击这道题，我可以加一个按钮，
+   查看原题、查看原卷。当点击这个按钮时候，啪，我们就出来这张卷子了"。
+   它**铺满整块舞台**（不是那两块小浮窗）—— 卷子图大，得铺开才看得清；
+   框用**百分比**定位，所以图怎么缩放、框都跟着走。 */
+.t3-scan {
+  position: absolute; inset: 0; z-index: 9;
+  display: flex; flex-direction: column;
+  background: var(--math-background);
+}
+.t3-scan[hidden] { display: none; }
+.t3-scan__head {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-bottom: 1px solid var(--math-border);
+}
+.t3-scan__title {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-family: var(--math-font-sans); font-size: calc(13px * var(--math-fs)); font-weight: 600;
+  color: var(--math-foreground);
+}
+.t3-scan__pages { flex: none; display: flex; gap: 4px; }
+.t3-scan__page {
+  padding: 4px 10px; border: 0; border-radius: var(--math-radius-md); background: var(--math-surface);
+  color: var(--math-ink-3); cursor: pointer; font-family: var(--math-font-sans);
+  font-size: calc(12px * var(--math-fs)); line-height: 1;
+}
+.t3-scan__page:hover { color: var(--math-foreground); }
+.t3-scan__page.is-on { background: var(--math-primary-tint); color: var(--math-primary); font-weight: 600; }
+.t3-scan__close {
+  flex: none; width: 24px; height: 24px; display: grid; place-items: center;
+  border: 0; border-radius: var(--math-radius-md); background: none; color: var(--math-ink-3); cursor: pointer;
+}
+.t3-scan__close:hover { background: var(--math-surface); color: var(--math-foreground); }
+/* 卷面：图 + 一层百分比定位的框 */
+.t3-scan__stage { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 10px; }
+.t3-scan__shot { position: relative; width: 100%; }
+.t3-scan__img { display: block; width: 100%; height: auto; }
+.t3-scan__boxes { position: absolute; inset: 0; pointer-events: none; }
+.t3-scan__box {
+  position: absolute; box-sizing: border-box; opacity: .3;
+  border: 2px solid var(--math-bar-weak); border-radius: 3px;
+}
+.t3-scan__box.is-on { opacity: 1; box-shadow: 0 0 0 3px var(--math-primary-tint); }
+.t3-scan__foot {
+  flex: none; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 10px; border-top: 1px solid var(--math-border);
+}
+.t3-scan__q { flex: none; font-family: var(--math-font-sans); font-weight: 600; color: var(--math-foreground); }
+.t3-scan__ack { flex: none; color: var(--math-ink-4); }
+.t3-scan__acts { flex: none; display: flex; gap: 6px; margin-left: auto; }
+.t3-scan__btn {
+  padding: 5px 10px; border: 1px solid var(--math-border); border-radius: var(--math-radius-md);
+  background: var(--math-surface); color: var(--math-ink-2); cursor: pointer;
+  font-family: var(--math-font-sans); font-size: calc(12.5px * var(--math-fs)); line-height: 1;
+}
+.t3-scan__btn:hover { background: var(--math-background); color: var(--math-foreground); }
+.t3-scan__btn.is-on { background: var(--math-primary-tint); color: var(--math-primary); border-color: transparent; font-weight: 600; }
+.t3-scan__pick { flex: 1 1 100%; display: flex; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
+.t3-scan__pick[hidden] { display: none; }
+/* 「查看原题」那颗按钮待的地方（在试卷表上面）—— 没那份原卷时整块收起 */
+.t3-scan__openwrap { flex: none; padding: 0 10px 6px; }
+.t3-scan__openwrap[hidden] { display: none; }
+
+/* ---------- 板子上的三个入口已挪到**右侧那一竖排**（用户 2026-09-30："这个考试，在上面……
+   放在哪啊？右边"）—— 所以这里不再有"贴在板子上方"的那条 bar。 */
 
 @media (max-width: 640px) {
   .t3-left { left: 16px; top: 16px; max-width: 80vw; }
   .t3-dock { bottom: 16px; }
-  .t3-report { right: 12px; top: 12px; width: min(260px, 86vw); max-height: calc(100% - 110px); }
+  .t3-float { top: 12px; left: 12px; max-height: calc(100% - 140px); }
+  .t3-rail { right: 8px; padding: 5px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .t3-dock__btn, [data-t3-tip]::after { transition-duration: .001ms !important; }
@@ -412,6 +755,9 @@ html, body { height: 100%; overflow: hidden; }
 <script src="assets/js/math-tree.js"></script>
 <script src="assets/js/timeline-axis.js"></script>
 <script src="assets/js/timeline-data.js"></script>
+<!-- 原卷（扫描件）—— **后台批卷接口的模拟**（用户 2026-10-01）。将来后台做好，
+     把这个文件换成 fetch 就行，页面与视图一个字都不用动。 -->
+<script src="assets/js/exam-scan.js"></script>
 <script src="assets/js/timeline-3d.js"></script>
 </body>
 </html>

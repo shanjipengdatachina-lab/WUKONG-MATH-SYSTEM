@@ -21,6 +21,17 @@
   --math-popover: #ffffff;
   --math-popover-foreground: #101215;
 
+  /* ---------- 面板透明度（设置页可调，默认 90%） ----------
+     用户 2026-10-01："无论是白板还是数轴，都可以在设置里调整透明度……这样我们就能看到后面的内容，
+     显得不那么实，而显得空灵一点。"
+     `--math-panel-a` 是**一个 0~1 的数**（由 display.js 写在 <html> 的行内样式上，
+     设置页那颗滑块改的就是它）；`--math-panel` 是它和本包 `--math-popover` 同一个色
+     拼出来的半透明底。**只换浮窗的底**，面板里的字、线、图标一律不透明 ——
+     所以往下调是"看得见后面的内容"，不是"整块面板发灰看不清"。 */
+  --math-panel-a: .9;
+  --math-panel: rgba(255, 255, 255, var(--math-panel-a));      /* 浮窗底（原来用 --math-popover 的那一路） */
+  --math-panel-bg: rgba(255, 255, 255, var(--math-panel-a));   /* 浮窗底（原来用 --math-background 的那一路） */
+
   --math-muted: #f4f5f7;
   --math-muted-foreground: #6b7280;
 
@@ -210,6 +221,9 @@ html[data-wk-theme="mid"] {
 
   --math-popover: #f7f8fa;
   --math-popover-foreground: #12161c;
+  /* 面板底（本包色 + 设置页那颗"面板透明度"，见 :root 那一节的说明） */
+  --math-panel: rgba(247, 248, 250, var(--math-panel-a));
+  --math-panel-bg: rgba(236, 239, 243, var(--math-panel-a));
 
   --math-muted: #e6eaef;
   --math-muted-foreground: #5a6270;
@@ -269,6 +283,9 @@ html[data-wk-theme="dark"] {
 
   --math-popover: #161616;
   --math-popover-foreground: #ffffff;
+  /* 面板底（本包色 + 设置页那颗"面板透明度"，见 :root 那一节的说明） */
+  --math-panel: rgba(22, 22, 22, var(--math-panel-a));
+  --math-panel-bg: rgba(0, 0, 0, var(--math-panel-a));
 
   --math-muted: #1a1a1a;
   --math-muted-foreground: #a3a3a3;

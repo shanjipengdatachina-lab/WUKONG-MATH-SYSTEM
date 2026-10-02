@@ -30,7 +30,9 @@
   display:flex;flex-direction:column;
   overflow:hidden;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-popover);
+  /* 面板底走 `--math-panel`（= 本包 popover 色 × 设置页那颗「面板透明度」，默认 90%）——
+     半透的是**底**，面板里的字与线不透明，所以调低也读得清（见 tokens.css）。 */
+  background:var(--math-panel);
   box-shadow:var(--math-shadow-1);
 }
 .wb-bank[hidden]{display:none}
@@ -263,7 +265,8 @@
   width:var(--math-float-w);max-width:calc(100% - 24px);
   padding:12px 14px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-background);
+  /* 这一块的底原来跟 `--math-background`，所以走 `--math-panel-bg`（同一颗面板透明度） */
+  background:var(--math-panel-bg);
   box-shadow:0 14px 36px rgba(15,23,42,.16);
 }
 .wb-pop[hidden]{display:none}
@@ -374,7 +377,7 @@
 .wb-menu{
   position:absolute;left:0;top:0;z-index:6;min-width:186px;padding:4px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-popover);box-shadow:var(--math-shadow-2);
+  background:var(--math-panel);box-shadow:var(--math-shadow-2);
 }
 .wb-menu[hidden]{display:none}
 .wb-menu__item{
@@ -406,7 +409,7 @@
   position:absolute;left:0;top:0;z-index:4;
   width:var(--math-float-w);max-width:calc(100% - 24px);padding:8px 10px 9px;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-popover);box-shadow:var(--math-shadow-1);
+  background:var(--math-panel);box-shadow:var(--math-shadow-1);
   /* 上限 8 步 × 大字号时，内容能高过整块画布 —— 不封顶的话底下那截就够不着了。
      封顶之后由正文自己滚：框始终在板内，读不完也够得着。 */
   display:flex;flex-direction:column;max-height:calc(100% - 32px);

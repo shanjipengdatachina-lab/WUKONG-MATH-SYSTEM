@@ -165,4 +165,50 @@ eq(schemeChips[0]._pressed, 'false', '同时「松绿」被松开（同一组里
 schemeChips[0].click();
 eq(__html.hasAttribute('data-wk-scheme'), false, '点回「松绿」→ 属性被摘掉（不是写成 green）');
 
+/* ------------------------------------------------------------ *
+ * 面板透明度（用户 2026-10-01）
+ *   "无论是白板还是数轴，都可以在设置里调整透明度。在总设置里设置面板的透明度，
+ *    比如默认设为 90%。这样我们就能看到后面的内容，显得不那么实，而显得空灵一点。"
+ *   它改的是浮窗的**底**：display.js 只负责把一个 0~1 的数写到 <html> 的
+ *   `--math-panel-a` 上，三个配色的 `--math-panel` 各自拼出自己那半透明底。
+ * ------------------------------------------------------------ */
+out('---- 面板透明度 ----');
+eq(window.WK_DISPLAY.get().panel, 90, '默认面板透明度是 90%');
+eq(window.WK_DISPLAY.panelDefault, 90, '默认值对外也能读到');
+eq(window.WK_DISPLAY.panelMin, 40, '下限 40%（再低字就开始糊了）');
+eq(window.WK_DISPLAY.panelMax, 100, '上限 100%');
+eq(window.WK_DISPLAY.keys.panel, 'wkmath.display.panel', '本机存储有自己的名字空间（不撞前面四项）');
+eq(__html.style.getPropertyValue('--math-panel-a'), '0.9', '默认 90% 也**照写**到 <html> 的 --math-panel-a 上（不然调低再调回来会留下旧值）');
+
+var beforePanel = __events.length;
+var afterPanel = window.WK_DISPLAY.set({ panel: 60 });
+eq(__html.style.getPropertyValue('--math-panel-a'), '0.6', '拖到 60% → <html> 上换成 0.6');
+eq(__store['wkmath.display.panel'], '60', '拖到 60% → 记在本机');
+eq(afterPanel.panel, 60, 'set 返回最新状态（调用方不用自己再读一次）');
+eq(__events.length, beforePanel + 1, '改一次面板透明度广播一次');
+eq(__events[__events.length - 1].detail.panel, 60, '事件里带的是最新面板透明度（别的页面靠它跟上）');
+
+/* 只改这一项不许把别的碰掉 —— 五组设置各自独立 */
+eq(window.WK_DISPLAY.get().scheme, 'green', '只改面板透明度，色彩方案保持不变');
+eq(window.WK_DISPLAY.get().theme, 'mid', '配色也保持不变');
+
+/* 越界一律夹回区间（拖不出来，但存进去的坏值也不许放行） */
+eq(window.WK_DISPLAY.set({ panel: 5 }).panel, 40, '拖到 5% 被夹回下限 40%');
+eq(window.WK_DISPLAY.set({ panel: 900 }).panel, 100, '拖到 900% 被夹回上限 100%');
+eq(window.WK_DISPLAY.set({ panel: 'abc' }).panel, 90, '说不清的值 → 回默认 90%');
+window.WK_DISPLAY.set({ panel: 90 });
+
+__store['wkmath.display.panel'] = '3';      /* 盘里存了个越界值 */
+eq(window.WK_DISPLAY.read().panel, 90, '盘里存了越界值 → 回落 90%（不能因为一个坏值把面板弄透明）');
+
+/* 设置页那颗滑块：进页面就对位、拖一下真的生效、旁边的百分数跟着走 */
+window.WK_DISPLAY.set({ panel: 90 });
+document.handlers.DOMContentLoaded();
+eq(panelRange.value, '90', '进页面时滑块停在当前值上（不是写死的 90）');
+eq(panelOut.textContent, '90%', '旁边的百分数也先对位');
+panelRange.drag(70);
+eq(window.WK_DISPLAY.get().panel, 70, '拖一下 → 面板透明度真的跟着变（不必等松手）');
+eq(__html.style.getPropertyValue('--math-panel-a'), '0.7', '拖一下 → <html> 上立刻换成 0.7');
+eq(panelOut.textContent, '70%', '拖一下 → 旁边的百分数跟着走');
+
 out(__fail ? 'RESULT: 有失败项' : 'RESULT: 全部通过');

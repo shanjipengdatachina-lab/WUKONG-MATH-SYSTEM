@@ -205,6 +205,17 @@
              2026-09-30 中途试过"亮纯色 + 深色底板"，用户看完说"改颜色之后就成黑色背景了"，底板已撤：
              现在每个色**同时压白压黑都 ≥ 3:1**，自己就看得清（代价是明度各压深一号）。
              见版本日志 §2.11 ㉑ ㉒ ㉕ ㉗。 -->
+        <!-- 面板透明度（用户 2026-10-01）：白板的题库 / 分析 / 设置浮窗、数轴的考试分析与考点
+             浮窗，底色的透明程度。**只调底**，面板里的字与线照旧不透明 ——
+             往下调是"看得见后面的内容"，不是"整块发灰"。拖的过程中就生效。 -->
+        <div class="frow">
+          <span class="frow__label">面板透明度</span>
+          <div class="frange">
+            <input type="range" id="set-panel-range" min="40" max="100" step="5" value="90"
+                   aria-label="面板透明度">
+            <output class="frange__out" id="set-panel-out" for="set-panel-range">90%</output>
+          </div>
+        </div>
         <div class="frow">
           <span class="frow__label">掌握度色彩</span>
           <div class="seg" id="set-scheme" role="group" aria-label="掌握度色彩方案">
@@ -216,7 +227,7 @@
             <button type="button" class="seg__item set-scheme" data-wk-scheme="a11y" aria-pressed="false"><span class="set-scheme__bar" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>无障碍</button>
           </div>
         </div>
-        <p class="fsec__hint">字号把整站文字一起放大（含侧栏与按钮）。配色换的是整站的底色与文字色 —— 白板与图谱的底色也跟着换，选了暗色白板就是黑板。高亮色换的是按钮、选中态、链接、焦点圈这些"可点的东西"的颜色（默认松绿就是 Trae 的品牌绿）；它不跟着配色走，亮底与暗底各有一档专门调过的，都是"字看得清"的那一档。掌握度色彩换的是"学会没有"那七档的颜色（彩条、图例、筛选里的胶囊、卡片徽标）—— 每套里的七个颜色都是<b>七个明显不同的色相</b>，一眼就能分辨状态；六套之间差的是<b>六个状态各用什么颜色</b>（<b>松绿</b> / <b>靛蓝</b> / <b>紫罗兰</b> / <b>琥珀</b> / <b>青碧</b> / <b>无障碍</b>），挑一套顺眼的就行；每个色都同时压在亮底与暗底上看得清，不用挑主题；<b>无障碍</b>那套是给色觉障碍与黑白打印挑的，色相与明度两层保险。</p>
+        <p class="fsec__hint">字号把整站文字一起放大（含侧栏与按钮）。配色换的是整站的底色与文字色 —— 白板与图谱的底色也跟着换，选了暗色白板就是黑板。高亮色换的是按钮、选中态、链接、焦点圈这些"可点的东西"的颜色（默认松绿就是 Trae 的品牌绿）；它不跟着配色走，亮底与暗底各有一档专门调过的，都是"字看得清"的那一档。掌握度色彩换的是"学会没有"那七档的颜色（彩条、图例、筛选里的胶囊、卡片徽标）—— 每套里的七个颜色都是<b>七个明显不同的色相</b>，一眼就能分辨状态；六套之间差的是<b>六个状态各用什么颜色</b>（<b>松绿</b> / <b>靛蓝</b> / <b>紫罗兰</b> / <b>琥珀</b> / <b>青碧</b> / <b>无障碍</b>），挑一套顺眼的就行；每个色都同时压在亮底与暗底上看得清，不用挑主题；<b>无障碍</b>那套是给色觉障碍与黑白打印挑的，色相与明度两层保险。面板透明度调的是<b>浮窗的底</b>（白板的题库 / 分析 / 设置浮窗、数轴的考试分析与考点浮窗）—— 默认 90%，往下拖就能看见浮窗后面的内容，显得空灵一点；<b>只调底</b>，面板里的字与线照旧不透明，所以拖到 60% 也读得清。</p>
       </section>
 
       <section class="fsec">
@@ -325,6 +336,13 @@ body{font-variant-numeric:tabular-nums}
 #set-fs .seg__item:hover,#set-theme .seg__item:hover,#set-accent .seg__item:hover,#set-scheme .seg__item:hover{color:var(--math-ink-2)}
 #set-fs .seg__item[aria-pressed="true"]:hover,#set-theme .seg__item[aria-pressed="true"]:hover,#set-accent .seg__item[aria-pressed="true"]:hover,#set-scheme .seg__item[aria-pressed="true"]:hover{color:var(--math-primary)}
 #set-fs .seg__item:focus-visible,#set-theme .seg__item:focus-visible,#set-accent .seg__item:focus-visible,#set-scheme .seg__item:focus-visible{outline:2px solid var(--math-primary);outline-offset:1px}
+/* 面板透明度：一颗滑块（不是 seg）—— 调的是浮窗的底，拖到哪儿看到哪儿。
+   轨道与把手用原生外观（accent-color 跟着高亮色走）；右边那个百分数用等宽数字并留固定宽度，
+   拖动时不会因为"90%"→"100%"多一位而左右抖。 */
+.frange{display:flex;align-items:center;gap:12px;max-width:420px}
+.frange input[type="range"]{flex:1;min-width:0;accent-color:var(--math-primary);cursor:pointer}
+.frange input[type="range"]:focus-visible{outline:2px solid var(--math-primary);outline-offset:3px;border-radius:4px}
+.frange__out{flex:none;width:46px;text-align:right;font-family:var(--math-font-mono);font-size:calc(13px * var(--math-fs));color:var(--math-foreground);font-variant-numeric:tabular-nums}
 /* 掌握度色彩方案：每颗按钮里那七个小色块 = **该方案自己的七档状态色**。
    颜色不写死 —— 读的就是 --math-bar-* 这七个令牌，而按钮自带 data-wk-scheme，
    tokens.css 里方案块的选择器有一条 `[data-wk-scheme=…]`（不带 html 前缀），

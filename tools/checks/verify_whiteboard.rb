@@ -483,8 +483,8 @@ issues << '题库 ✕ 的 svg 规则还留着（✕ 已经是文字 × 了，这
 
 # 题库那张卡片的外壳要跟分析面板同一套（用户原话："题库的关闭按钮和样式应该和分析面板一致"）。
 # 以前是白底 + 24px 投影 + 铺底又拉分隔线的标题栏 + 15px 抓手，并排一开就不像一个系统里的东西。
-issues << '题库面板还是白底（没跟分析面板一样走 --math-popover）' unless
-  html[/\.wb-bank\{[^}]*background:var\(--math-popover\)/m]
+issues << '题库面板还是白底（没跟分析面板一样走面板底令牌 --math-panel）' unless
+  html[/\.wb-bank\{[^}]*background:var\(--math-panel\)/m]
 issues << '题库面板的投影没跟分析面板同一档（应 var(--math-shadow-1)）' unless
   html[/\.wb-bank\{[^}]*box-shadow:var\(--math-shadow-1\)/m]
 bank_head = html[/\.wb-bank__head\{([^}]*)\}/m, 1].to_s

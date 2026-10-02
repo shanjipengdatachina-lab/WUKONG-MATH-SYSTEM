@@ -291,7 +291,9 @@ body{padding-top:0}
   display:flex;flex-direction:column;
   overflow:hidden;
   border:1px solid var(--math-border);border-radius:var(--math-radius-lg);
-  background:var(--math-popover);
+  /* 面板底走 `--math-panel`（= 本包 popover 色 × 设置页那颗「面板透明度」，默认 90%）——
+     半透的是**底**，面板里的字与线不透明，所以调低也读得清（见 tokens.css）。 */
+  background:var(--math-panel);
   box-shadow:var(--math-shadow-1);}
 .mm-card[hidden]{display:none}
 .mm-card__head{display:flex;align-items:center;gap:7px;flex:none;
