@@ -234,6 +234,16 @@
       </button>
       <div class="t3-levels" data-t3-levels role="group" aria-label="难度层" hidden></div>
       <span class="t3-rail__sep"></span>
+      <!-- 「切片」（用户 2026-10-02："3D 数轴右边的按钮加一个……就是这个切片按钮……
+           这个切片按钮控制场景里的切片。如果默认这个按钮是激活状态，它是显示切片的。
+           我如果点击之后，它这个切片就不显示了。"）——
+           **默认激活（`aria-pressed="true"`）= 显示切片**，点一下藏起来。
+           图标照原来那颗"考试切片"用的 `square-stack`（三个小方块垒起来那个，用户点名的就是这个）。 -->
+      <button type="button" class="t3-rail__btn" data-t3-rail-slices aria-pressed="true"
+              data-t3-tip="切片显示中 · 点一下藏起来" aria-label="考试切片">
+        <i data-lucide="square-stack" class="t3-rail__icon"></i>
+      </button>
+      <span class="t3-rail__sep"></span>
       <button type="button" class="t3-rail__btn" data-t3-rail-report aria-pressed="false"
               data-t3-tip="先点住一块玻璃板，再看这一场" aria-label="考试分析">
         <i data-lucide="list-checks" class="t3-rail__icon"></i>

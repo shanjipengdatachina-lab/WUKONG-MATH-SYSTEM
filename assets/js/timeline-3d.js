@@ -503,6 +503,10 @@
     examWin: true,             /* 考试浮窗开着没有（收起来只是收起浮窗，钉子还在） */
     examTab: 'report',         /* 考试浮窗那一页：report（分析）/ paper（试卷） */
     railLevels: false,         /* 右侧那排：「难度层」点开没有（点开才展开五档勾选） */
+    /* 右侧那排：「切片」开着没有（用户 2026-10-02："这个切片按钮控制场景里的切片。如果默认这个
+       按钮是激活状态，它是显示切片的。我如果点击之后，它这个切片就不显示了"）—— **默认 true**。
+       注意这条**只管"画不画"**：切片"有多少"仍然由底部时间条决定（那是上一版定死的口径）。 */
+    slicesOn: true,
     pickedQ: null,             /* 浮窗里点到的那**一道题**（图上那道题 + 它的知识点一起高亮） */
     nodeAt: null,              /* 点开的那个考点（点一下具体考点才出现的独立浮窗） */
     /* 「清爽模式」（用户 2026-10-01）：左边的导航与底部的工具条 / 时间条滑走，只留场景
@@ -931,10 +935,11 @@
                                         随后又说"你现在放的位置挺好，我还可以再往上再往上来一点"）——
                                         原来摞在切片头顶（24）是错的："他是立在上面，这是不对的。" */
       /* **半透明，鼠标压上去才满**（用户 2026-10-02："默认设置它，这个是半透明的这个状态。然后鼠标
-         滑上去的时候，它再显示透明度百分之百。原来透明度可能在 60%~70% 吧，这样的目的是为了不挡住。
-         大约是 80% 吧，你就直接定好，默认 80%，鼠标滑上去的时候 100%"）——
-         目的是**不挡后面的东西**：卷子大，压着后面那些柱子和点。 */
-      var SHEET_ALPHA = 0.8;
+         滑上去的时候，它再显示透明度百分之百……大约是 80% 吧，你就直接定好，默认 80%，鼠标滑上去
+         的时候 100%"；随后改口："默认的那个考试透明度，你可以设置为 30%。以表示有这么一个试卷就行。
+         鼠标点击之后，它才出现啊。"）—— 目的是**不挡住**后面的东西：卷子大，压着后面那些柱子和点；
+         30% 只是个"这儿有这么一张卷子"的影子。 */
+      var SHEET_ALPHA = 0.3;
       var alpha = state.hoverPaper ? 1 : SHEET_ALPHA;
       c.globalAlpha = alpha;
       /* 摆在哪一格：**往过去挪 2.5 年**（用户 2026-10-02："那个位置……应该是往后。大约位置在
@@ -1031,8 +1036,10 @@
     var pinned = state.exam;
     var coveredByPinned = pinned ? COVERED[pinned] : null;
     /* 考试切片**一直在**（用户 2026-10-01："这个切片是由这个时间轴来控制的，滑动时间轴就知道
-       我们有多少"）—— 它不再是"图层开关"，所以这里只挡平面视角那一档。 */
-    if (state.view !== 'axis') {
+       我们有多少"）—— "有多少"由时间条决定；**"画不画"由右侧那颗「切片」按钮决定**
+       （用户 2026-10-02 把那个开关要回来了："我点击之后，它这个切片就不显示了"），默认是画的。
+       挡住整块还顺带把它从命中表里摘掉 —— 藏起来的板子不该还能点中。 */
+    if (state.view !== 'axis' && state.slicesOn) {
       EXAMS.filter(function (e) { return e.day <= state.dayMs; })
         .sort(function (a, b) { return b.day - a.day; }).forEach(function (e) {
         var a = Math.max(range[0], e.range[0]) - 0.5;
@@ -1907,9 +1914,14 @@
       center: (sa + sb) / 2,
       zoom: Math.max(1, Math.min(2.6, 100 / Math.max(26, w * 3.2))),
       /* `keepAngle`：从「适配」进来时**保留用户自己调好的角度**，只有"点住这块板"那一下才
-         转到默认的俯视参考角（用户 2026-10-01："不要恢复到原来的那种角度……角度也不需要变"） */
-      yaw: keepAngle ? state.yaw : -0.08,
-      pitch: keepAngle ? state.pitch : 0.70,   /* 约 40° —— 俯得下来看空间关系，又不是死板 45° */
+         转到默认的参考角。**默认参考角在 2026-10-02 换过一版**（用户拖到一个满意的角度、
+         发了张截图："当时间轴单个选中了这个考试切片之后，就按照现在这个角度来展示。这样它这个
+         角度、立体度、展示度、俯瞰度都能够出现。点击这个试卷的时候，它也可以更好地展示出这个
+         层次感觉。"）—— 拿他截图里的两条硬特征反解出来的：卷面在屏幕上的宽高比 0.96、
+         年份轴 18°（2020→2026 往右下走），残差 1.0。原来那版是 yaw -0.08 / pitch 0.70
+         （正对着看、俯角 40°），现在是**绕到侧面 ~124°、俯角 ~13°** 的斜看。 */
+      yaw: keepAngle ? state.yaw : 2.17,
+      pitch: keepAngle ? state.pitch : 0.22,
       panX: 0,
       panY: 0,
       flat: 0,
@@ -2482,6 +2494,14 @@
     if (lvBtn) { lvBtn.setAttribute('aria-pressed', state.railLevels ? 'true' : 'false'); }
     var lvBox = el('[data-t3-levels]');
     if (lvBox) { lvBox.hidden = !state.railLevels; }
+    /* 「切片」（用户 2026-10-02）：激活 = 场景里画着切片（默认），点一下藏起来。
+       提示词跟着翻，省得以为点了没反应。 */
+    var slBtn = el('[data-t3-rail-slices]');
+    if (slBtn) {
+      slBtn.setAttribute('aria-pressed', state.slicesOn ? 'true' : 'false');
+      slBtn.setAttribute('data-t3-tip',
+        state.slicesOn ? '切片显示中 · 点一下藏起来' : '切片藏起来了 · 点一下显示');
+    }
     var rep = el('[data-t3-rail-report]');
     if (rep) {
       rep.setAttribute('aria-pressed', shown && state.examWin ? 'true' : 'false');
@@ -3120,6 +3140,17 @@
       railLv.addEventListener('click', function () {
         state.railLevels = !state.railLevels;
         syncRail();
+      });
+    }
+    /* 「切片」（用户 2026-10-02）：激活 = 场景里画着切片（默认），点一下藏起来。
+       "这个切片按钮控制场景里的切片。如果默认这个按钮是激活状态，它是显示切片的。
+       我如果点击之后，它这个切片就不显示了。" */
+    var railSl = el('[data-t3-rail-slices]');
+    if (railSl) {
+      railSl.addEventListener('click', function () {
+        state.slicesOn = !state.slicesOn;
+        syncRail();
+        render();
       });
     }
     var railRep = el('[data-t3-rail-report]');

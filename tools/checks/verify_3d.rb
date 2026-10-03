@@ -314,10 +314,11 @@ issues << '"落在哪一块"没跟着鼠标移开清掉（会一直挂着）' un
 # 一格宽是**实量**出来的（拿 `p()` 投影出来比），不是写死的解析式 —— 转视角 / 透视都不跑偏
 issues << '一格在屏幕上多宽是写死的（应拿 p() 实量，转视角 / 透视才不跑偏）' unless
   js.include?('var gridPx = Math.abs(p(xx(1), 0, currentZ).x - p(xx(0), 0, currentZ).x);')
-# 考试切片**不是**一个图层开关（用户 2026-10-01 第二次改口径："我们这个切片是一直在的，
-# 这个切片是由这个时间轴来控制的，滑动时间轴就知道我们有多少"）—— 所以 `layers` 里没有 exams，
-# 只有"多少场"由 `dayMs` 说了算。
-issues << '考试切片又变成了图层开关（板应一直在，有多少由底部时间条决定）' if
+# 考试切片**没有**做成 `state.layers` 里的一项（用户 2026-10-01 第二次改口径："我们这个切片是
+# 一直在的，这个切片是由这个时间轴来控制的，滑动时间轴就知道我们有多少"）—— "多少场"由 `dayMs`
+# 说了算。*（2026-10-02 用户又把"画不画"的开关要回来了，但走的是**另一条** `state.slicesOn`
+# 与右侧那颗「切片」按钮，不是塞回 `layers` 里 —— 见下面"工具条图标"那一节。这两条仍然有效。）*
+issues << '考试切片又变成了 layers 里的图层开关（走的是 state.slicesOn，不是 layers.exams）' if
   js.include?('exams: true,') || js.include?('state.layers.exams')
 issues << '考试切片没有跟着"当前那一天"过滤（滑动时间条应能多一场少一场）' unless
   js.include?('EXAMS.filter(function (e) { return e.day <= state.dayMs; })')
@@ -466,9 +467,12 @@ issues << '点住一块玻璃板没有把相机适配到这一场（也没把"�
   js.include?('function focusExam(id, keepAngle, dur)') && js.include?('focusExam(best.exam);') &&
   js.include?('state.examWin = false;')
 # 聚焦 / 松开都走**相机动画**（用户 2026-09-30："那个时间段的长度可以用动画的形式缩一下……
-# 这样人家不至于说那么长"）；角度同时转到"俯视"的参考角度（"你一定要有一个俯视的感觉"）。
-issues << '聚焦这一场时角度没转到"俯视"（用户 2026-09-30："你一定要有一个俯视的感觉……让人家可以看到空间关系"）' unless
-  js =~ /function focusExam\(id, keepAngle, dur\) \{[\s\S]{0,700}?yaw: keepAngle \? state\.yaw : -0\.08,[\s\S]{0,160}?pitch: keepAngle \? state\.pitch : 0\.70,/
+# 这样人家不至于说那么长"）；角度同时转到参考角度（"你一定要有一个俯视的感觉"）。
+# **默认参考角换过一版**（用户 2026-10-02 拖到满意的角度发了张截图，让"单个选中考试切片之后
+# 就按这个角度展示"；拿截图里两条硬特征反解出 yaw 2.17 / pitch 0.22）——
+# 原来那版是 -0.08 / 0.70，别再改回去。
+issues << '聚焦这一场时角度没转到参考角（用户 2026-10-02 定的 yaw 2.17 / pitch 0.22）' unless
+  js =~ /function focusExam\(id, keepAngle, dur\) \{[\s\S]{0,1600}?yaw: keepAngle \? state\.yaw : 2\.17,[\s\S]{0,160}?pitch: keepAngle \? state\.pitch : 0\.22,/
 # 聚焦的缩放要**收敛**（用户 2026-09-30："它的确需要聚焦，但是你这聚焦的也太大了"）
 issues << '聚焦的缩放又放大了（用户说太大了，要收敛）' unless
   js.include?('zoom: Math.max(1, Math.min(2.6, 100 / Math.max(26, w * 3.2))),')
@@ -735,13 +739,21 @@ issues << '「回到总轴」没有接到动作上（应松开钉子 + 铺满整
 #         平面时间轴「适配」**同一个动作同一个图标**，见 verify_whiteboard.rb 里那条约定）
 issues << '「投影」按钮的图标不是 move-3d' unless
   page =~ /data-t3-proj[\s\S]{0,200}?data-lucide="move-3d"/
-# **反向**：它不许再去开关"场景里那些玻璃板" —— 那个 `layers.exams` 整条已经撤掉（板一直在，
-# 有多少由底部时间条决定，见 §2.11 67 与 68 节）。
-issues << '考试切片又去开关场景里的玻璃板了（考试切片不再是图层开关 —— 板一直在）' if
-  js.include?('layers.exams') || js.include?('exams: true,')
-issues << '考试切片又被图层开关挡住了（应只看平面视角那一档）' unless
-  js.include?("if (state.view !== 'axis') {") &&
-  !js.include?("if (state.layers.exams && state.view !== 'axis') {")
+# **口径在 2026-10-02 又翻回来了**（用户："3D 数轴右边的按钮加一个……就是这个切片按钮……
+# 这个切片按钮控制场景里的切片。如果默认这个按钮是激活状态，它是显示切片的。我如果点击之后，
+# 它这个切片就不显示了。"）—— 右侧新加一颗「切片」，**只控制"画不画"**；
+# **"有多少"仍然由底部时间条说了算**（`e.day <= state.dayMs` 那条一个字都不能少）。
+# 下面这两条把这条新口径钉住：开关得在，而且不许顺手把"有多少"也管了。
+issues << '「切片」开不出来（板应能被右侧那颗按钮整块挡住：`state.view !== \'axis\' && state.slicesOn`）' unless
+  js.include?("if (state.view !== 'axis' && state.slicesOn) {")
+issues << '「切片」开关顺手把"有多少"也管了（那一条必须仍由底部时间条决定）' unless
+  js.include?('EXAMS.filter(function (e) { return e.day <= state.dayMs; })')
+issues << '右侧竖排少了「切片」那颗按钮（data-t3-rail-slices，图标 square-stack）' unless
+  page =~ /data-t3-rail-slices[\s\S]{0,240}?data-lucide="square-stack"/
+issues << '「切片」那颗按钮默认不是"激活（= 显示切片）"（应 aria-pressed="true"）' unless
+  page =~ /data-t3-rail-slices aria-pressed="true"/
+issues << '「切片」那颗按钮接错了（应翻转 state.slicesOn 再 syncRail + render）' unless
+  js =~ /var railSl = el\('\[data-t3-rail-slices\]'\);[\s\S]{0,220}?state\.slicesOn = !state\.slicesOn;/
 
 # ---------- 「考试切片选择器」那条整条已撤（用户 2026-10-01）----------
 # 用户："考试切面选择器按钮和它左边的选择切片 删除"。
@@ -953,8 +965,8 @@ issues << '实物卷没按"往过去挪两三年"摆到另一个日期格上（�
 # 透明度（用户 2026-10-02："默认设置它，这个是半透明的这个状态。然后鼠标滑上去的时候，它再显示
 # 透明度百分之百……大约是 80% 吧，你就直接定好，默认 80%，鼠标滑上去的时候 100%"）——
 # 目的是"不挡住"后面的柱子 / 点。三处得同时在场：常量、按 hover 取 100%、hover 里真的算出压没压上。
-issues << '实物卷没有"默认 80% 半透明"（应 SHEET_ALPHA = 0.8）' unless
-  js =~ /var SHEET_ALPHA = 0\.8;/
+issues << '实物卷没有"默认 30% 半透明"（应 SHEET_ALPHA = 0.3）' unless
+  js =~ /var SHEET_ALPHA = 0\.3;/
 issues << '实物卷鼠标压上去没有变 100%（应 `state.hoverPaper ? 1 : SHEET_ALPHA`）' unless
   js.include?('var alpha = state.hoverPaper ? 1 : SHEET_ALPHA;')
 issues << '没算出"鼠标压没压在实物卷上"（应 hover() 里走 hitPaper 存进 state.hoverPaper）' unless
