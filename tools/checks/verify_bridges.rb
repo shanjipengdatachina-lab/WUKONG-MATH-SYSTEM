@@ -108,5 +108,5 @@ issues << '练习页「做题帮手」缺纵向排布样式' unless
 issues << '有人把公式速查加进侧栏导航了（应按设计只从正文进）' if
   home.include?('data-nav-key="formulas"')
 
-puts issues.empty? ? '动线体检通过 ✓（首页三出口 / 练习去论坛 / 白板回知识点 / 图谱接点名 / 公式与易错在正文可达）'
+puts issues.empty? ? '动线体检通过 ✓（首页只剩标题+银河系；练挂页脚 / 问画挂侧栏 / 练习去论坛 / 白板回知识点 / 图谱接点名 / 公式与易错在正文可达）'
                    : issues.map { |i| "  ✗ #{i}" }.join("\n")
