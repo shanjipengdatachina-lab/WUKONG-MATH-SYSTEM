@@ -16,6 +16,12 @@ base   = read('assets/css/base.css')
 disp   = read('assets/js/display.js')
 wb     = read('assets/js/whiteboard.js')
 pages  = Dir[File.join(ROOT, '*.html')].sort
+# 独立页面（不挂外壳、不接全站的字号 / 配色启动器）：白板功能规划（规划文档）+
+# Universal.html（用户那份粒子沙盒页，首页 hero 星空的原稿）。它自己一套字体与底色，
+# 本来就不该被"全站字号可缩放"这条管 —— 下面的页面级循环一律跳过它。
+# （verify_rail / verify_brand / verify_fullscreen 里也有各自的同名名单，四处要一起加。）
+STANDALONE = %w[白板功能规划.html Universal.html].freeze
+pages = pages.reject { |p| STANDALONE.include?(File.basename(p)) }
 
 issues = []
 
@@ -49,6 +55,43 @@ issues << '两档字号乘数没定义（lg / xl）' unless
   tokens.include?('html[data-wk-fs="lg"]') && tokens.include?('html[data-wk-fs="xl"]')
 issues << '正文字重没走令牌（base.css 的 body 没用 --math-weight-body）' unless
   base.include?('font-weight: var(--math-weight-body')
+
+# ---------- 2b. 字体：全站只有一个（本地的阿里巴巴普惠体，不引 CDN） ----------
+# 用户 2026-10-02："把字体换成阿里普惠体"。四件事一起钉，少一件都会"看着像换了其实没换"：
+#   ① 四个字重各一段 @font-face（全站的字重分布就是 400/500/600/700 这四个）；
+#   ② src 一律指**本地**文件 —— 全站"不引 CDN、断网也能开"是同一条口径；
+#   ③ 那四个子集文件真的在仓库里，而且**是子集**（~250KB，不是 5MB 整包）——
+#      引一个不存在的文件，浏览器会静默回退到系统字体，跟没换一模一样；
+#   ④ 四个字体令牌都以普惠体打头，字重映射是 400/500/600/700 ← 55/65/75/85
+#      （600 用得最多，映射错了最扎眼）。
+FONT_FACES = {
+  '400' => 'puhuiti-3-55-regular.woff2',
+  '500' => 'puhuiti-3-65-medium.woff2',
+  '600' => 'puhuiti-3-75-semibold.woff2',
+  '700' => 'puhuiti-3-85-bold.woff2'
+}.freeze
+faceBlocks = tokens.scan(/@font-face\s*\{[^}]*\}/)
+issues << 'tokens.css 里 @font-face 不是四段（四个字重各一段）' unless
+  faceBlocks.size == 4
+FONT_FACES.each do |w, file|
+  issues << "缺 #{w} 那段 @font-face（应写 font-weight:#{w} 并指向 #{file}）" unless
+    tokens.include?("font-weight:#{w}") && tokens.include?(file)
+  path = File.join(ROOT, 'assets', 'fonts', file)
+  issues << "字体文件 assets/fonts/#{file} 不在仓库里（会静默回退到系统字体）" unless File.exist?(path)
+  issues << "字体文件 #{file} 太大了（子集化没生效？应 ~250KB、上限 600KB）" if
+    File.exist?(path) && File.size(path) > 600 * 1024
+end
+issues << '字体引了外部地址（全站不引 CDN，字体也得是本地文件）' if
+  faceBlocks.any? { |b| b.include?('http') }
+%w[sans display mono math].each do |k|
+  val = tokens[/--math-font-#{k}\s*:\s*([^;]+);/, 1].to_s
+  issues << "--math-font-#{k} 没以阿里巴巴普惠体打头（又换回系统字体了）" unless
+    val.include?('"Alibaba PuHuiTi 3"')
+  issues << "--math-font-#{k} 里还留着换之前的字体名" if
+    val =~ /Inter|JetBrains Mono|Source Han Serif|HarmonyOS Sans/
+end
+issues << '四个字体令牌没写全（sans / display / mono / math）' unless
+  %w[sans display mono math].all? { |k| tokens.include?("--math-font-#{k}:") }
 
 # ---------- 3. 三包配色：逐个颜色令牌比对 ----------
 def block_of(css, selector)
@@ -533,9 +576,10 @@ issues << '滚轮条没跟主题走（暗色下会横一根浅色条）' unless
   tokens.include?('background-color: var(--math-ink-4);') &&
   tokens.include?('background-color: var(--math-ink-3);')
 
-puts "页面：#{pages.size} 个，全部挂了启动器；字号可缩放 #{pages.size} 页"
+puts "页面：#{pages.size} 个（另 #{STANDALONE.size} 个独立页不接启动器），全部挂了启动器；字号可缩放 #{pages.size} 页"
 puts "配色令牌：:root 里 #{color_names.size} 个颜色令牌，中色 / 暗色逐一对齐"
 puts '对比度：亮 / 中 / 暗三套的正文、次级、说明、次要、主色均已计算'
+puts '字体：四个字重各一段 @font-face，全指向本地子集（assets/fonts/*.woff2，共 4 个文件）；四个字体令牌都以阿里巴巴普惠体打头'
 unless issues.empty?
   puts
   issues.each { |i| puts "  ✗ #{i}" }

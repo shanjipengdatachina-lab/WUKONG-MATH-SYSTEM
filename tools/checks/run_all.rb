@@ -66,7 +66,7 @@ puts "\n== 体检 =="
 problems = []
 %w[verify_brand.rb verify_rail.rb verify_reader_tree.rb verify_whiteboard.rb
    verify_fullscreen.rb verify_graph.rb verify_timeline.rb verify_3d.rb verify_bridges.rb verify_forum.rb
-   verify_display.rb broken_links.rb residue_final.rb ia_audit.rb].each do |b|
+   verify_display.rb verify_home.rb broken_links.rb residue_final.rb ia_audit.rb].each do |b|
   path = File.join(DIR, b)
   next unless File.exist?(path)
   next unless keep?(File.basename(b, '.rb'))

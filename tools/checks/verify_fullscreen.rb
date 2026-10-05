@@ -35,10 +35,11 @@ pages.each do |path|
   end
 end
 
-# 除独立文档（白板功能规划）外应全有。这个数是**页面总数 - 1**。
-# 2026-09-30 加 timeline-3d.html 时把写死的 42 改成跟着页面总数走：
-# 加页面时不用再回来改这个数，"漏加"照样抓得住。
-expect_with_btn = pages.size - 1
+# 除独立页面（白板功能规划 / Universal 粒子沙盒）外应全有 —— 这个数是**页面总数 - 独立页数**。
+# 2026-09-30 加 timeline-3d.html 时把写死的 42 改成跟着页面总数走（加页面时不用再回来改这个数）；
+# 2026-10-02 又改成"减掉 STANDALONE 的个数"，这样再加独立页也不用动它。
+STANDALONE = %w[白板功能规划.html Universal.html].freeze
+expect_with_btn = pages.size - STANDALONE.size
 issues << "仍有个别页面漏加全屏按钮（除独立文档外应全有；应 #{expect_with_btn} 页，实际 #{with_btn.size} 页）" unless
   with_btn.size == expect_with_btn
 issues << '白板工具条里还留着全屏按钮（应与侧栏统一）' if

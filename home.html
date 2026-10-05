@@ -81,190 +81,42 @@
     </nav>
 
     <main>
-      <section class="home-hero" aria-labelledby="hero-title">
+      <!-- 首页 = 一块黑底 + 标题那两行字 + 背后一片干净的点（用户 2026-10-02：
+           "简单的、纯粹的点……不是带光晕的点。然后慢慢形成这个星云……真的慢慢在旋转，
+            有种很静谧、很神秘、很安静的那种感觉。就是单纯的点。"）。
+
+           段落**默认不出现**，点标题才显出来（同一句："你只有点击这个标题，然后它再显现出来"）。
+
+           来龙去脉：这页做过三版 —— ① 标题+副题+按钮+索引那面"目录墙"（用户让只留标题和粒子）；
+           ② 从他自己那份 Universal.html 搬来的旋臂星系（做完他说不要粒子了）；
+           ③ 黑底+标题+宣言（现在这一版，把粒子又请了回来，但是**重写过的、干净的一版**：
+           去光晕、去公式星尘、从散点慢慢长成星云，引擎在 assets/js/home-stars.js）。
+           看完第一版星云他说"这四条臂也没有弧度，不像银河系"，于是引擎又重做了一轮：
+           对数螺旋的缠绕度 0.95 → 2.6（四臂真的绕出弧线）、整盘改**刚体自转**
+           （差速转会把旋臂绞散）、相机加了自己慢慢飘 + 上下起伏 + 空白处按住拖动转视角。
+           他那份 Universal.html 原稿留着当沙盒（体检按"独立页"跳过）。
+
+           宣言那段是**他给的原文**，一个字没动；只按自然的段落分了段。
+           动线没有断：那三座桥（练 / 问 / 画）由**侧栏**（白板 / 论坛）与**页脚**（考点速练）承接
+           —— 见 tools/checks/verify_bridges.rb 里那一段。 -->
+      <section class="home-hero" data-home-hero aria-labelledby="hero-title">
+        <canvas class="home-hero__stars" data-home-stars aria-hidden="true"></canvas>
         <div class="home-hero__inner">
-          <div class="home-hero__lead">
-            <h1 class="home-hero__title" id="hero-title">悟空数学</h1>
-            <p class="home-hero__subtitle">人教版 · 六册 · 二十九章 · 完整知识体系</p>
-            <p class="home-hero__desc">把三年知识连成一张可缩放的脑图，从册到章到知识点一路深入。</p>
-            <div class="home-hero__actions">
-              <a class="btn btn--primary" href="graph.html" data-dom-id="cta-graph">
-                <span>进入知识图谱</span>
-                <i data-lucide="arrow-right" class="btn__icon"></i>
-              </a>
-              <a class="btn btn--ghost" href="reader.html" data-dom-id="cta-reader">浏览章节</a>
-            </div>
+          <div class="home-hero__brand">
+            <h1 class="home-hero__title" id="hero-title">
+              <button type="button" class="home-hero__toggle" data-hero-title
+                      aria-expanded="false" aria-controls="hero-manifesto">WUKONG MATH UNIVERSAL</button>
+            </h1>
+            <p class="home-hero__subtitle">
+              <button type="button" class="home-hero__toggle" data-hero-title
+                      aria-expanded="false" aria-controls="hero-manifesto">悟空云界交互空间实验室 · 数学宇宙</button>
+            </p>
           </div>
-          <figure class="home-hero__figure">
-            <svg class="axis-svg" viewBox="0 0 480 120" role="img" aria-label="一条均匀刻度数轴，标注 −2 到 3，原点 O，箭头指向正方向">
-              <line class="axis-line" x1="24" y1="62" x2="452" y2="62"></line>
-              <polyline class="axis-arrow" points="442,56 452,62 442,68" fill="none"></polyline>
-              <line class="axis-tick" x1="40" y1="56" x2="40" y2="68"></line>
-              <line class="axis-tick" x1="112" y1="56" x2="112" y2="68"></line>
-              <line class="axis-tick" x1="184" y1="56" x2="184" y2="68"></line>
-              <line class="axis-tick" x1="256" y1="56" x2="256" y2="68"></line>
-              <line class="axis-tick" x1="328" y1="56" x2="328" y2="68"></line>
-              <line class="axis-tick" x1="400" y1="56" x2="400" y2="68"></line>
-              <circle class="axis-origin" cx="184" cy="62" r="3"></circle>
-              <text class="axis-origin-label" x="184" y="44" text-anchor="middle">O</text>
-              <text class="axis-num" x="40" y="90" text-anchor="middle">−2</text>
-              <text class="axis-num" x="112" y="90" text-anchor="middle">−1</text>
-              <text class="axis-num" x="184" y="90" text-anchor="middle">0</text>
-              <text class="axis-num" x="256" y="90" text-anchor="middle">1</text>
-              <text class="axis-num" x="328" y="90" text-anchor="middle">2</text>
-              <text class="axis-num" x="400" y="90" text-anchor="middle">3</text>
-            </svg>
-            <figcaption class="formula-block">
-              <span class="formula">|a| ≥ 0</span>
-              <span class="formula-note">绝对值</span>
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section class="section-quick" aria-labelledby="quick-title">
-        <div class="section-quick__inner">
-          <p class="section-quick__meta">练 · 问 · 画</p>
-          <h2 class="section-quick__title" id="quick-title">不只读，还要动手</h2>
-
-          <ul class="quick-list">
-            <li class="quick">
-              <a class="quick__link" href="practice.html" data-dom-id="quick-practice">
-                <span class="quick__icon" aria-hidden="true"><i data-lucide="clipboard-list"></i></span>
-                <span class="quick__body">
-                  <span class="quick__name">练 · 考点速练</span>
-                  <span class="quick__desc">挑一组真题速练，提交后看逐题解析</span>
-                </span>
-                <i data-lucide="arrow-right" class="quick__arrow"></i>
-              </a>
-            </li>
-            <li class="quick">
-              <a class="quick__link" href="forum-compose.html" data-dom-id="quick-forum">
-                <span class="quick__icon" aria-hidden="true"><i data-lucide="messages-square"></i></span>
-                <span class="quick__body">
-                  <span class="quick__name">问 · 论坛求助</span>
-                  <span class="quick__desc">卡住的题发出来，连同你的思路一起</span>
-                </span>
-                <i data-lucide="arrow-right" class="quick__arrow"></i>
-              </a>
-            </li>
-            <li class="quick">
-              <a class="quick__link" href="whiteboard.html" data-dom-id="quick-board">
-                <span class="quick__icon" aria-hidden="true"><i data-lucide="presentation"></i></span>
-                <span class="quick__body">
-                  <span class="quick__name">画 · 白板演算</span>
-                  <span class="quick__desc">随时拉起白板，边算边写边讲</span>
-                </span>
-                <i data-lucide="arrow-right" class="quick__arrow"></i>
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="section-index" aria-labelledby="index-title">
-        <div class="section-index__inner">
-          <p class="section-index__meta">29 章 · 目录</p>
-          <h2 class="section-index__title" id="index-title">三年六册</h2>
-
-          <article class="volume">
-            <header class="volume__head">
-              <h3 class="volume__name">七年级（上）</h3>
-              <span class="volume__count">4 章</span>
-              <a class="volume__link" href="reader.html">进入本册 <span class="volume__arrow">→</span></a>
-            </header>
-            <ul class="chapter-list chapter-list--even">
-              <li class="chapter"><a class="chapter__link" href="chapter.html" data-dom-id="home-open-chapter"><span class="chapter__no">01</span><span class="chapter__name">有理数</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">02</span><span class="chapter__name">整式的加减</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">03</span><span class="chapter__name">一元一次方程</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">04</span><span class="chapter__name">几何图形初步</span></a></li>
-            </ul>
-          </article>
-
-          <article class="volume">
-            <header class="volume__head">
-              <h3 class="volume__name">七年级（下）</h3>
-              <span class="volume__count">6 章</span>
-              <a class="volume__link" href="reader.html">进入本册 <span class="volume__arrow">→</span></a>
-            </header>
-            <ul class="chapter-list chapter-list--even">
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">05</span><span class="chapter__name">相交线与平行线</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">06</span><span class="chapter__name">实数</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">07</span><span class="chapter__name">平面直角坐标系</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">08</span><span class="chapter__name">二元一次方程组</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">09</span><span class="chapter__name">不等式与不等式组</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">10</span><span class="chapter__name">数据的收集、整理与描述</span></a></li>
-            </ul>
-          </article>
-
-          <article class="volume">
-            <header class="volume__head">
-              <h3 class="volume__name">八年级（上）</h3>
-              <span class="volume__count">5 章</span>
-              <a class="volume__link" href="reader.html">进入本册 <span class="volume__arrow">→</span></a>
-            </header>
-            <ul class="chapter-list chapter-list--odd">
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">11</span><span class="chapter__name">三角形</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">12</span><span class="chapter__name">全等三角形</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">13</span><span class="chapter__name">轴对称</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">14</span><span class="chapter__name">整式的乘法与因式分解</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">15</span><span class="chapter__name">分式</span></a></li>
-            </ul>
-          </article>
-
-          <article class="volume">
-            <header class="volume__head">
-              <h3 class="volume__name">八年级（下）</h3>
-              <span class="volume__count">5 章</span>
-              <a class="volume__link" href="reader.html">进入本册 <span class="volume__arrow">→</span></a>
-            </header>
-            <ul class="chapter-list chapter-list--odd">
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">16</span><span class="chapter__name">二次根式</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">17</span><span class="chapter__name">勾股定理</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">18</span><span class="chapter__name">平行四边形</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">19</span><span class="chapter__name">一次函数</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">20</span><span class="chapter__name">数据的分析</span></a></li>
-            </ul>
-          </article>
-
-          <article class="volume">
-            <header class="volume__head">
-              <h3 class="volume__name">九年级（上）</h3>
-              <span class="volume__count">4 章</span>
-              <a class="volume__link" href="reader.html">进入本册 <span class="volume__arrow">→</span></a>
-            </header>
-            <ul class="chapter-list chapter-list--even">
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">21</span><span class="chapter__name">一元二次方程</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">22</span><span class="chapter__name">二次函数</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">23</span><span class="chapter__name">旋转</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">24</span><span class="chapter__name">圆</span></a></li>
-            </ul>
-          </article>
-
-          <article class="volume">
-            <header class="volume__head">
-              <h3 class="volume__name">九年级（下）</h3>
-              <span class="volume__count">5 章</span>
-              <a class="volume__link" href="reader.html">进入本册 <span class="volume__arrow">→</span></a>
-            </header>
-            <ul class="chapter-list chapter-list--odd">
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">25</span><span class="chapter__name">概率初步</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">26</span><span class="chapter__name">反比例函数</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">27</span><span class="chapter__name">相似</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">28</span><span class="chapter__name">锐角三角函数</span></a></li>
-              <li class="chapter"><a class="chapter__link" href="chapter.html"><span class="chapter__no">29</span><span class="chapter__name">投影与视图</span></a></li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="section-cta" aria-labelledby="cta-title">
-        <div class="section-cta__inner">
-          <h2 class="section-cta__title" id="cta-title">全站图谱</h2>
-          <a class="btn btn--primary" href="graph.html">
-            <span>进入知识图谱</span>
-            <i data-lucide="arrow-right" class="btn__icon"></i>
-          </a>
+          <div class="home-hero__manifesto" id="hero-manifesto">
+            <p>数学是一种知识体系，也是一种认识世界的方式。它训练人处理数量、结构、关系、空间、变化、不确定性和证明，帮助人形成长期专注、克制判断、逻辑推演和独立探索的能力。考试能够观察其中一部分学习结果，但考试不是数学本身，更不是学习数学的唯一目的。</p>
+            <p>WUKONG MATH 的核心判断是：只要数学知识被组织成稳定的对象、关系和层级，只要学习过程能够留下可信证据，只要系统能够区分真正理解、熟练操作、短期记忆、迁移能力和偶发失误，数学学习就可以变得更加连续、透明、个性化和可持续。</p>
+            <p>WUKONG MATH 将全人类数学知识组织成一个可探索、可学习、可验证、可持续生长的数字宇宙，使每个孩子都能找到自己的入口和长期路径。</p>
+          </div>
         </div>
       </section>
     </main>
@@ -286,289 +138,148 @@
 </style>
 
     <style id="page-styles">
-*,*::before,*::after{ box-sizing: border-box; }body{
+      *,*::before,*::after{ box-sizing: border-box; }body{
         margin: 0;
         font-family: var(--math-font-sans);
         font-variant-numeric: tabular-nums;
         background: var(--math-background);
         color: var(--math-foreground);
-      }h1,h2,h3,p,figure,ul{ margin: 0; }ul{ padding: 0; list-style: none; }a{ color: inherit; }.btn:focus-visible,.chapter__link:focus-visible,.volume__link:focus-visible,.shell-footer__link:focus-visible{
+      }h1{ margin: 0; }a{ color: inherit; }.shell-footer__link:focus-visible{
         outline: 2px solid var(--math-ring);
         outline-offset: 2px;
         border-radius: var(--math-radius-sm);
-      }.chapter__link:focus-visible{ outline-offset: -2px; }.btn{
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        height: 44px;
-        min-height: 44px;
-        padding: 0 20px;
-        border: 1px solid transparent;
-        border-radius: var(--math-radius-md);
-        font-size: var(--math-text-body);
-        font-weight: 500;
-        line-height: 1;
-        white-space: nowrap;
-        text-decoration: none;
-        transition: background-color 140ms cubic-bezier(.2,.8,.2,1),
-                    border-color 140ms cubic-bezier(.2,.8,.2,1),
-                    color 140ms cubic-bezier(.2,.8,.2,1);
-      }.btn--primary{
-        background: var(--math-primary);
-        border-color: var(--math-primary);
-        color: var(--math-primary-foreground);
-      }.btn--primary:hover{
-        background: var(--math-primary-strong);
-        border-color: var(--math-primary-strong);
-        color: var(--math-primary-foreground);
-      }.btn--ghost{
-        background: transparent;
-        border-color: var(--math-border);
-        color: var(--math-foreground);
-      }.btn--ghost:hover{
-        border-color: var(--math-line-strong);
-        color: var(--math-primary);
-      }.btn__icon,.btn svg{
-        width: 15px;
-        height: 15px;
-        flex: 0 0 auto;
-        transition: transform 140ms cubic-bezier(.2,.8,.2,1);
-      }.btn:hover .btn__icon,.btn:hover svg{ transform: translateX(2px); }.home-hero__inner{
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 128px 32px 136px;
+      }
+      /* ---- 一块黑底 + 中间那两行字 + 背后一片干净的点 ----
+         `min-height:100vh`：这一页就这一块，得铺满一屏。`place-items:center` = **整块居中**。
+         `--math-hero-*` 那一族令牌**三包共用一份值**（这一页就是黑底白字，见 tokens.css）；
+         侧栏与页脚照旧跟着主题走。 */
+      .home-hero{
+        position: relative;
+        isolation: isolate;
+        min-height: 100vh;
         display: grid;
-        grid-template-columns: repeat(12, minmax(0, 1fr));
-        gap: 48px;
-        align-items: center;
-      }.home-hero__lead{ grid-column: span 7; }.home-hero__figure{
-        grid-column: span 5;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }.home-hero__title{
-        font-size: var(--math-text-display);
-        font-weight: 600;
-        line-height: 1.2;
-        letter-spacing: -0.02em;
-        color: var(--math-foreground);
-        text-wrap: balance;
-        word-break: keep-all;
-      }.home-hero__subtitle{
-        margin-top: 28px;
-        font-size: var(--math-text-body-lg);
-        line-height: 1.7;
-        color: var(--math-ink-2);
-      }.home-hero__desc{
-        margin-top: 12px;
-        font-size: var(--math-text-body);
-        line-height: 1.7;
-        color: var(--math-ink-3);
-      }.home-hero__actions{
-        margin-top: 36px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-      }.axis-svg{ display: block; width: 100%; height: auto; }.axis-line,.axis-tick{ stroke: var(--math-line-strong); stroke-width: 1; }.axis-arrow{
-        fill: none;
-        stroke: var(--math-primary);
-        stroke-width: 1.5;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }.axis-origin{ fill: var(--math-primary); }.axis-origin-label{
-        fill: var(--math-primary);
-        font-family: var(--math-font-mono);
-        font-size:calc(13px * var(--math-fs));
-        font-weight: 600;
-      }.axis-num{
-        fill: var(--math-ink-2);
-        font-family: var(--math-font-mono);
-        font-size:calc(13px * var(--math-fs));
-      }.formula-block{
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-        padding-top: 18px;
-        border-top: 1px solid var(--math-border);
-      }.formula{
-        font-family: var(--math-font-math);
-        font-style: italic;
-        font-size:calc(1.5rem * var(--math-fs));
-        line-height: 1.3;
-        color: var(--math-foreground);
-        font-variant-numeric: tabular-nums;
-      }.formula-note{
-        font-size: var(--math-text-caption);
-        color: var(--math-ink-3);
-      }.section-quick{ border-top: 1px solid var(--math-border); }.section-quick__inner{
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 88px 32px 0;
-        display: flex;
-        flex-direction: column;
-      }.section-quick__meta{
-        font-size: var(--math-text-caption);
-        line-height: 1.6;
-        letter-spacing: 0.08em;
-        color: var(--math-ink-3);
-      }.section-quick__title{
-        margin-top: 10px;
-        font-size: var(--math-text-h2);
-        font-weight: 600;
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-        color: var(--math-foreground);
-        text-wrap: balance;
-      }.quick-list{
-        margin-top: 36px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1px;
-        background: var(--math-border);
-        border: 1px solid var(--math-border);
-        border-radius: var(--math-radius-md);
+        place-items: center;
+        padding: 88px 32px;
         overflow: hidden;
-      }.quick{ background: var(--math-background); }.quick__link{
-        display: flex;
-        align-items: center;
-        gap: 16px;
+        background: var(--math-hero-bg);
+        cursor: grab;              /* 空白处按住能拖着转星系（见 home-stars.js 头部） */
+      }
+      /* 拖动中就换成"抓着"的手，并且**不许选中文字**
+         （用户 2026-10-02："拖动的时候不要把这个文字选中" —— 三段话显出来之后也一样，
+          那三段话本身也要能跟着拖：见 home-stars.js 头部）。 */
+      .home-hero[data-stars-drag="on"]{ cursor: grabbing; }
+      .home-hero[data-stars-drag="on"] *{ user-select: none; -webkit-user-select: none; }
+      /* 星云是**背景层**：铺满、不接指针（不许挡标题那颗按钮）。
+         段落显出来的时候它自己**退到后面去**（0.55）—— 那些点虽然干净，但压在 14px 正文后面
+         还是会碍事；退这一下和正文是同一个节奏，看着像"星云让开"。 */
+      .home-hero__stars{
+        position: absolute;
+        inset: 0;
+        width: 100%;
         height: 100%;
-        padding: 24px;
-        text-decoration: none;
-        transition: background-color 140ms cubic-bezier(.2,.8,.2,1);
-      }.quick__link:hover{ background: var(--math-surface); }.quick__link:focus-visible{
-        outline: 2px solid var(--math-ring);
-        outline-offset: -2px;
-      }.quick__icon{
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        flex: 0 0 40px;
-        border: 1px solid var(--math-border);
-        border-radius: var(--math-radius-md);
-        background: var(--math-primary-soft);
-        color: var(--math-primary);
-      }.quick__icon svg{ width: 18px; height: 18px; }.quick__body{
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        flex: 1 1 auto;
-        min-width: 0;
-      }.quick__name{
-        font-size: var(--math-text-body);
-        font-weight: 500;
-        line-height: 1.4;
-        color: var(--math-foreground);
-      }.quick__desc{
-        font-size: var(--math-text-caption);
-        line-height: 1.6;
-        color: var(--math-ink-3);
-      }.quick__arrow{
-        width: 16px;
-        height: 16px;
-        flex: 0 0 16px;
-        color: var(--math-ink-4);
-        transition: transform 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1);
-      }.quick__link:hover .quick__arrow{ transform: translateX(2px); color: var(--math-primary); }@media (max-width: 1024px){.section-quick__inner{ padding: 72px 32px 0; }.quick-list{ grid-template-columns: minmax(0, 1fr); }}@media (max-width: 640px){.section-quick__inner{ padding: 60px 20px 0; }.quick-list{ margin-top: 28px; }.quick__link{ padding: 20px; }}.section-index{ border-top: 1px solid var(--math-border); }.section-index__inner{
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 88px 32px 0;
-      }.section-index__meta{
-        font-family: var(--math-font-mono);
-        font-size: var(--math-text-caption);
-        letter-spacing: 0.02em;
-        color: var(--math-ink-3);
-      }.section-index__title{
-        margin-top: 10px;
-        font-size: var(--math-text-h2);
-        font-weight: 600;
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-        color: var(--math-foreground);
-        text-wrap: balance;
-        word-break: keep-all;
-      }.volume{
-        margin-top: 56px;
-        border-top: 1px solid var(--math-border);
-        padding: 36px 0 40px;
-      }.volume__head{ display: flex; align-items: baseline; gap: 12px; }.volume__name{
-        font-size: var(--math-text-body-lg);
-        font-weight: 600;
-        line-height: 1.2;
-        color: var(--math-foreground);
-        word-break: keep-all;
-      }.volume__count{
-        font-family: var(--math-font-mono);
-        font-size: var(--math-text-caption);
-        color: var(--math-ink-3);
-      }.volume__link{
-        margin-left: auto;
-        flex: 0 0 auto;
-        font-size: var(--math-text-caption);
-        color: var(--math-ink-3);
-        text-decoration: none;
-        white-space: nowrap;
-        transition: color 140ms cubic-bezier(.2,.8,.2,1);
-      }.volume__link:hover{ color: var(--math-primary); }.volume__arrow{
-        display: inline-block;
-        transition: transform 140ms cubic-bezier(.2,.8,.2,1);
-      }.volume__link:hover .volume__arrow{ transform: translateX(2px); }.chapter-list{
-        margin-top: 22px;
+        display: block;
+        pointer-events: none;
+        transition: opacity 640ms cubic-bezier(.2,.8,.2,1);
+      }.home-hero[data-manifesto="on"] .home-hero__stars{ opacity: 0.55; }
+      /* 两行 = 两行；第二行那格平时是 0fr（收着），点标题才放到 1fr —— 这样"长出来"
+         带着**高度动画**，而不是啪一下撑开、把标题顶上去。
+         行距 `row-gap` 跟着一起动，收着的时候不留那道 48px 的空。 */
+      .home-hero__inner{
+        position: relative;
+        z-index: 1;
+        width: 100%;
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        column-gap: 48px;
-      }.chapter{ border-bottom: 1px solid var(--math-border); }.chapter-list--odd > .chapter:last-child{ border-bottom: none; }.chapter-list--even > .chapter:nth-last-child(-n+2){ border-bottom: none; }.chapter__link{
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-height: 40px;
-        padding: 0 4px;
-        text-decoration: none;
-      }.chapter__no{
-        flex: 0 0 auto;
-        font-family: var(--math-font-mono);
-        font-size: var(--math-text-caption);
-        color: var(--math-ink-3);
-        transition: transform 140ms cubic-bezier(.2,.8,.2,1);
-      }.chapter__name{
-        font-size: var(--math-text-body);
-        line-height: 1.5;
-        color: var(--math-foreground);
-        overflow-wrap: break-word;
-        transition: color 140ms cubic-bezier(.2,.8,.2,1);
-      }.chapter__link:hover .chapter__no{ transform: translateX(2px); }.chapter__link:hover .chapter__name{ color: var(--math-primary); }.section-cta{ border-top: 1px solid var(--math-border); }.section-cta__inner{
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 104px 32px;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 32px;
-      }.section-cta__title{
+        grid-template-rows: auto 0fr;
+        row-gap: 0;
+        justify-items: center;
+        transition: grid-template-rows 640ms cubic-bezier(.2,.8,.2,1),
+                    row-gap 640ms cubic-bezier(.2,.8,.2,1);
+        cursor: auto;              /* 字这块不显示"抓手"：标题要点、正文要能选字 */
+      }.home-hero[data-manifesto="on"] .home-hero__inner{
+        grid-template-rows: auto 1fr;
+        row-gap: 48px;
+      }.home-hero__brand{
+        display: grid;
+        gap: 10px;
+      }.home-hero__title{
         font-size: var(--math-text-h2);
         font-weight: 600;
-        line-height: 1.2;
-        letter-spacing: -0.01em;
-        color: var(--math-foreground);
-        text-wrap: balance;
+        line-height: 1.15;
+        letter-spacing: 0.06em;
+        text-align: center;
+        color: var(--math-hero-ink);
         word-break: keep-all;
-      }@media (max-width: 1024px){.home-hero__inner{
-          grid-template-columns: minmax(0, 1fr);
-          gap: 56px;
-          padding: 96px 32px 104px;
-        }.home-hero__lead,.home-hero__figure{ grid-column: auto; }.chapter-list{ column-gap: 32px; }.section-index__inner{ padding: 72px 32px 0; }.section-cta__inner{ padding: 80px 32px; }.volume{ margin-top: 44px; padding: 32px 0 34px; }}@media (max-width: 640px){.home-hero__inner{ padding: 72px 20px 80px; gap: 44px; }.section-index__inner{ padding: 60px 20px 0; }.section-cta__inner{ padding: 64px 20px; }.chapter-list{
-          grid-template-columns: minmax(0, 1fr);
-          column-gap: 0;
-          margin-top: 18px;
-        }.chapter-list--even > .chapter:nth-last-child(-n+2){ border-bottom: 1px solid var(--math-border); }.chapter-list > .chapter:last-child{ border-bottom: none; }.volume__head{ flex-wrap: wrap; gap: 8px 12px; }.volume__link{ margin-left: 0; }.shell-footer__inner{ padding: 28px 20px; }}@media (prefers-reduced-motion: reduce){*,*::before,*::after{
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-          scroll-behavior: auto !important;
-        }}
+      }
+      /* 两行字各自都是一颗"开关"：做成真按钮（不是给 h1 挂 onclick），
+         键盘、读屏、`aria-expanded` 都是现成的。英文标题与中文副题**都能点**
+         （用户 2026-10-02："除了点那个 WUKONG MATH UNIVERSAL，下面那个汉语也可以点击"）。
+         平时没有任何按钮样子 —— 只有鼠标压上去时**微微提亮**，算个"可以点"的暗示。 */
+      .home-hero__toggle{
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        font: inherit;
+        color: inherit;
+        letter-spacing: inherit;
+        cursor: pointer;
+        transition: opacity 260ms ease;
+      }.home-hero__toggle:hover{ opacity: 0.82; }
+      .home-hero__toggle:focus-visible{
+        outline: 2px solid var(--math-ring);
+        outline-offset: 6px;
+        border-radius: var(--math-radius-sm);
+      }
+      /* 中文那行**按宽度配到跟英文标题一样长**（用户 2026-10-02："汉字字号长短要匹配英文大标题"）。
+         实测（**阿里巴巴普惠体 3.0**、字距 0.06em、标题字号 22px）：
+           「WUKONG MATH UNIVERSAL」             317.31px
+           「悟空云界交互空间实验室 · 数学宇宙」 323.23px（已经是 ×0.879 之后量到的）
+         → 中文还得再收一点点：0.879 × 317.31 ÷ 323.23 = **0.863**，两行左右两端才齐。
+         两边字距都是 em 值、字体也同族，所以这个比例**跟着标题字号一起缩放** ——
+         在设置里换字号档，两行依旧等宽。
+         ⚠️ 这数**跟字体、跟标题那行字面量一起绑死**：2026-10-02 从 Inter 换成阿里巴巴普惠体，
+            它就从 0.879 变成 0.863；再往前 "Universal → UNIVERSAL" 那次也把它从 0.807 改成了 0.879。
+            以后**动字体或动标题那行字，都要重新量一遍**。 */
+      .home-hero__subtitle{
+        font-size: calc(0.863 * var(--math-text-h2));
+        font-weight: 500;
+        line-height: 1.3;
+        letter-spacing: 0.06em;
+        text-align: center;
+        color: var(--math-hero-body);
+        word-break: keep-all;
+      }
+      /* 宣言**默认收着**（点标题才出来）：这里给"块内"的排版，
+         收放那件事交给上面 `.home-hero__inner` 的两行格子。
+         左对齐 + 每段开头空两格（用户 2026-10-02："段落文字 要左对齐 开头空俩字"）。 */
+      .home-hero__manifesto{
+        max-width: 760px;
+        min-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        display: grid;
+        gap: 24px;
+        text-align: left;
+        font-size: calc(14px * var(--math-fs));
+        line-height: 1.95;
+        color: var(--math-hero-body);
+        transition: opacity 380ms ease;
+      }
+      .home-hero[data-manifesto="on"] .home-hero__manifesto{
+        opacity: 1;
+        transition-delay: 180ms;     /* 等高度先长开一点再显字，不然字像从缝里挤出来 */
+      }
+      .home-hero__manifesto p{
+        text-indent: 2em;
+      }
+      @media (max-width: 640px){.home-hero{ padding: 64px 20px; }.home-hero[data-manifesto="on"] .home-hero__inner{ row-gap: 32px; }}
+      @media (prefers-reduced-motion: reduce){*,*::before,*::after{
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }}
 </style>
 
     <script>lucide.createIcons();</script>
@@ -576,6 +287,31 @@
     <link rel="stylesheet" href="assets/css/ide.css">
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/ide-shell.js"></script>
+    <!-- 标题背后那片星云（干净的点，慢慢长、慢慢转），见文件头注释 -->
+    <script src="assets/js/home-stars.js"></script>
+    <script>
+      /* 点那两行字 → 那三段话显出来（用户 2026-10-02："你只有点击这个标题，然后它再显现出来"，
+         随后补："除了点那个 WUKONG MATH UNIVERSAL，下面那个汉语也可以点击"）。
+         状态落在 section 的 `data-manifesto` 上，CSS 那边管高度与淡入；
+         两颗按钮的 `aria-expanded` 一起同步，读屏与键盘用户拿到的是同一件事。 */
+      (function () {
+        var hero = document.querySelector('[data-home-hero]');
+        var toggles = document.querySelectorAll('[data-hero-title]');
+        if (!hero || !toggles.length) { return; }
+        function sync(on) {
+          if (on) { hero.setAttribute('data-manifesto', 'on'); }
+          else { hero.removeAttribute('data-manifesto'); }
+          for (var j = 0; j < toggles.length; j += 1) {
+            toggles[j].setAttribute('aria-expanded', on ? 'true' : 'false');
+          }
+        }
+        for (var k = 0; k < toggles.length; k += 1) {
+          toggles[k].addEventListener('click', function () {
+            sync(hero.getAttribute('data-manifesto') !== 'on');
+          });
+        }
+      }());
+    </script>
     <script src="assets/js/board-link.js"></script>
     <script src="assets/js/pages.js"></script>
 </body>

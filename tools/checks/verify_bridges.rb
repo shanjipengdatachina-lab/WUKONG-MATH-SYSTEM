@@ -17,20 +17,26 @@ wb       = read('whiteboard.html')
 wbjs     = read('assets/js/whiteboard.js')
 mm       = read('assets/js/mindmap.js')
 
-# ---------- 1. 首页：练 / 问 / 画 三个出口 ----------
-{
-  'quick-practice' => 'practice.html',
-  'quick-forum'    => 'forum-compose.html',
-  'quick-board'    => 'whiteboard.html'
-}.each do |dom, href|
-  unless home =~ /href="#{Regexp.escape(href)}"\s+data-dom-id="#{dom}"/
-    issues << "首页出口 ##{dom} 缺失或没指向 #{href}"
-  end
+# ---------- 1. 首页：**只剩标题 + 星空**；那三座桥改由侧栏 / 页脚承接 ----------
+# 背景：原来这一段钉的是"首页必须有练 / 问 / 画三个出口"（首页当时是那面"目录墙"）。
+# 2026-10-02 用户看完星空那一版后定："首页除了标题和粒子 其它的都删掉" —— 整段撤掉，
+# 于是这里**反过来**钉两件事：① 首页别再长出别的区块；② 那三座桥在别处确实还通。
+# 问过用户"练习页还有没有入口、侧栏里可没有练习" —— 有：页脚那条「考点速练」全站五十多页
+# 都挂着，章节页 / 阅读器 / 真题页 / 错题页正文里也各有入口，删掉首页那一个不影响可达性。
+%w[quick-list section-index section-cta].each do |cls|
+  issues << "首页又长出了 .#{cls} 那一段（用户 2026-10-02 只要标题 + 星空）" if
+    home.include?(%(class="#{cls}"))
 end
-issues << '首页出口没有收进 .quick-list 区块' unless home.include?('class="quick-list"')
-issues << '首页出口区块缺标题（无障碍/结构）' unless home.include?('aria-labelledby="quick-title"')
-%w[练 问 画].each do |word|
-  issues << "首页出口少了「#{word}」这个字" unless home =~ /quick__name">#{word} · /
+issues << '首页又挂回了大按钮（用户 2026-10-02 只要标题 + 星空）' if
+  home.include?('class="btn btn--primary"')
+issues << '首页又挂回了那根数轴 SVG / 公式块（那一版整段撤了）' if
+  home.include?('class="axis-svg"') || home.include?('class="formula-block"')
+# 三座桥现在挂在哪：练 → 页脚那条；问 / 画 → 侧栏
+issues << '首页页脚的「考点速练」出口丢了（"练"这座桥现在挂在页脚）' unless
+  home =~ /href="practice\.html"\s+data-dom-id="foot-practice"/
+%w[whiteboard forum].each do |k|
+  issues << "侧栏里「#{k}」入口丢了（问 / 画两座桥现在靠侧栏）" unless
+    home.include?("data-nav-key=\"#{k}\"")
 end
 
 # ---------- 2. 练习页：做完题能直接去问 ----------

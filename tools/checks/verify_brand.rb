@@ -7,8 +7,10 @@
 ROOT = (ENV['WKMATH_ROOT'] || File.expand_path('../..', __dir__)).dup.force_encoding('UTF-8')
 pages = Dir.glob(File.join(ROOT, '*.html')).sort
 
-# 独立文档（白板功能规划）按设计没有侧栏，单独按自己的品牌面核对
-RAILLESS = %w[白板功能规划.html]
+# 独立页面（按设计没有侧栏、自己一套标题）：白板功能规划（规划文档）+
+# Universal.html（用户 2026-10-02 交来的粒子沙盒页，首页 hero 那块星空的原稿 ——
+# 标题「银河 · 数学 · 寂静」是他自己起的，不套「页面名 · 悟空数学」）。
+RAILLESS = %w[白板功能规划.html Universal.html]
 
 MARK   = '<span class="ide-rail__mark" aria-hidden="true">悟</span>'
 NAME   = '<span class="ide-rail__brand-name">悟空数学</span>'
@@ -71,6 +73,8 @@ TITLE_LIT    = "· 悟空数学'"
 title_ok = 0
 pages.each do |path|
   base = File.basename(path)
+  # 独立页面自己一套标题（见 RAILLESS 的说明）—— 不套「页面名 · 悟空数学」这条规矩
+  next if RAILLESS.include?(base)
   html = File.read(path, encoding: 'UTF-8')
   t = html[/<title>(.*?)<\/title>/m, 1]
   if t.nil?
@@ -115,7 +119,7 @@ end
 puts "页面总数: #{pages.size}"
 puts "侧栏品牌统一: #{rail_ok}/#{pages.size - RAILLESS.size} 页（另 #{RAILLESS.size} 页无侧栏按设计跳过）"
 puts "页脚品牌统一: #{foot_ok}/#{pages.size} 页"
-puts "标签页标题统一: #{title_ok}/#{pages.size} 页（「页面名 · 悟空数学」）"
+puts "标签页标题统一: #{title_ok}/#{pages.size - RAILLESS.size} 页（「页面名 · 悟空数学」；另 #{RAILLESS.size} 页独立标题）"
 puts issues.empty? ? '品牌体检全部通过 ✓' : issues.map { |i| "  ✗ #{i}" }.join("\n")
 
 # 顺带核对：脑图根节点与教材结构文档仍用学科名（项目名 ≠ 学科名）

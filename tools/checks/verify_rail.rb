@@ -5,7 +5,9 @@ BAK  = '/Users/liyuanyuan/.trae-cn/work/6ab7b9737ec5c92d0299834b/backup-html3'
 FORUM_NAV = %w[forum.html forum-thread.html board.html my-posts.html forum-compose.html]
 # 这一页按设计没有外壳侧栏，侧栏结构检查对它跳过（verify_brand 里也是这么跳的）：
 # 它是一份独立的功能规划文档页，不在站点动线上（ia_audit 也会把它报成"孤岛"）。
-SKIP_RAIL = %w[白板功能规划.html].freeze
+# Universal.html（用户 2026-10-02 交来的**粒子沙盒页**）同一条待遇：它是首页 hero 那块
+# 星空的**原稿**（引擎已搬进 assets/js/home-galaxy.js），本身不挂外壳、不进动线。
+SKIP_RAIL = %w[白板功能规划.html Universal.html].freeze
 
 problems = []
 files = Dir.glob(File.join(ROOT, '*.html')).sort

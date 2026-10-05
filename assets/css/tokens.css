@@ -7,6 +7,40 @@
    <style id="semantic-token-fallback"> 抽取而来，作为全站唯一的设计令牌来源。
    ========================================================================== */
 
+/* ==========================================================================
+   字体：阿里巴巴普惠体 3.0（永久免费商用）
+   --------------------------------------------------------------------------
+   用户 2026-10-02："把字体换成阿里普惠体"。
+   来源：https://github.com/lCSSl/puhuiti —— 阿里巴巴普惠体 3.0 官方发布包。
+   许可：阿里巴巴普惠体**永久免费商用**，无需授权、无需署名（这里仍然把出处写在文件里）。
+
+   两条跟全站一致的规矩：
+     · **只用本地文件**，不引任何 CDN —— 跟"零构建、断网也能开"是同一条口径；
+     · 按站点**实际用到的字**做过子集化：整包一个字重 ~5MB → 这里一个 ~245KB。
+       子集覆盖站点现有文案 2238 个字（1404 个汉字 + 中文标点 + 拉丁字母与数字）。
+       ⚠️ 文案里**新出现的生僻字**会落到字体栈后面的系统字体上；重新跑一遍子集化即可补齐。
+
+   四个字重是按全站实际的字重分布挑的（600 用得最多，其次 500、400，700 只有一处）：
+
+     字重  文件                                阿里巴巴普惠体 3.0
+     400   puhuiti-3-55-regular.woff2          55 Regular
+     500   puhuiti-3-65-medium.woff2           65 Medium
+     600   puhuiti-3-75-semibold.woff2         75 SemiBold
+     700   puhuiti-3-85-bold.woff2             85 Bold
+
+   要补字（文案里出现了新字，落到系统字体上了）：把整站用到的字拼成一张字符表
+   （`*.html` + `assets/**/*.js` + `assets/**/*.css` 里出现过的字去重），四个字重各跑一遍
+   `pyftsubset <字重>.woff2 --text-file=chars.txt --flavor=woff2 --layout-features='*'
+     --name-IDs='*' --drop-tables+=DSIG --output-file=puhuiti-3-<字重>.woff2`
+   （整包不在仓库里，从上面那个 GitHub 取；本机这轮用的是独立装的 fonttools 4.66 + brotli，
+     整包 ~5MB → 子集 ~245KB。）
+
+   `font-display: swap`：字体不等，先用系统字体画出来、到了再换，永远不会白屏。 */
+@font-face{ font-family:"Alibaba PuHuiTi 3"; src:url("../fonts/puhuiti-3-55-regular.woff2") format("woff2"); font-weight:400; font-style:normal; font-display:swap; }
+@font-face{ font-family:"Alibaba PuHuiTi 3"; src:url("../fonts/puhuiti-3-65-medium.woff2") format("woff2"); font-weight:500; font-style:normal; font-display:swap; }
+@font-face{ font-family:"Alibaba PuHuiTi 3"; src:url("../fonts/puhuiti-3-75-semibold.woff2") format("woff2"); font-weight:600; font-style:normal; font-display:swap; }
+@font-face{ font-family:"Alibaba PuHuiTi 3"; src:url("../fonts/puhuiti-3-85-bold.woff2") format("woff2"); font-weight:700; font-style:normal; font-display:swap; }
+
 :root {
   /* ---------- Surface & foreground (5-channel palette) ---------- */
   --math-background: #ffffff;
@@ -52,6 +86,16 @@
      单独做成令牌是因为它**必须**跟着主题换 —— 原来写死 rgba(255,255,255,.86)，
      深色下就成了画布上的一块白板（真机截图里一眼就看出来了）。 */
   --math-dock: rgba(255, 255, 255, 0.86);
+
+  /* ---------- 首页那面"黑底宣言"（用户 2026-10-02）----------
+     首页现在是一块**纯黑** + 一个标题 + 那段宣言。粒子那一版用户当天就撤了
+     （"不要这个粒子效果了，空白黑色的背景下，[写上]这段话"）。
+     这一族**三包共用一份值** —— 那一页就是"黑底白字"，不跟着主题变；跟着主题变的是
+     侧栏 / 页脚与页面上的链接，那些照旧走常规令牌。
+     对比度：标题压 #000000 约 18:1，正文约 14:1（远超 4.5:1 那条线）。 */
+  --math-hero-bg: #000000;        /* 那面黑底 */
+  --math-hero-ink: #f2f5fa;       /* 标题（约 18:1） */
+  --math-hero-body: #c9d2e0;      /* 宣言正文（约 14:1） */
 
   /* ---------- Brand: exactly one hue ----------
      默认是**松绿** —— Trae 品牌绿 `#32F08C` 的可读档。为什么不用那个亮绿本身当主色：
@@ -155,12 +199,18 @@
   --math-fs: 1;
   /* 正文字重提一档：中文小字号在 400 下笔画偏细，500 是"看得出更实、但不像加粗"的那一档 */
   --math-weight-body: 500;
-  --math-font-sans: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC",
-    "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
-  --math-font-display: "Inter", "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC",
+  /* 全站字体一律走**本地**的阿里巴巴普惠体（见文件头上那四段 @font-face）。
+     后面留的那串系统字体只兜两种缺：普惠体没覆盖的生僻字、以及它没有的字形。
+     `mono` 与 `math` 也照样以普惠体打头 —— 用户要的是"全站一个字体"：
+       · mono：普惠体**不是等宽**，但它带 `tnum`（等宽数字），全站那些 `tabular-nums`
+         的数字列照旧对齐；后面那串真等宽只负责补它没有的符号（比如 ⌘）。
+       · math：数学式子改成无衬线（原来走 Times 那一族）。 */
+  --math-font-sans: "Alibaba PuHuiTi 3", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+  --math-font-display: "Alibaba PuHuiTi 3", "PingFang SC", "Hiragino Sans GB",
     system-ui, sans-serif;
-  --math-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
-  --math-font-math: "Times New Roman", "Songti SC", "Source Han Serif SC", serif;
+  --math-font-mono: "Alibaba PuHuiTi 3", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --math-font-math: "Alibaba PuHuiTi 3", "Times New Roman", "Songti SC", serif;
 
   /* ---------- Type scale ---------- */
   --math-text-display: calc(clamp(2.5rem, 5.2vw, 4.5rem) * var(--math-fs));
@@ -239,6 +289,11 @@ html[data-wk-theme="mid"] {
 
   --math-dock: rgba(247, 248, 250, 0.88);
 
+  /* 首页那面"黑底宣言"：**三包共用一份值**（那一页就是黑底白字），见 :root 那一节的说明。 */
+  --math-hero-bg: #000000;
+  --math-hero-ink: #f2f5fa;
+  --math-hero-body: #c9d2e0;
+
   /* 高亮色与亮色同族（中色底也是浅的，深绿照样读得清）；
      浅色那几档与焦点圈 / 信息态不再逐主题写 —— 它们由主色与底色混出来，见 :root。 */
   --math-primary: #0e7a4f;
@@ -300,6 +355,11 @@ html[data-wk-theme="dark"] {
   --math-input: #2b2b2b;
 
   --math-dock: rgba(17, 17, 17, 0.88);
+
+  /* 首页那面"黑底宣言"：**三包共用一份值**（那一页就是黑底白字），见 :root 那一节的说明。 */
+  --math-hero-bg: #000000;
+  --math-hero-ink: #f2f5fa;
+  --math-hero-body: #c9d2e0;
 
   /* 暗色里用的就是 **Trae 品牌绿本色** `#32F08C`（压在纯黑上 14:1，正好是它该出现的地方；
      Trae 自己的说法是"在深色界面上像命令行一样利落"）。主色底上的字一律纯黑 —— 与上面「暗色是纯粹的黑白」同一条规矩；这几个亮主色的相对亮度都在 0.52 以上，纯黑压上去 11:1 起步。

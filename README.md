@@ -5,7 +5,8 @@
 - 版本：**1.6**（版本历史见日志 §1）
 - 形态：零构建静态站点 · 44 个页面 · 原生 HTML / CSS / JavaScript
 - 依赖：无。不需要 npm，不需要打包器，双击 HTML 就能打开
-- 自检：1452 条断言 + 14 项静态体检 + 断链 0
+- 字体：**阿里巴巴普惠体 3.0**（永久免费商用）。四个字重按站点用到的字**子集化后随仓库一起走**（`assets/fonts/`，共约 980KB），**不引任何 CDN**
+- 自检：1452 条断言 + 15 项静态体检 + 断链 0
 
 ## 快速开始
 
@@ -21,13 +22,15 @@ ruby tools/checks/run_all.rb
 ruby tools/checks/run_all.rb wb graph
 ```
 
-也可以直接双击 `home.html` 打开，但用 HTTP 访问体验更完整（相对路径、localStorage、剪贴板 API 更稳定）。
+也可以直接双击 `home.html` 打开，但用 HTTP 访问体验更完整（相对路径、localStorage、剪贴板 API 更稳定；
+另外 **Chrome 在 `file://` 下会拦掉本地字体文件**，双击打开时字体会回退到系统字体 —— 想看普惠体就走 HTTP）。
 
 ## 目录结构
 
 ```
 ├── *.html                  44 个站点页面（扁平放置）
 ├── assets/css/             tokens.css 设计令牌 / base.css / shell.css 骨架 / ide.css 外壳
+├── assets/fonts/           阿里巴巴普惠体 3.0 子集（四个字重，共约 980KB，本地引用、无 CDN）
 ├── assets/js/              全局脚本，按固定顺序加载
 ├── tools/                  一次性改造脚本与生成器（幂等）
 ├── tools/checks/           自检体系（断言包 + 静态体检 + run_all.rb）
