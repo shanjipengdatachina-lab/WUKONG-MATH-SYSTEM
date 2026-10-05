@@ -1,0 +1,32 @@
+[
+  {
+    "id": "exams-index",
+    "kind": "活动",
+    "title": "历年真题 按册索引",
+    "sub": "六册二十九章，一道一道挂到对应章节下；看不懂就把它画下来。",
+    "image": "assets/img/banner-exams.svg",
+    "alt": "深蓝色底上答题卡的横线与勾选方框",
+    "href": "exams.html",
+    "cta": "去看真题"
+  },
+  {
+    "id": "graph-all",
+    "kind": "公告",
+    "title": "知识图谱 六册全上线",
+    "sub": "二十九章、780 个节点连成一张网，从「有理数」一路看到「投影与视图」。",
+    "image": "assets/img/banner-graph.svg",
+    "alt": "墨绿色底上由圆点与连线构成的网络",
+    "href": "graph.html",
+    "cta": "打开图谱"
+  },
+  {
+    "id": "board-desk",
+    "kind": "活动",
+    "title": "白板演算台",
+    "sub": "手写、擦除、把思路画给同学看；题目就印在板上，不用抄一遍。",
+    "image": "assets/img/banner-board.svg",
+    "alt": "紫蓝色底上一条手写曲线与一个圈出的重点",
+    "href": "whiteboard.html",
+    "cta": "去画一题"
+  }
+]

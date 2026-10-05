@@ -1,0 +1,210 @@
+{
+  "status": [
+    {
+      "name": "精通",
+      "min": 90,
+      "token": "--math-bar-gold"
+    },
+    {
+      "name": "已掌握",
+      "min": 80,
+      "token": "--math-bar-ok"
+    },
+    {
+      "name": "初步掌握",
+      "min": 65,
+      "token": "--math-bar-first"
+    },
+    {
+      "name": "学习中",
+      "min": 45,
+      "token": "--math-bar-learn"
+    },
+    {
+      "name": "待复习",
+      "min": 30,
+      "token": "--math-bar-review"
+    },
+    {
+      "name": "薄弱",
+      "min": 1,
+      "token": "--math-bar-weak"
+    },
+    {
+      "name": "未开始",
+      "min": 0,
+      "token": "--math-bar-idle"
+    }
+  ],
+  "factors": [
+    {
+      "key": "acc",
+      "name": "正确率",
+      "weight": 0.4
+    },
+    {
+      "key": "solo",
+      "name": "独立完成",
+      "weight": 0.2
+    },
+    {
+      "key": "gap",
+      "name": "复习间隔",
+      "weight": 0.2
+    },
+    {
+      "key": "speed",
+      "name": "速度",
+      "weight": 0.1
+    },
+    {
+      "key": "err",
+      "name": "错题消除",
+      "weight": 0.1
+    }
+  ],
+  "cardTypes": [
+    {
+      "name": "概念",
+      "weight": 1.35
+    },
+    {
+      "name": "公式",
+      "weight": 1.15
+    },
+    {
+      "name": "例题",
+      "weight": 1
+    },
+    {
+      "name": "变式",
+      "weight": 0.92
+    },
+    {
+      "name": "错题",
+      "weight": 1.2
+    },
+    {
+      "name": "复习",
+      "weight": 0.78
+    }
+  ],
+  "causes": [
+    {
+      "key": "concept",
+      "name": "概念没懂",
+      "group": "unknown"
+    },
+    {
+      "key": "formula",
+      "name": "公式记错",
+      "group": "unknown"
+    },
+    {
+      "key": "method",
+      "name": "方法想不出来",
+      "group": "unknown"
+    },
+    {
+      "key": "calc",
+      "name": "算错",
+      "group": "slip"
+    },
+    {
+      "key": "read",
+      "name": "审题不清",
+      "group": "slip"
+    },
+    {
+      "key": "careless",
+      "name": "粗心漏写",
+      "group": "slip"
+    },
+    {
+      "key": "time",
+      "name": "没做完",
+      "group": "slip"
+    }
+  ],
+  "causeGroups": {
+    "unknown": "不会",
+    "slip": "失误"
+  },
+  "causeBys": {
+    "unlearned": "当时还没学到这个考点",
+    "block-low": "这一块本来就没学好",
+    "block-ok": "这一块学得挺好、却做了一半就错了",
+    "late": "卷面靠后的题，没做完",
+    "nearly": "这一块学得挺好、只差最后一点",
+    "blank": "这一块学得挺好、却几乎整道错"
+  },
+  "marks": [
+    {
+      "key": "key",
+      "name": "重点",
+      "icon": "star",
+      "token": "--math-mark-key",
+      "own": true
+    },
+    {
+      "key": "hard",
+      "name": "难点",
+      "icon": "flame",
+      "token": "--math-mark-hard",
+      "own": true
+    },
+    {
+      "key": "review",
+      "name": "待复习",
+      "icon": "rotate-ccw",
+      "token": "--math-mark-review",
+      "own": true
+    },
+    {
+      "key": "block",
+      "name": "前置未满足",
+      "icon": "lock",
+      "token": "--math-mark-block",
+      "own": false
+    }
+  ],
+  "eventKinds": [
+    {
+      "key": "first",
+      "name": "首学"
+    },
+    {
+      "key": "review",
+      "name": "复习"
+    },
+    {
+      "key": "fix",
+      "name": "纠错"
+    },
+    {
+      "key": "exam",
+      "name": "考试"
+    }
+  ],
+  "calendar": {
+    "startYear": 2020,
+    "term": {
+      "upper": "09-01",
+      "lower": "02-20"
+    },
+    "grades": {
+      "一年级": 1,
+      "二年级": 2,
+      "三年级": 3,
+      "四年级": 4,
+      "五年级": 5,
+      "六年级": 6,
+      "七年级": 7,
+      "八年级": 8,
+      "九年级": 9,
+      "高一": 10,
+      "高二": 11
+    }
+  },
+  "todayAt": "2026-06-30"
+}
