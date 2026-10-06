@@ -110,8 +110,8 @@
           </div>
 
           <div class="cur">
-            <span class="cur__badge">会员版</span>
-            <p class="cur__text">有效期至 <strong>2026 年 10 月 26 日</strong>，到期后按月自动续费，可随时关闭。</p>
+            <span class="cur__badge">正在取…</span>
+            <p class="cur__text">正在读取你当前的方案与到期时间。</p>
             <div class="cur__actions">
               <a class="btn btn--ghost" href="membership.html" data-dom-id="orders-renew">续费</a>
             </div>
@@ -120,9 +120,9 @@
           <section class="sec" aria-labelledby="orders-title">
             <div class="sec__head">
               <h2 class="sec__title" id="orders-title">订单记录</h2>
-              <span class="sec__note">共 4 笔</span>
+              <span class="sec__note" data-qa="orders-count">正在取…</span>
             </div>
-            <table class="ord">
+            <table class="ord" data-qa="orders-table">
               <colgroup>
                 <col style="width:22%">
                 <col style="width:26%">
@@ -139,35 +139,8 @@
                   <th scope="col">时间</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td class="ord-mono">CN2026092600341</td>
-                  <td>会员版 · 按月</td>
-                  <td class="num">¥19.00</td>
-                  <td><span class="badge badge--ok">已支付</span></td>
-                  <td class="ord-mono">2026-09-26 20:14</td>
-                </tr>
-                <tr>
-                  <td class="ord-mono">CN2026082600297</td>
-                  <td>会员版 · 按月</td>
-                  <td class="num">¥29.00</td>
-                  <td><span class="badge badge--ok">已支付</span></td>
-                  <td class="ord-mono">2026-08-26 19:02</td>
-                </tr>
-                <tr>
-                  <td class="ord-mono">CN2026072600244</td>
-                  <td>会员版 · 按季</td>
-                  <td class="num">¥69.00</td>
-                  <td><span class="badge badge--ok">已支付</span></td>
-                  <td class="ord-mono">2026-07-26 21:37</td>
-                </tr>
-                <tr>
-                  <td class="ord-mono">CN2026062600188</td>
-                  <td>会员版 · 按月</td>
-                  <td class="num">¥29.00</td>
-                  <td><span class="badge badge--wait">已关闭</span></td>
-                  <td class="ord-mono">2026-06-26 18:45</td>
-                </tr>
+              <tbody data-qa="orders-rows">
+                <tr><td colspan="5">正在取订单…</td></tr>
               </tbody>
             </table>
           </section>
@@ -175,40 +148,11 @@
           <section class="sec" aria-labelledby="invoices-title">
             <div class="sec__head">
               <h2 class="sec__title" id="invoices-title">发票记录</h2>
-              <span class="sec__note">共 2 张</span>
+              <span class="sec__note">还没做</span>
             </div>
-            <table class="ord">
-              <colgroup>
-                <col style="width:40%">
-                <col style="width:30%">
-                <col style="width:30%">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th scope="col">发票抬头</th>
-                  <th scope="col">金额</th>
-                  <th scope="col">状态</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>林一鸣</td>
-                  <td class="num">¥19.00</td>
-                  <td><span class="badge badge--ok">已开具</span></td>
-                </tr>
-                <tr>
-                  <td>林一鸣</td>
-                  <td class="num">¥29.00</td>
-                  <td><span class="badge badge--ok">已开具</span></td>
-                </tr>
-              </tbody>
-            </table>
+            <p class="page-head__desc">开票还没接 —— 它要等商户资质与开票信息（企业主体 · 税号 · 收票邮箱）齐了才能动。
+              这一页现在<strong>只有上面那张订单表是真的</strong>；在接上之前，这里不放任何看起来像发票的记录。</p>
           </section>
-
-          <div class="sec-foot">
-            <p class="sec-foot__note">如需修改发票信息，请在账号设置中更新邮箱后重新申请。</p>
-            <a class="link-plain" href="#">申请开票</a>
-          </div>
         </div>
       </div>
 
@@ -237,6 +181,7 @@
     <script src="assets/js/shell.js"></script>
     <script src="assets/js/api.js"></script>
     <script src="assets/js/auth-client.js"></script>
+    <script src="assets/js/orders-live.js"></script>
     <script src="assets/js/ide-shell.js"></script>
     <script src="assets/js/board-link.js"></script>
     <script src="assets/js/pages.js"></script>
