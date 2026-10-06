@@ -13,7 +13,7 @@
    数据来自 assets/js/math-tree.js（由 tools/build-math-tree.rb 生成）。
    ========================================================================== */
 
-(function () {
+var __wkGraph = function () {
   'use strict';
 
   var MS = window.MathSite;
@@ -1678,4 +1678,8 @@
   } else {
     boot();
   }
-})();
+};
+
+/* 等接口把知识树取回来再跑 —— 拉不到、且本地没缓存时由 WK_API.boot 出兜底页，绝不留白屏。
+   没有 api.js 的场合（测试脚手架把本文件拼进去跑）就同步执行，行为与改造前完全一致。 */
+if (window.WK_API) { window.WK_API.boot(__wkGraph); } else { __wkGraph(); }

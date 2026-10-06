@@ -129,9 +129,14 @@
 
   /* ---------------- 存取 ---------------- */
   function save(db) {
+    /* M5：接了后台之后**服务器是唯一真相源**，本地不再存一份 ——
+       存了就会有两个真相（刷新时读库、改动只在本机看得见）。发帖/回复走接口。 */
+    if (REMOTE) { return; }
     try { window.localStorage.setItem(KEY, JSON.stringify(db)); } catch (e) { /* 隐私模式下会失败，忽略 */ }
   }
   function load() {
+    /* M5：服务器那一份已经适配成下面这个形状了，直接给它 */
+    if (REMOTE) { return REMOTE; }
     var raw = null;
     try { raw = window.localStorage.getItem(KEY); } catch (e) { raw = null; }
     var db = null;
@@ -141,6 +146,92 @@
       save(db);
     }
     return db;
+  }
+
+  /* ==========================================================================
+     M5 · 数据从后台来
+     --------------------------------------------------------------------------
+     `REMOTE` 一旦有值，`load()` 就把它给出去、`save()` 变成空操作 ——
+     于是**下面那一整套渲染一个字都不用改**（列帖、进专题、看详情、画楼层全照旧），
+     变的只是数据从哪儿来、写往哪儿去。
+
+     为什么不干脆把论坛重写一遍：渲染里有不少细节（`timeAgo` / `heat` / `rich` / `lastAt`）
+     已经调过好几轮，重写一遍等于把它们再踩一遍坑。改成"换数据源"是最小代价。
+
+     适配：服务器回的是 `{id, boardCode, boardName, title, authorName, views, replies, at(ISO)}`，
+     这里翻成本地那套 `{id, board, title, author, at(数字), views, floors[]}`。
+     列表接口不返回每个楼层，所以 `floors` 先按条数占位（`length` 是对的，内容为空）——
+     详情页会拿真楼层覆盖掉。
+     ========================================================================== */
+  var REMOTE = null;
+
+  function api() { return window.WK_API && window.WK_API.get ? window.WK_API : null; }
+
+  function toLocalPost(row, floors) {
+    var at = Date.parse(row.at);
+    return {
+      id: String(row.id),
+      board: row.boardCode,
+      title: row.title,
+      author: row.authorName,
+      at: isNaN(at) ? Date.now() : at,
+      views: row.views,
+      body: row.body || '',
+      floors: floors || new Array(row.replies || 0),
+      mine: row.mine === true,
+    };
+  }
+
+  function toLocalFloor(r) {
+    var at = Date.parse(r.at);
+    return {
+      who: r.authorName, role: r.role || '',
+      at: isNaN(at) ? Date.now() : at,
+      text: r.text, mine: r.mine === true,
+    };
+  }
+
+  /** 把服务器那几份数据取回来，装成 `REMOTE`。拿不到就返回 false（照老路走本机那份）。 */
+  function pullRemote() {
+    var A = api();
+    if (!A) { return Promise.resolve(false); }
+    return A.get('/forum/boards').then(function (b) {
+      if (b && b.items && b.items.length) {
+        BOARDS.length = 0;
+        b.items.forEach(function (x) {
+          BOARDS.push({ id: x.code, name: x.name, desc: x.desc || '', note: x.note || x.desc || '' });
+        });
+      }
+      return A.get('/forum/posts');
+    }).then(function (list) {
+      REMOTE = { v: VER, posts: (list.items || []).map(function (p) { return toLocalPost(p); }) };
+      return true;
+    }, function () { return false; });
+  }
+
+  /** 当前登录的人（没有就用页面上那个演示名字） */
+  function meName() {
+    if (window.WK_AUTH && window.WK_AUTH.current && window.WK_AUTH.current()) {
+      return window.WK_AUTH.current().nickname;
+    }
+    return ME;
+  }
+
+  /** 要登录才让做的事，都从这里过一道。
+      **必须 await `WK_AUTH.ready()`** —— 它是异步问服务端的（`/api/me`）。
+      直接读 `WK_AUTH.current()` 会踩一个很隐蔽的坑：页面刚打开那一两秒
+      `current()` 还是 null，于是**明明登录着**的人点发帖却被送去登录页。
+      （这个坑真踩了：回复提交后跳到了 login.html?next=...） */
+  function needLogin(run) {
+    if (!window.WK_AUTH || !window.WK_AUTH.ready) { run(); return; }
+    window.WK_AUTH.ready().then(function (u) {
+      if (u) { run(); return; }
+      toast('发帖和回复要登录 —— 这就带你去登录页');
+      var here = window.location.pathname.split('/').pop() + window.location.search;
+      window.setTimeout(function () {
+        window.location.assign('login.html?next=' + encodeURIComponent(here));
+      }, 700);
+    });
   }
 
   /* ---------------- 小工具 ---------------- */
@@ -349,6 +440,31 @@
         var board = (boardIn && boardIn.value) || BOARDS[0].id;
         if (!title) { toast('先写个标题'); if (titleIn && titleIn.focus) titleIn.focus(); return; }
         if (!body) { toast('正文还空着'); if (bodyIn && bodyIn.focus) bodyIn.focus(); return; }
+
+        /* M5：接了后台就发到服务器（未登录先去登录）—— 这样换个浏览器也看得到自己发的帖 */
+        if (REMOTE && api()) {
+          needLogin(function () {
+            submitBtn.setAttribute('aria-busy', 'true');
+            api().post('/forum/posts', { board: board, title: title, body: body }).then(function () {
+              submitBtn.removeAttribute('aria-busy');
+              if (titleIn) titleIn.value = '';
+              if (bodyIn) bodyIn.value = '';
+              setBox(false);
+              toast('已发布');
+              return pullRemote();
+            }).then(function () {
+              state.tab = 'latest';
+              state.board = null;
+              syncUrl();
+              render();
+            }, function (err) {
+              submitBtn.removeAttribute('aria-busy');
+              toast((err && err.message) || '发布失败，再试一次');
+            });
+          });
+          return;
+        }
+
         var post = {
           id: 'p' + Date.now().toString(36),
           board: board, title: title, body: body,
@@ -434,6 +550,22 @@
     }
     render();
 
+    /** M5：从服务器重取这一帖（发了回复、或进来时要先拿到真楼层）。
+        浏览数不要自己再加 —— 服务端在 GET 详情时已经 +1 了。 */
+    function reloadThread() {
+      if (!REMOTE || !api()) { return Promise.resolve(); }
+      return api().get('/forum/posts/' + encodeURIComponent(id)).then(function (d) {
+        post.views = d.views;
+        post.body = d.body || '';
+        post.floors = (d.replies || []).map(toLocalFloor);
+        post.mine = d.mine === true;
+        /* 列表接口不返回正文，所以正文要等这一趟才有内容 */
+        if (bodyEl) { bodyEl.innerHTML = rich(post.body); }
+        render();
+      }, function () { /* 取不到就保持原样，别把已经渲染好的页面弄没了 */ });
+    }
+    if (REMOTE) { reloadThread(); }
+
     if (floorsEl) {
       floorsEl.addEventListener('click', function (event) {
         var node = event.target && event.target.closest ? event.target.closest('[data-act]') : null;
@@ -458,6 +590,24 @@
         if (typeof event.preventDefault === 'function') event.preventDefault();
         var text = (replyBox && replyBox.value ? replyBox.value : '').trim();
         if (!text) { toast('先写点内容再发表'); if (replyBox && replyBox.focus) replyBox.focus(); return; }
+
+        /* M5：接了后台就发到服务器（未登录先去登录） */
+        if (REMOTE && api()) {
+          needLogin(function () {
+            submitBtn.setAttribute('aria-busy', 'true');
+            api().post('/forum/posts/' + post.id + '/replies', { text: text }).then(function () {
+              submitBtn.removeAttribute('aria-busy');
+              if (replyBox) replyBox.value = '';
+              toast('回复已发表');
+              return reloadThread();
+            }, function (err) {
+              submitBtn.removeAttribute('aria-busy');
+              toast((err && err.message) || '回复失败，再试一次');
+            });
+          });
+          return;
+        }
+
         post.floors.push({ who: ME, at: Date.now(), text: text });
         save(db);
         if (replyBox) replyBox.value = '';
@@ -544,7 +694,7 @@
     if (!postsEl && !repliesEl) return false;
 
     var db = load();
-    var mine = db.posts.filter(function (p) { return p.author === ME; });
+    var mine = db.posts.filter(function (p) { return p.mine === true || p.author === ME; });
     mine.sort(function (a, b) { return b.at - a.at; });
     var replies = [];
     db.posts.forEach(function (p) {
@@ -558,6 +708,7 @@
     var postsTab = byId('mine-tab-posts');
     var repliesTab = byId('mine-tab-replies');
 
+    function paint() {
     if (descEl) {
       descEl.innerHTML = '共 <b class="num">' + mine.length + '</b> 篇帖子与 <b class="num">' +
         replies.length + '</b> 条回复。';
@@ -599,6 +750,25 @@
         : '<p class="empty">还没有回复过别人的帖子。</p>';
     }
     icons();
+    }
+
+    /* M5：接了后台就用服务器的"我的帖子 / 我的回复" —— 列表接口不带楼层内容，
+       所以回复那半边必须另取一次，不能靠占位。 */
+    if (REMOTE && api()) {
+      api().get('/forum/mine').then(function (d) {
+        mine = (d.posts.items || []).map(function (p) { return toLocalPost(p); });
+        replies = (d.replies.items || []).map(function (r) {
+          var at = Date.parse(r.at);
+          return {
+            post: { id: String(r.postId), title: r.postTitle, board: r.boardCode },
+            floor: { at: isNaN(at) ? Date.now() : at, text: r.text },
+          };
+        });
+        paint();
+      }, function () { /* 取不到就保持本机那份 */ });
+    }
+
+    paint();
 
     function show(which) {
       if (postsEl) postsEl.hidden = which !== 'posts';
@@ -628,8 +798,16 @@
     return true;
   }
 
-  function init() {
+  /** 页面启动：能连后台就先把手头的数据换成后台那份，再走原来那套渲染。
+      连不上就照老路读本机 localStorage —— 论坛别看不了（未登录也能看帖，这是用户定的）。 */
+  function initLocal() {
     return initHome() || initThread() || initBoard() || initMine();
+  }
+
+  function init() {
+    if (!api()) { return initLocal(); }
+    /* 拉得到用后台那份、拉不到就用本机那份 —— 两条路最后都走同一套渲染 */
+    return pullRemote().then(initLocal);
   }
 
   window.__FORUM__ = {

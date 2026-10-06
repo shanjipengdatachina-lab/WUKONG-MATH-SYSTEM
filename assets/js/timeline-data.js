@@ -360,6 +360,14 @@
    */
   function buildTimeline(items, records, opts) {
     var opt = opts || {};
+
+    /* 服务器那一份已经自带 events / plannedAt / exams 了，不用再算一遍。
+       （它没有 plannedAt 的格子会返回空串，视图那边按"没有计划"处理。） */
+    var srv = serverData();
+    if (opt.server === true && srv) {
+      return { calendar: K12, kinds: EVENT_KINDS, exams: srv.exams || [], today: srv.today };
+    }
+
     var seed0 = typeof opt.seed === 'number' ? opt.seed : DEFAULT_SEED;
     var today = parseDay(opt.todayAt || TODAY_AT);
     var i;
@@ -580,6 +588,27 @@
   }
   var MARK_SALT = { block: 0, review: 1, hard: 2, key: 3 };
 
+  /* ==================================================================
+     服务器那一份（M3）
+     ------------------------------------------------------------------
+     接后端之后，"学习记录"这件事只有**一个来源**：服务器。
+     这份 js 里下面那一大套生成规则**留着不动**，但它降级成"兜底"：
+       · 服务器那份能用（`window.WK_LEARN_DATA` 且格数对得上）→ 直接用服务器的；
+       · 拿不到（没网 / 接口没通）→ 按老规则在本机生成一份，界面不至于空着。
+     谁用哪一份由 `opts.server` 说了算 —— 视图那边知道自己要看的是不是"服务器上的那个人"：
+     登录了看自己（server=true），未登录切到别的演示学生就看本机那份（server=false）。
+     ================================================================== */
+  function serverData() {
+    var d = window.WK_LEARN_DATA;
+    return (d && d.records && d.records.length) ? d : null;
+  }
+
+  /** 服务器这一份是谁的（界面上"当前学员"跟它比对，一致才用） */
+  function serverViewer() {
+    var d = serverData();
+    return d ? { name: d.viewer, mine: d.mine === true } : null;
+  }
+
   /**
    * 按图谱摊平出来的 items 顺序铺一份学习记录。
    * 一条记录：
@@ -596,6 +625,13 @@
     /* opts 可以覆盖"学到哪儿 / 种子 / 起止日" —— 未登录时用默认那一份（设计稿的 43.7%），
        登录后按账号推（见 forAccount）。三个参数都不给时，与第一版**一字不差**。 */
     var opt = opts || {};
+
+    /* 服务器说了算的分支（M3）：格数对得上就直接用那一份，本机规则一律不跑。 */
+    var srv = serverData();
+    if (opt.server === true && srv && srv.records.length === items.length) {
+      return srv.records;
+    }
+
     var total = items.length;
     var learned = Math.round(total * clamp(typeof opt.progress === 'number' ? opt.progress : PROGRESS, 0.01, 1));
     var t0 = parseDay(opt.startAt || START_AT);
@@ -814,6 +850,8 @@
     ownMarks: ownMarks,
     students: DEMO_STUDENTS,
     forAccount: forAccount,
+    /* M3：服务器那一份是谁（没有就返回 null）—— 视图据此决定这次要不要用本机兜底 */
+    serverViewer: serverViewer,
     stateOf: stateOf,
     tokenOf: tokenOf,
     build: build,

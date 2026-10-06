@@ -68,12 +68,17 @@ issues << '「适配」没有用白板那个图标（maximize-2）—— 同一�
 issues << '工具条按钮尺寸不是白板那一档（34×34）' unless page.include?('width: 34px; height: 34px;')
 issues << '工具条图标尺寸不是白板那一档（16px）' unless page.include?('.tk-dock__btn svg { width: 16px; height: 16px; }')
 
-%w[assets/js/math-tree.js assets/js/timeline-data.js assets/js/timeline.js assets/js/shell.js assets/js/ide-shell.js].each do |src|
+%w[assets/js/api.js assets/js/timeline-data.js assets/js/timeline.js assets/js/shell.js assets/js/ide-shell.js].each do |src|
   issues << "页面没挂 #{src}" unless page.include?(src)
 end
-issues << 'timeline.js 没有排在 math-tree.js 之后（轴要读图谱数据）' unless
-  page.index('assets/js/math-tree.js') && page.index('assets/js/timeline.js') &&
-  page.index('assets/js/math-tree.js') < page.index('assets/js/timeline.js')
+# 2026-10-05：知识树不再由静态文件同步提供 —— 改成 api.js 到后台接口取（拉不到退只读缓存，
+# 缓存也没有才出兜底页）。顺序契约跟着变：**api.js 必须在 timeline.js 之前**，
+# 因为把 window.MATH_TREE 填上的是 api.js，timeline.js 启动时才有树可摊平。
+issues << 'api.js 没有排在 timeline.js 之前（树由 api.js 取回来，timeline.js 只等它）' unless
+  page.index('assets/js/api.js') && page.index('assets/js/timeline.js') &&
+  page.index('assets/js/api.js') < page.index('assets/js/timeline.js')
+issues << '这页还挂着 math-tree.js（知识树已改成从接口取，静态那份不该再被页面加载）' if
+  page.include?('<script src="assets/js/math-tree.js">')
 issues << 'timeline.js 没有排在 timeline-data.js 之后（要读学习记录）' unless
   page.index('assets/js/timeline-data.js') && page.index('assets/js/timeline.js') &&
   page.index('assets/js/timeline-data.js') < page.index('assets/js/timeline.js')

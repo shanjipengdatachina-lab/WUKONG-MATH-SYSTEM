@@ -237,6 +237,130 @@
     });
   })();
 
+  /* ------------------------------------------------------------------ *
+   * 会话：登录后全站侧栏显示账号
+   *
+   * **这一段必须排在下面那个 early return 之前。**
+   * 它是全站共用的（登录页 / 个人中心这些页面没有 .reader-shell），
+   * 早退会把 window.WK_SHELL 一起跳掉 —— 那几页的侧栏就永远只能是静态样子。
+   *
+   * 本机这份 `wkmath.user` 只是**显示用的镜像**：真正的身份在服务端
+   * （httpOnly Cookie，脚本读不到），每次进页面由 assets/js/auth-client.js
+   * 问一次 /api/me 来校正。这份镜像只为了让侧栏立刻写得出姓名，
+   * 不再决定“我是谁”。
+   * ------------------------------------------------------------------ */
+
+  var SESSION_KEY = 'wkmath.user';
+  var DEMO_USER = { name: '林一鸣', grade: '七年级（下）', short: '林' };
+
+  function readSession() {
+    try {
+      var raw = window.localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function writeSession(user) {
+    try {
+      if (user) window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      else window.localStorage.removeItem(SESSION_KEY);
+    } catch (err) { /* 隐私模式下忽略 */ }
+  }
+
+  function accountEl() {
+    return document.querySelector ? document.querySelector('.ide-rail__account') : null;
+  }
+
+  function markupLoggedIn() {
+    var acct = accountEl();
+    if (!acct) return false;
+    var href = acct.getAttribute('href') || '';
+    return href !== 'login.html' && href !== 'register.html';
+  }
+
+  function currentUser() {
+    var saved = readSession();
+    if (saved && saved.name) {
+      return {
+        name: saved.name,
+        grade: saved.grade || DEMO_USER.grade,
+        short: saved.short || saved.name.charAt(0)
+      };
+    }
+    if (markupLoggedIn()) {
+      return { name: DEMO_USER.name, grade: DEMO_USER.grade, short: DEMO_USER.short };
+    }
+    return null;
+  }
+
+  // 登录/退出后让侧栏跟着变；未登录时不强改页面上原来的样子
+  function syncAccount() {
+    var acct = accountEl();
+    if (!acct) return;
+    var user = currentUser();
+    if (!user) return;
+    acct.setAttribute('href', 'profile.html');
+    acct.setAttribute('title', '个人中心 · ' + user.name + ' · ' + user.grade);
+    var avatar = acct.querySelector('.ide-rail__avatar');
+    if (avatar) avatar.textContent = user.short;
+    var label = acct.querySelector('.ide-rail__label');
+    if (label) label.textContent = user.name;
+  }
+
+  function signIn(user) { writeSession(user || DEMO_USER); syncAccount(); }
+
+  // 退出：清会话，并把侧栏恢复成未登录的样子
+  function revertAccount() {
+    var acct = accountEl();
+    if (!acct) return;
+    acct.setAttribute('href', 'login.html');
+    acct.setAttribute('title', '登录 / 注册');
+    var avatar = acct.querySelector('.ide-rail__avatar');
+    if (avatar) avatar.innerHTML = '<i data-lucide="user"></i>';
+    var label = acct.querySelector('.ide-rail__label');
+    if (label) label.textContent = '登录';
+    if (window.lucide && window.lucide.createIcons) {
+      try { window.lucide.createIcons(); } catch (err) { /* 忽略 */ }
+    }
+  }
+
+  function signOut() {
+    writeSession(null);
+    revertAccount();
+  }
+
+  syncAccount();
+
+  // 登录页：点"登录"就记下会话，再照常跳个人中心
+  // ——只在这页**没有真的账号客户端**时才这么干（`assets/js/auth-client.js` 一旦在，
+  //   登录要走服务端：那里是 httpOnly Cookie，点一下就在本机记个名字，等于没有登录态）。
+  var loginSubmit = document.querySelector('[data-dom-id="login-submit"]');
+  if (loginSubmit) {
+    loginSubmit.addEventListener('click', function () {
+      if (window.WK_AUTH) { return; }
+      signIn(DEMO_USER);
+    });
+  }
+
+  // 设置页：退出登录清掉本机会话
+  var logoutBtn = document.querySelector('[data-dom-id="settings-logout"]');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function () { signOut(); });
+  }
+
+  window.WK_SHELL = {
+    user: DEMO_USER,
+    signIn: signIn,
+    signOut: signOut,
+    session: readSession,
+    current: currentUser,
+    syncAccount: syncAccount
+  };
+
   var shell = document.querySelector('.reader-shell');
   var leftBtn = document.getElementById('toggle-left');    // 顶栏：左栏开关
   var rightBtn = document.getElementById('toggle-right');  // 顶栏：右栏开关
@@ -334,115 +458,4 @@
   if (readStore(STORE_RIGHT) === 'hidden') setRight(true);
   syncPanels();
 
-  /* ------------------------------------------------------------------ *
-   * 会话：登录后全站侧栏显示账号
-   * 站点是静态演示，登录态放在本机；登录页写入，设置页清除。
-   * 页面自己写着已登录（侧栏是账号）时沿用页面上的身份，保证与演示一致。
-   * ------------------------------------------------------------------ */
-
-  var SESSION_KEY = 'wkmath.user';
-  var DEMO_USER = { name: '林一鸣', grade: '七年级（下）', short: '林' };
-
-  function readSession() {
-    try {
-      var raw = window.localStorage.getItem(SESSION_KEY);
-      if (!raw) return null;
-      var parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : null;
-    } catch (err) {
-      return null;
-    }
-  }
-
-  function writeSession(user) {
-    try {
-      if (user) window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-      else window.localStorage.removeItem(SESSION_KEY);
-    } catch (err) { /* 隐私模式下忽略 */ }
-  }
-
-  function accountEl() {
-    return document.querySelector ? document.querySelector('.ide-rail__account') : null;
-  }
-
-  function markupLoggedIn() {
-    var acct = accountEl();
-    if (!acct) return false;
-    var href = acct.getAttribute('href') || '';
-    return href !== 'login.html' && href !== 'register.html';
-  }
-
-  function currentUser() {
-    var saved = readSession();
-    if (saved && saved.name) {
-      return {
-        name: saved.name,
-        grade: saved.grade || DEMO_USER.grade,
-        short: saved.short || saved.name.charAt(0)
-      };
-    }
-    if (markupLoggedIn()) {
-      return { name: DEMO_USER.name, grade: DEMO_USER.grade, short: DEMO_USER.short };
-    }
-    return null;
-  }
-
-  // 登录/退出后让侧栏跟着变；未登录时不强改页面上原来的样子
-  function syncAccount() {
-    var acct = accountEl();
-    if (!acct) return;
-    var user = currentUser();
-    if (!user) return;
-    acct.setAttribute('href', 'profile.html');
-    acct.setAttribute('title', '个人中心 · ' + user.name + ' · ' + user.grade);
-    var avatar = acct.querySelector('.ide-rail__avatar');
-    if (avatar) avatar.textContent = user.short;
-    var label = acct.querySelector('.ide-rail__label');
-    if (label) label.textContent = user.name;
-  }
-
-  function signIn(user) { writeSession(user || DEMO_USER); syncAccount(); }
-
-  // 退出：清会话，并把侧栏恢复成未登录的样子
-  function revertAccount() {
-    var acct = accountEl();
-    if (!acct) return;
-    acct.setAttribute('href', 'login.html');
-    acct.setAttribute('title', '登录 / 注册');
-    var avatar = acct.querySelector('.ide-rail__avatar');
-    if (avatar) avatar.innerHTML = '<i data-lucide="user"></i>';
-    var label = acct.querySelector('.ide-rail__label');
-    if (label) label.textContent = '登录';
-    if (window.lucide && window.lucide.createIcons) {
-      try { window.lucide.createIcons(); } catch (err) { /* 忽略 */ }
-    }
-  }
-
-  function signOut() {
-    writeSession(null);
-    revertAccount();
-  }
-
-  syncAccount();
-
-  // 登录页：点"登录"就记下会话，再照常跳个人中心
-  var loginSubmit = document.querySelector('[data-dom-id="login-submit"]');
-  if (loginSubmit) {
-    loginSubmit.addEventListener('click', function () { signIn(DEMO_USER); });
-  }
-
-  // 设置页：退出登录清掉本机会话
-  var logoutBtn = document.querySelector('[data-dom-id="settings-logout"]');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', function () { signOut(); });
-  }
-
-  window.WK_SHELL = {
-    user: DEMO_USER,
-    signIn: signIn,
-    signOut: signOut,
-    session: readSession,
-    current: currentUser,
-    syncAccount: syncAccount
-  };
 })();

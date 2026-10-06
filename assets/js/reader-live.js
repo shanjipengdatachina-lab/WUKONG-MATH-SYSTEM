@@ -12,7 +12,7 @@
    一册的那一套 —— 左栏的册 / 章 / 节按当前学段现建，默认初中。学段键与知识图谱
    共用（wkmath.graph.stage），在那边选了高中，过来这边也是高中，不用再选一次。
    ========================================================================== */
-(function () {
+var __wkReader = function () {
   'use strict';
 
   var TREE = window.MATH_TREE;
@@ -692,4 +692,8 @@
 
   buildOutline();
   syncOutline();
-})();
+};
+
+/* 等接口把知识树取回来再跑 —— 拉不到、且本地没缓存时由 WK_API.boot 出兜底页，绝不留白屏。
+   没有 api.js 的场合（测试脚手架把本文件拼进去跑）就同步执行，行为与改造前完全一致。 */
+if (window.WK_API) { window.WK_API.boot(__wkReader); } else { __wkReader(); }

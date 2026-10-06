@@ -87,10 +87,10 @@
           <h1 class="auth__title" id="login-title">登录</h1>
           <p class="auth__sub">继续你的悟空数学知识图谱，错题与进度会同步回来。</p>
 
-          <form class="auth__fields" action="#" method="post" novalidate>
+          <form class="auth__fields" id="login-form" action="login.html" method="post" novalidate>
             <div class="field">
-              <label class="field__label" for="login-account">手机号或邮箱</label>
-              <input class="field__input" id="login-account" name="account" type="text" placeholder="请输入手机号或邮箱" autocomplete="username">
+              <label class="field__label" for="login-account">手机号或登录名</label>
+              <input class="field__input" id="login-account" name="account" type="text" placeholder="请输入手机号或登录名" autocomplete="username">
             </div>
             <div class="field">
               <label class="field__label" for="login-password">密码</label>
@@ -103,10 +103,12 @@
               </span>
               <a class="auth__link" href="password-reset.html" data-dom-id="login-forgot">忘记密码</a>
             </div>
-            <a class="btn btn--primary btn--block" href="profile.html" data-dom-id="login-submit">登录</a>
+            <p class="auth__msg" id="login-msg" role="alert" hidden></p>
+            <button class="btn btn--primary btn--block" type="submit" id="login-submit-btn" data-dom-id="login-submit">登录</button>
           </form>
 
           <p class="auth__foot">还没有账号？<a href="register.html" data-dom-id="login-register">立即注册</a></p>
+          <p class="auth__foot auth__foot--demo" id="login-demo">演示账号：<code>student</code> / <code>wk-demo-2026</code>（学生）· <code>admin</code> / <code>wk-admin-2026</code>（管理后台）</p>
         </section>
 
         <aside class="auth__aside">
@@ -154,6 +156,11 @@
 .auth__check input{cursor:pointer}
 .auth__check input:disabled{cursor:not-allowed}
 .auth__formula sup{font-size:.62em;line-height:0}
+.auth__msg{margin:0;padding:10px 12px;border-radius:var(--math-radius-md);font-size:calc(13px * var(--math-fs));line-height:1.6;background:var(--math-danger-soft, rgba(220,38,38,.08));color:var(--math-danger, #b42318);border:1px solid var(--math-danger-border, rgba(220,38,38,.25))}
+.auth__msg[hidden]{display:none}
+.auth__foot--demo{line-height:1.9}
+.auth__foot--demo code{font-family:var(--math-font-mono);font-size:calc(12px * var(--math-fs));padding:1px 5px;border-radius:4px;background:var(--math-surface-2, rgba(127,127,127,.12))}
+.btn[aria-busy="true"]{opacity:.7;pointer-events:none}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms !important;animation-delay:0ms !important;transition-duration:.01ms !important;scroll-behavior:auto !important}}
     </style>
 
@@ -161,7 +168,10 @@
     <link rel="stylesheet" href="assets/css/shell.css">
     <link rel="stylesheet" href="assets/css/ide.css">
     <script src="assets/js/shell.js"></script>
+    <script src="assets/js/api.js"></script>
     <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/auth-client.js"></script>
+    <script src="assets/js/auth-pages.js"></script>
     <script src="assets/js/board-link.js"></script>
     <script src="assets/js/pages.js"></script>
 </body>

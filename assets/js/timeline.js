@@ -19,7 +19,7 @@
      · 字号乘 --math-fs（显示设置里的"大 / 特大"直接管到画布里的字）。
    ========================================================================== */
 
-(function () {
+var __wkTimeline = function () {
   'use strict';
 
   var main = document.querySelector('[data-tk]');
@@ -219,12 +219,21 @@
 
   /* 生成参数：登录了按账号在本机推一份（没有后端），未登录用那个演示学生的写死参数 */
   function learnOptions() {
+    /* M3：服务器上就有这个人那一份时，直接用服务器的（`server: true`）；
+       服务器那份不在（没网 / 看的是别的演示学生）就退回本机生成。 */
+    var srv = (window.WK_LEARNING && window.WK_LEARNING.serverViewer)
+      ? window.WK_LEARNING.serverViewer() : null;
+
     if (WHO.mine) {
-      return (window.WK_LEARNING && window.WK_LEARNING.forAccount)
+      var mine = (window.WK_LEARNING && window.WK_LEARNING.forAccount)
         ? window.WK_LEARNING.forAccount(WHO) : {};
+      if (srv && srv.mine) { mine.server = true; }
+      return mine;
     }
     var s = viewerList()[WHO.student] || {};
-    return { seed: s.seed, progress: s.progress };
+    var out = { seed: s.seed, progress: s.progress };
+    if (srv && !srv.mine && srv.name === s.name) { out.server = true; }
+    return out;
   }
 
   /* ------------------------------------------------------------------ *
@@ -2784,4 +2793,8 @@
     barScreen: barScreen,
     redraw: redraw
   };
-}());
+};
+
+/* 等接口把知识树取回来再跑 —— 拉不到、且本地没缓存时由 WK_API.boot 出兜底页，绝不留白屏。
+   没有 api.js 的场合（测试脚手架把本文件拼进去跑）就同步执行，行为与改造前完全一致。 */
+if (window.WK_API) { window.WK_API.boot(__wkTimeline); } else { __wkTimeline(); }
