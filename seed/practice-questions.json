@@ -1,0 +1,100 @@
+{
+  "questions": [
+    {
+      "no": 1,
+      "kind": "choice",
+      "tag": "考点 1 整式的概念",
+      "stem": "下列各式中，是单项式的是（　）",
+      "options": [
+        {
+          "key": "A",
+          "text": "<span class=\"m\">x + 1</span>"
+        },
+        {
+          "key": "B",
+          "text": "<span class=\"m\">3a<sup>2</sup>b</span>"
+        },
+        {
+          "key": "C",
+          "text": "<span class=\"m\">1/x</span>"
+        },
+        {
+          "key": "D",
+          "text": "<span class=\"m\">a/b</span>"
+        }
+      ],
+      "blanks": [],
+      "answer": "B",
+      "explanation": "数与字母的积组成的式子叫做单项式。<span class=\"m\">x + 1</span> 是多项式；<span class=\"m\">1/x</span> 与 <span class=\"m\">a/b</span> 的分母中含字母，不是整式。故选 <span class=\"quiz-no\">B</span>。",
+      "source": "practice.html"
+    },
+    {
+      "no": 2,
+      "kind": "choice",
+      "tag": "考点 2 整式的加减",
+      "stem": "下列计算正确的是（　）",
+      "options": [
+        {
+          "key": "A",
+          "text": "<span class=\"m\">3a + 2b = 5ab</span>"
+        },
+        {
+          "key": "B",
+          "text": "<span class=\"m\">5a<sup>2</sup> − 3a<sup>2</sup> = 2</span>"
+        },
+        {
+          "key": "C",
+          "text": "<span class=\"m\">4a<sup>2</sup>b − 3ba<sup>2</sup> = a<sup>2</sup>b</span>"
+        },
+        {
+          "key": "D",
+          "text": "<span class=\"m\">−2(a − b) = −2a − 2b</span>"
+        }
+      ],
+      "blanks": [],
+      "answer": "C",
+      "explanation": "",
+      "source": "practice.html"
+    },
+    {
+      "no": 3,
+      "kind": "blank",
+      "tag": "考点 1 整式的概念",
+      "stem": "<span class=\"m\">单项式 −3x<sup>2</sup>y</span> 的系数是\n                <span class=\"blank-slot\">＿＿</span>\n                ，次数是\n                <span class=\"blank-slot\">＿＿</span>\n                。",
+      "options": [],
+      "blanks": [
+        {
+          "label": "系数",
+          "answer": "-3"
+        },
+        {
+          "label": "次数",
+          "answer": "3"
+        }
+      ],
+      "answer": "-3|3",
+      "explanation": "",
+      "source": "practice.html"
+    },
+    {
+      "no": 4,
+      "kind": "choice",
+      "tag": "考点 2 整式的加减",
+      "stem": "化简：<span class=\"m\">(3x<sup>2</sup> − 2x) − (x<sup>2</sup> − 3x)</span>",
+      "options": [
+        {
+          "key": "A",
+          "text": "<span class=\"m\">2x<sup>2</sup> + x</span>"
+        },
+        {
+          "key": "B",
+          "text": "<span class=\"m\">2x<sup>2</sup> − 5x</span>"
+        }
+      ],
+      "blanks": [],
+      "answer": "A",
+      "explanation": "",
+      "source": "practice.html"
+    }
+  ]
+}
