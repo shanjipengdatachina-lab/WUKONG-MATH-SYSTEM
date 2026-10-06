@@ -216,18 +216,35 @@
       if (explain && body) {
         var mine = d.given ? '你答的是 <span class="expr">' + esc(d.given) + '</span>，' : '';
         var right = '正确答案 <span class="expr">' + esc(d.answer) + '</span>。';
-        body.innerHTML = mine + right + (d.explanation || '');
+        var ENT = window.WK_ENT;
+        /* 判分和正确答案是免费的；**题解是后台能配的另一项**（member_solution）。
+           服务端没有权益时 explanation 直接就是 null（不是前端藏起来的）。
+           这里换成一行"会员专享"的引导 —— 空一片会让人以为页面坏了。
+           注意：有权益但库里那道题本来就没写题解时，什么都不加（不是缺权益）。 */
+        var tail = (res.hasSolution === false && ENT)
+          ? ENT.lockHTML('member_solution')
+          : (d.explanation || '');
+        body.innerHTML = mine + right + tail;
         explain.hidden = false;
       }
     });
 
     var actions = qs('#quiz-actions', list);
     if (actions) {
+      /* 错题本满了会有几道进不去 —— 后台配的容量（免费版 50 道）。
+         这种情况**必须说出来**：不说的话，学生只会觉得"我明明错了三道，怎么只多了一条"。 */
+      var wrongCount = res.total - res.correct;
+      var tail;
+      if (wrongCount === 0) {
+        tail = '全对。';
+      } else if (typeof res.dropped === 'number' && res.dropped > 0) {
+        tail = '错的 ' + wrongCount + ' 道里有 <b>' + res.dropped + '</b> 道没能进错题本 —— ' +
+          '错题本满了（<a href="membership.html">开通会员</a>之后不限量）。';
+      } else {
+        tail = '错的 ' + wrongCount + ' 道已经进你的错题本。';
+      }
       actions.innerHTML = '<p class="quiz-actions__note" data-tone="done">得分 <b>' + res.score +
-        '</b> 分（对 ' + res.correct + ' / ' + res.total + '）。' +
-        (res.total - res.correct > 0
-          ? '错的 ' + (res.total - res.correct) + ' 道已经进你的错题本。'
-          : '全对。') +
+        '</b> 分（对 ' + res.correct + ' / ' + res.total + '）。' + tail +
         '</p><a class="btn btn--ghost" href="mistakes.html">去错题本</a>' +
         '<a class="btn btn--ghost" href="practice-result.html">看这次的结果</a>';
     }
@@ -247,6 +264,17 @@
         renderQuestions();
       },
       function (err) {
+        /* **服务端说了缺哪一项就照它说**（403 + perk）。
+           题库是后台能配的：免费版里勾掉 question_bank，这里立刻拿不到题 ——
+           这时候给一张开通引导，而不是一句"取不到题，先确认接口在跑"（那是把人往错方向指）。 */
+        if (err && err.status === 403 && err.code === 'PERK_REQUIRED') {
+          var ENT = window.WK_ENT;
+          var perk = err.perk || 'question_bank';
+          list.innerHTML = ENT
+            ? ENT.gateHTML(perk, '当前方案里没有「' + ENT.name(perk) + '」这一项，所以取不到题。')
+            : '<p class="quiz-gate__desc">这一项要开通会员才能用。</p>';
+          return;
+        }
         list.innerHTML = '<p class="quiz-gate__desc">题目没取到：' +
           esc((err && err.message) || '未知错误') + '（先确认接口服务在跑、库里导过题）</p>';
       }

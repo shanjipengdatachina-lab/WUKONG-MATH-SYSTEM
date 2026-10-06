@@ -25,7 +25,8 @@
        颜色一律从 tokens.css 读（原型里写死的 hex 全部换成令牌），字号乘 --math-fs。
    ========================================================================== */
 
-var __wkTimeline3d = function () {
+/* 真正的渲染。启动那一层（文件末尾的 __wkTimeline3d）只负责先判一次权益，再决定要不要叫它。 */
+var __wkRender3d = function () {
   'use strict';
 
   var AX = window.WK_AXIS;
@@ -3342,5 +3343,24 @@ var __wkTimeline3d = function () {
 };
 
 /* 等接口把知识树取回来再跑 —— 拉不到、且本地没缓存时由 WK_API.boot 出兜底页，绝不留白屏。
-   没有 api.js 的场合（测试脚手架把本文件拼进去跑）就同步执行，行为与改造前完全一致。 */
+   没有 api.js 的场合（测试脚手架把本文件拼进去跑）就同步执行，行为与改造前完全一致。
+
+   这一层只多做一件事：**先问一句有没有「三维交互图谱」这一项权益**，有才去渲染。
+   它是"后台能配"的一项（tutorial_3d），而且**服务端拦不住它** —— 数据来自公开的知识树接口，
+   服务端给不出"这一份数据只给会员"的切法，只能在前台按权益决定渲不渲染。
+   （服务端拦得住的那类见 apps/api/src/middleware/perk.ts，两者不是一回事。）
+   渲染本身还是 __wkRender3d，那一大段一行没动。 */
+function __wkTimeline3d() {
+  var ENT = window.WK_ENT;
+  if (!ENT) { __wkRender3d(); return; }
+  ENT.ready().then(function () {
+    if (ENT.has('tutorial_3d')) { __wkRender3d(); return; }
+    var host = document.querySelector('[data-t3-wrap]');
+    if (!host) { __wkRender3d(); return; }
+    ENT.paintGate('tutorial_3d', host,
+      '三维视图可以转着看知识点在轴上的位置与前后衔接，二维那一页看不出这些。' +
+      '当前方案里没有这一项 —— 开通之后这一页直接变成 3D。');
+  });
+}
+
 if (window.WK_API) { window.WK_API.boot(__wkTimeline3d); } else { __wkTimeline3d(); }

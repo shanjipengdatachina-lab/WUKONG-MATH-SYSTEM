@@ -247,6 +247,25 @@
     /* 原来那几块写死的分组整块换掉 */
     all('.group', main).forEach(function (el) { el.remove(); });
 
+    /* 容量是后台配的（免费版 50 道，在「套餐与服务项目」里改）。
+       **超了也要如实说**：演示数据里就有 158 道 —— 那是导入进来的历史数据，
+       不受后来配的容量约束。装作没这回事，比把话说明白更糟。 */
+    var quota = data.quota;
+    if (typeof quota === 'number') {
+      var cap = document.createElement('p');
+      cap.className = 'wk-note';
+      if (quota === 0) {
+        cap.innerHTML = '当前方案<strong>不含错题本</strong>。' +
+          '<a href="membership.html">看会员方案</a>';
+      } else if (total >= quota) {
+        cap.innerHTML = '错题本已用 <strong>' + total + ' / ' + quota + '</strong> 道，满了 —— ' +
+          '再做错的题不会再归档。<a href="membership.html">开通会员</a>之后不限量。';
+      } else {
+        cap.innerHTML = '错题本已用 <strong>' + total + ' / ' + quota + '</strong> 道。';
+      }
+      main.insertBefore(cap, main.firstChild);
+    }
+
     if (!items.length) {
       var empty = document.createElement('p');
       empty.className = 'wk-note';
