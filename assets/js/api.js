@@ -94,6 +94,13 @@
     if (cached && cached.version) { url += '?version=' + encodeURIComponent(cached.version); }
 
     var opts = {};
+    /* **必须带 `credentials: 'include'`**：本地开发时学生在 5173、接口在 3000，
+       这是跨源请求，而 fetch 的默认是 `same-origin` —— 不带这行就**不送 cookie**，
+       `/me/learning` 直接 401，然后被下面那条"退回演示那一份"兜住。
+       症状极隐蔽：页面照常显示林一鸣的数据（演示那份跟他自己的长得一模一样），
+       于是"登录后看自己的"其实一直没生效，谁都不会发现。
+       （生产是 Nginx 同域，本来就会送，但这条不能靠环境侥幸。） */
+    opts.credentials = 'include';
     if (ctrl) { opts.signal = ctrl.signal; }
 
     return window.fetch(url, opts).then(
@@ -181,31 +188,44 @@
   /* --------------------------------------------------------------------------
      学习数据（个人中心 / 学习进度 / 时间轴用的那一整份）
      登录了取自己的（/me/learning），没登录取演示学生的（/learning/demo，公开）。
+
+     **"我是谁"要问服务端，不读本机那个镜像。** 镜像（`wkmath.user`）是给侧栏
+     立刻写得出姓名用的显示缓存；拿它当身份判据的话，会话过期时就会带着一个
+     "看起来登录着"的假象去请求，然后被下面那条降级兜住 —— 又是一次"看着对、其实错"。
+
      **这一份拉不到不算致命**：视图那边还有本机生成的那条老路兜着，
      所以这里失败只记一条日志，不弹兜底页 —— 拿不到个人数据就把整页变成错误页，太重了。
      -------------------------------------------------------------------------- */
+  function whoIsMine() {
+    if (window.WK_AUTH && window.WK_AUTH.ready) {
+      return window.WK_AUTH.ready().then(
+        function (u) { return u ? (u.username || '') : ''; },
+        function () { return ''; },
+      );
+    }
+    return Promise.resolve('');
+  }
+
   function learning() {
-    var who = null;
-    try { who = window.localStorage.getItem('wkmath.user'); } catch (e) { who = null; }
-    var mine = !!who;
+    return whoIsMine().then(function (who) {
+      var cached = readCache(LEARN_KEY);
+      /* 缓存是跟人走的：换了人（或者退出登录）就不能拿上一份用 */
+      if (cached && (cached.who || '') !== who) { cached = null; }
 
-    var cached = readCache(LEARN_KEY);
-    /* 缓存是跟人走的：换了人（或者退出登录）就不能拿上一份用 */
-    if (cached && (cached.who || '') !== (who || '')) { cached = null; }
-
-    var path = mine ? '/me/learning' : '/learning/demo';
-    return getJson(path, cached, LEARN_KEY, who || '').then(function (got) {
-      return got;
-    }, function (err) {
-      if (cached) {
-        console.warn('[WK_API] 学习数据没拉通，用本地缓存：', err);
-        return { version: cached.version, data: cached.data, from: 'cache', error: err };
-      }
-      if (err && err.status === 401) {
-        /* 缓存说"我登录着"，服务端说没有 —— 那就是会话过期了，退回演示那一份。 */
-        return getJson('/learning/demo', null, LEARN_KEY, '');
-      }
-      throw err;
+      var path = who ? '/me/learning' : '/learning/demo';
+      return getJson(path, cached, LEARN_KEY, who).then(function (got) {
+        return got;
+      }, function (err) {
+        if (cached) {
+          console.warn('[WK_API] 学习数据没拉通，用本地缓存：', err);
+          return { version: cached.version, data: cached.data, from: 'cache', error: err };
+        }
+        if (err && err.status === 401) {
+          /* 服务端说这个会话没了 —— 退回演示那一份，别把页面留空 */
+          return getJson('/learning/demo', null, LEARN_KEY, '');
+        }
+        throw err;
+      });
     });
   }
 

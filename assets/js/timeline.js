@@ -1122,14 +1122,22 @@ var __wkTimeline = function () {
     return node;
   }
 
-  /* 一行就说完：谁是主语 + 从哪来的。不再有可点的东西（用户："不再切换"）。 */
+  /* 一行就说完：谁是主语 + 从哪来的。不再有可点的东西（用户："不再切换"）。
+     "从哪来的"要**照实说** —— 这一行原来是写死的"本机演示数据 · 按账号在本机算的"，
+     接上后台之后它就在骗人：数据其实来自 /api/me/learning。 */
   function renderWho() {
     if (!whoEl) { return; }
+    var srv = window.WK_LEARN_DATA;
+    var note;
+    if (srv && WHO.mine && srv.mine) { note = '服务器数据 · 就是你自己的'; }
+    else if (srv && !WHO.mine) { note = '演示数据 · 登录后看自己的'; }
+    else if (WHO.mine) { note = '服务器没连上 · 按账号在本机算的'; }
+    else { note = '演示数据 · 登录后看自己的'; }
+
     whoEl.textContent = '';
     whoEl.appendChild(whoNode('tk-who__lead', WHO.mine ? '我' : '演示学生'));
     whoEl.appendChild(whoNode('tk-who__chip is-on', WHO.grade ? WHO.name + ' · ' + WHO.grade : WHO.name));
-    whoEl.appendChild(whoNode('tk-who__note',
-      WHO.mine ? '本机演示数据 · 按账号在本机算的' : '演示数据 · 登录后看自己的'));
+    whoEl.appendChild(whoNode('tk-who__note', note));
   }
 
   /* ------------------------------------------------------------------ *
