@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>考试切片 · 悟空数学</title>
+    <!-- 阅读与显示设置：首屏前应用（字号方案 / 亮中暗配色）-->
+    <script src="assets/js/display.js"></script>
+    <link rel="stylesheet" href="assets/css/tokens.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <script src="assets/js/lucide.min.js"></script>
+    </head>
+<body class="min-h-screen font-sans antialiased">
+
+
+    <nav class="ide-rail" data-shell="2" aria-label="主导航">
+      <a class="ide-rail__brand" href="home.html" data-dom-id="nav-home" title="悟空数学 · 知识图谱">
+        <span class="ide-rail__mark" aria-hidden="true">悟</span>
+        <span class="ide-rail__brand-text">
+          <span class="ide-rail__brand-name">悟空数学</span>
+          <span class="ide-rail__brand-sub">知识图谱</span>
+        </span>
+      </a>
+      <span class="ide-rail__sep" aria-hidden="true"></span>
+
+      <div class="ide-rail__group">
+        <a class="ide-rail__item" href="home.html" data-nav-key="home" title="首页">
+          <i data-lucide="house" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">首页</span>
+        </a>
+        <a class="ide-rail__item" href="reader.html" data-nav-key="reader" title="章节">
+          <i data-lucide="book-open" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">章节</span>
+        </a>
+        <a class="ide-rail__item" href="graph.html" data-nav-key="graph" title="图谱">
+          <i data-lucide="git-fork" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">图谱</span>
+        </a>
+        <a class="ide-rail__item" href="timeline.html" data-nav-key="timeline" title="时间轴">
+          <i data-lucide="git-commit-horizontal" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">时间轴</span>
+        </a>
+        <a class="ide-rail__item" href="whiteboard.html" data-nav-key="whiteboard" title="白板">
+          <i data-lucide="presentation" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">白板</span>
+        </a>
+        <a class="ide-rail__item" href="exams.html" data-nav-key="exams" title="真题">
+          <i data-lucide="clipboard-list" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">真题</span>
+        </a>
+        <a class="ide-rail__item" href="methods.html" data-nav-key="methods" title="方法">
+          <i data-lucide="lightbulb" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">方法</span>
+        </a>
+        <a class="ide-rail__item" href="forum.html" data-nav-key="forum" title="论坛">
+          <i data-lucide="messages-square" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">论坛</span>
+        </a>
+      </div>
+
+      <div class="ide-rail__foot">
+        <span class="ide-rail__sep" aria-hidden="true"></span>
+        <button type="button" class="ide-rail__item" id="toggle-fullscreen" aria-pressed="false" title="全屏模式">
+          <i data-lucide="maximize" class="ide-rail__icon ide-rail__icon--fs-on"></i>
+          <i data-lucide="minimize" class="ide-rail__icon ide-rail__icon--fs-off"></i>
+          <span class="ide-rail__label">全屏</span>
+        </button>
+        <a class="ide-rail__item ide-rail__search" href="search.html" title="搜索知识点">
+          <i data-lucide="search" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">搜索</span>
+        </a>
+        <a class="ide-rail__item" href="notifications.html" title="消息通知">
+          <i data-lucide="bell" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">消息</span>
+        </a>
+        <a class="ide-rail__account" href="profile.html" title="个人中心">
+          <span class="ide-rail__avatar" aria-hidden="true">林</span>
+          <span class="ide-rail__label">林一鸣</span>
+        </a>
+        <a class="ide-rail__item" href="settings.html" title="设置">
+          <i data-lucide="settings" class="ide-rail__icon"></i>
+          <span class="ide-rail__label">设置</span>
+        </a>
+      </div>
+    </nav>
+
+    <main>
+      <div class="acct">
+        <aside class="acct-side">
+          <p class="acct-side__title">学习中心</p>
+          <nav class="acct-side__nav" aria-label="学习中心">
+            <a class="acct-side__item" href="profile.html" data-dom-id="side-profile">个人中心</a>
+            <a class="acct-side__item" href="mistakes.html" data-dom-id="side-mistakes">错题本</a>
+            <a class="acct-side__item" href="favorites.html" data-dom-id="side-favorites">收藏夹</a>
+            <a class="acct-side__item" href="progress.html" data-dom-id="side-progress">学习进度</a>
+            <a class="acct-side__item" href="exam-slices.html" data-dom-id="side-slices">考试切片</a>
+            <a class="acct-side__item" href="membership.html" data-dom-id="side-membership">会员中心</a>
+            <a class="acct-side__item" href="report.html" data-dom-id="side-report">学习报告</a>
+            <a class="acct-side__item" href="notebook.html" data-dom-id="side-notebook">笔记汇总</a>
+            <a class="acct-side__item" href="settings.html" data-dom-id="side-settings">账号设置</a>
+          </nav>
+        </aside>
+
+        <div class="acct-main">
+          <div class="page-head">
+            <p class="page-head__crumb">学习中心／考试切片</p>
+            <h1 class="page-head__title">考试切片</h1>
+            <p class="page-head__desc">把考完的卷子拍下来传上来，标上日期和这次的情况 ——
+              攒够几张之后，这里会告诉你哪几章反复出错、成绩是往上还是往下走。</p>
+            <div class="page-head__acts">
+              <button type="button" class="btn btn--primary" id="upload-open">上传一张卷子</button>
+            </div>
+          </div>
+
+          <section class="sec" aria-labelledby="rpt-title">
+            <div class="sec__head">
+              <h2 class="sec__title" id="rpt-title">考情报告</h2>
+              <span class="sec__note">按上传的切片自动汇总</span>
+            </div>
+            <div class="rpt" id="slice-report"><p class="wk-note">正在汇总…</p></div>
+          </section>
+
+          <section class="sec" aria-labelledby="list-title">
+            <div class="sec__head">
+              <h2 class="sec__title" id="list-title">我的切片</h2>
+              <span class="sec__note" id="slice-count">正在取…</span>
+            </div>
+            <div id="slice-list"><p class="wk-note">正在取…</p></div>
+          </section>
+
+          <section class="sec" id="upload-sec" hidden aria-labelledby="up-title">
+            <div class="sec__head">
+              <h2 class="sec__title" id="up-title">上传一张卷子</h2>
+              <span class="sec__note">一次考试 = 一张切片</span>
+            </div>
+            <form class="up" id="slice-form">
+              <div class="up__row">
+                <span class="up__lab">卷子照片</span>
+                <div class="up__field">
+                  <input type="file" id="up-file" accept="image/*" multiple>
+                  <div class="up__thumbs" id="up-thumbs"><span class="up__hint">还没有图片</span></div>
+                  <p class="up__hint">可以一次选正面和反面。上传前会自动压到长边 1600，不用管原图多大。</p>
+                </div>
+              </div>
+              <div class="up__row">
+                <label class="up__lab" for="up-name">考试名称</label>
+                <div class="up__field">
+                  <input id="up-name" maxlength="191" placeholder="五年级上 · 第一单元综合素养评价">
+                </div>
+              </div>
+              <div class="up__row">
+                <label class="up__lab" for="up-date">考试日期</label>
+                <div class="up__field"><input id="up-date" type="date"></div>
+              </div>
+              <div class="up__row">
+                <label class="up__lab" for="up-subject">科目</label>
+                <div class="up__field"><input id="up-subject" maxlength="64" value="数学" placeholder="数学"></div>
+              </div>
+              <div class="up__row">
+                <label class="up__lab" for="up-type">卷型</label>
+                <div class="up__field"><input id="up-type" maxlength="32" value="单元卷" placeholder="单元卷 / 期中 / 期末 / 模拟"></div>
+              </div>
+              <div class="up__row">
+                <span class="up__lab">得分</span>
+                <div class="up__field up__pair">
+                  <input id="up-score" type="number" min="0" placeholder="得分">
+                  <span class="up__slash">/</span>
+                  <input id="up-full" type="number" min="1" placeholder="满分">
+                  <span class="up__hint">不填也行 —— 有时候只想知道错在哪。</span>
+                </div>
+              </div>
+              <div class="up__row">
+                <label class="up__lab" for="up-note">这次的情况</label>
+                <div class="up__field">
+                  <textarea id="up-note" rows="3" maxlength="4000" placeholder="哪几道错了、错在哪、考试时什么感觉…"></textarea>
+                </div>
+              </div>
+              <div class="up__row">
+                <span class="up__lab">考了哪几章</span>
+                <div class="up__field">
+                  <input id="up-ch-filter" placeholder="搜章节名…（不选也行）">
+                  <div class="up__chaps" id="up-chaps"></div>
+                  <p class="up__hint">选了之后，这张切片会落到 3D 时间轴的这一段上；报告里的「薄弱章节」也按它归。</p>
+                </div>
+              </div>
+              <div class="up__acts">
+                <button type="submit" class="btn btn--primary" id="up-submit">存成一张切片</button>
+                <button type="button" class="btn btn--ghost" id="up-cancel">取消</button>
+                <p class="up__msg" id="up-note-msg"></p>
+              </div>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      <footer class="shell-footer">
+        <div class="shell-footer__inner">
+          <p class="shell-footer__legal">悟空数学知识图谱 · 小学到高中四套教材 · 竞赛章节框架</p>
+          <nav class="shell-footer__links" aria-label="页脚导航">
+            <a class="shell-footer__link" href="graph.html" data-dom-id="foot-graph">知识图谱</a>
+            <a class="shell-footer__link" href="reader.html" data-dom-id="foot-reader">章节索引</a>
+            <a class="shell-footer__link" href="practice.html" data-dom-id="foot-practice">考点速练</a>
+            <a class="shell-footer__link" href="about.html" data-dom-id="foot-about">关于本站</a>
+          </nav>
+        </div>
+      </footer>
+    </main>
+
+    <style id="shell-styles">
+.shell-footer{border-top:1px solid var(--math-border);background:var(--math-background);margin-top:80px}.shell-footer__inner{max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}.shell-footer__legal{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}.shell-footer__links{display:flex;flex-wrap:wrap;gap:24px}.shell-footer__link{font-size:calc(13px * var(--math-fs));color:var(--math-ink-2);text-decoration:none;transition:color 140ms cubic-bezier(.2,.8,.2,1)}.shell-footer__link:hover{color:var(--math-primary)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 18px;border-radius:var(--math-radius-md);font-size:calc(14px * var(--math-fs));font-weight:500;line-height:1;text-decoration:none;cursor:pointer;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),border-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.btn--primary{background:var(--math-primary);color:var(--math-primary-foreground);border:1px solid var(--math-primary)}.btn--primary:hover{background:var(--math-primary-strong);border-color:var(--math-primary-strong)}.btn--ghost{background:transparent;color:var(--math-ink);border:1px solid var(--math-border)}.btn--ghost:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.btn--sm{height:32px;padding:0 12px;font-size:calc(13px * var(--math-fs))}.btn:focus-visible,.shell-footer__link:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px}body{padding-top:0}
+</style>
+    <style id="page-styles">
+.acct{max-width:1280px;margin:0 auto;padding:36px 32px 0;display:grid;grid-template-columns:216px minmax(0,1fr);gap:48px;align-items:start}.acct-side{position:sticky;top:88px}.acct-side__title{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);letter-spacing:.08em;padding:0 12px 10px}.acct-side__nav{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--math-border);padding-top:10px}.acct-side__item{display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 12px;border-radius:var(--math-radius-sm);font-size:calc(14px * var(--math-fs));color:var(--math-ink-2);text-decoration:none;transition:background-color 140ms cubic-bezier(.2,.8,.2,1),color 140ms cubic-bezier(.2,.8,.2,1)}.acct-side__item:hover{background:var(--math-surface);color:var(--math-foreground)}.acct-side__item[data-active="true"]{color:var(--math-primary);font-weight:500}.acct-main{min-width:0}.page-head{border-bottom:1px solid var(--math-border);padding-bottom:20px;margin-bottom:24px;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}.page-head__crumb{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);margin-bottom:10px;flex:1 0 100%}.page-head__title{font-size:calc(clamp(1.75rem,3vw,2.25rem) * var(--math-fs));font-weight:600;letter-spacing:-0.02em;line-height:1.25;color:var(--math-foreground)}.page-head__desc{font-size:calc(14px * var(--math-fs));color:var(--math-ink-2);margin-top:8px;line-height:1.7;max-width:52em}.page-head__acts{display:flex;gap:10px}.sec{margin-top:36px}.sec__head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}.sec__title{font-size:calc(15px * var(--math-fs));font-weight:600;color:var(--math-foreground)}.sec__note{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);margin-left:auto}.wk-note{margin:0;padding:18px 0;font-size:calc(13px * var(--math-fs));line-height:1.9;color:var(--math-ink-3)}.dim{color:var(--math-ink-3)}.link-plain{color:var(--math-primary);text-decoration:none}
+.rpt{border:1px solid var(--math-border);border-radius:var(--math-radius-md);padding:20px}.rpt__kpis{display:flex;flex-wrap:wrap;gap:34px;margin-bottom:6px}.rpt__kpi{display:flex;flex-direction:column;gap:2px}.rpt__kpi b{font-size:calc(24px * var(--math-fs));font-weight:600;font-variant-numeric:tabular-nums;color:var(--math-foreground)}.rpt__kpi span{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}.rpt__range{margin:10px 0 0;font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}.rpt__h{margin:22px 0 10px;font-size:calc(14px * var(--math-fs));font-weight:600;color:var(--math-foreground)}.rpt__sub{font-weight:400;font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}.rpt__bars{display:flex;flex-direction:column;gap:8px}.rpt__bar{display:grid;grid-template-columns:64px 1fr 150px;align-items:center;gap:12px}.rpt__bar-date{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);font-variant-numeric:tabular-nums}.rpt__bar-track{height:12px;border-radius:6px;background:var(--math-surface);overflow:hidden}.rpt__bar-track i{display:block;height:100%;background:var(--math-primary);border-radius:6px}.rpt__bar-num{font-size:calc(12px * var(--math-fs));color:var(--math-ink-2);font-variant-numeric:tabular-nums}.rpt__chaps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}.rpt__chaps li{display:grid;grid-template-columns:1fr 190px;gap:8px 14px;padding-bottom:10px;border-bottom:1px solid var(--math-border)}.rpt__chap-name{font-size:calc(14px * var(--math-fs));color:var(--math-foreground)}.rpt__chap-meta{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);text-align:right}.rpt__chap-cause{grid-column:1/-1;font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}.rpt__boxes{margin:14px 0 0;font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.sc{border:1px solid var(--math-border);border-radius:var(--math-radius-md);overflow:hidden;display:flex;flex-direction:column}.sc__img{width:100%;height:150px;object-fit:cover;background:var(--math-surface);display:block}.sc__img--none{display:flex;align-items:center;justify-content:center;color:var(--math-ink-3);font-size:calc(13px * var(--math-fs))}.sc__body{padding:14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}.sc__name{margin:0;font-size:calc(15px * var(--math-fs));font-weight:600;color:var(--math-foreground)}.sc__meta{margin:0;font-size:calc(12px * var(--math-fs));color:var(--math-ink-2)}.sc__rate{margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--math-surface);color:var(--math-primary);font-weight:600}.sc__note{margin:0;font-size:calc(13px * var(--math-fs));line-height:1.8;color:var(--math-ink-2)}.sc__acts{margin-top:auto;display:flex;gap:8px;padding-top:8px}
+.up{display:flex;flex-direction:column;gap:16px;border:1px solid var(--math-border);border-radius:var(--math-radius-md);padding:20px}.up__row{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:start}.up__lab{font-size:calc(13px * var(--math-fs));color:var(--math-ink-2);padding-top:9px}.up__field{display:flex;flex-direction:column;gap:8px;min-width:0}.up__field input[type=text],.up__field input[type=date],.up__field input[type=number],.up__field input:not([type]),.up__field textarea{width:100%;padding:8px 10px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);background:var(--math-background);color:var(--math-foreground);font-size:calc(14px * var(--math-fs));font-family:inherit}.up__field input:focus-visible,.up__field textarea:focus-visible{outline:2px solid var(--math-ring);outline-offset:1px}.up__pair{flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap}.up__pair input{width:110px}.up__slash{color:var(--math-ink-3)}.up__hint{margin:0;font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);line-height:1.8}.up__thumbs{display:flex;gap:12px;flex-wrap:wrap}.up__item{display:flex;flex-direction:column;gap:4px;width:110px}.up__thumb{position:relative;display:block;width:110px;height:88px;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);overflow:hidden}.up__thumb img{width:100%;height:100%;object-fit:cover;display:block}.up__thumb-x{position:absolute;top:4px;right:4px;width:24px;height:24px;padding:0;line-height:1;border-radius:50%;border:1px solid var(--math-border);background:var(--math-background);color:var(--math-ink);cursor:pointer;font-size:calc(14px * var(--math-fs))}.up__thumb-x:hover{border-color:var(--math-line-strong);color:var(--math-foreground)}.up__thumb-l{font-size:calc(11px * var(--math-fs));color:var(--math-ink-3)}.up__chaps{max-height:230px;overflow:auto;border:1px solid var(--math-border);border-radius:var(--math-radius-sm);padding:8px}.up__chaps-head{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3);padding:2px 4px 8px}.up__chap{display:flex;align-items:center;gap:8px;padding:5px 4px;font-size:calc(13px * var(--math-fs));color:var(--math-ink-2);cursor:pointer;border-radius:var(--math-radius-sm)}.up__chap:hover{background:var(--math-surface)}.up__acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--math-border);padding-top:16px}.up__msg{margin:0;font-size:calc(13px * var(--math-fs));color:var(--math-ink-3)}.up__msg[data-tone="bad"]{color:#b42318}.up__msg[data-tone="ok"]{color:var(--math-primary)}
+@media (max-width:1023px){.acct{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:24px}.acct-side{position:static}}@media (max-width:767px){.up__row{grid-template-columns:minmax(0,1fr);gap:6px}.up__lab{padding-top:0}.rpt__bar{grid-template-columns:52px 1fr;gap:6px}.rpt__bar-num{grid-column:2}.rpt__chaps li{grid-template-columns:minmax(0,1fr)}.rpt__chap-meta{text-align:left}}
+</style>
+    <script>lucide.createIcons();</script>
+    <link rel="stylesheet" href="assets/css/shell.css">
+    <link rel="stylesheet" href="assets/css/ide.css">
+    <script src="assets/js/shell.js"></script>
+    <script src="assets/js/api.js"></script>
+    <script src="assets/js/auth-client.js"></script>
+    <script src="assets/js/entitlement.js"></script>
+    <script src="assets/js/exam-slices-live.js"></script>
+    <script src="assets/js/ide-shell.js"></script>
+    <script src="assets/js/board-link.js"></script>
+    <script src="assets/js/pages.js"></script>
+</body>
+</html>

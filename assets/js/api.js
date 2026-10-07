@@ -19,6 +19,9 @@
   var CACHE_KEY = 'wkmath.api.tree.v1';
   var LEARN_KEY = 'wkmath.api.learning.v1';
   var TIMEOUT_MS = 8000;
+  /* 上传图片单独放宽：一张两三 MB 的照片在手机网络下 8 秒根本传不完，
+     拿取数那套超时去卡它，等于"大一点就传不上"。 */
+  var UPLOAD_TIMEOUT_MS = 60000;
 
   /* --------------------------------------------------------------------------
      接口地址
@@ -42,6 +45,21 @@
     }
     return '/api';
   }());
+
+  /* --------------------------------------------------------------------------
+     静态资源地址
+     上传接口回的 `url` 是**挂在接口那台机器根上**的（`/uploads/2026/10/xxx.jpg`），
+     不是挂在 `/api` 底下的 —— 生产由 Nginx 把 `/uploads` 反代到接口，同域相对路径就够；
+     本地开发学生端在 5173、接口在 3000，相对路径会指到 5173 去（那边没有这个目录），
+     所以要把 `/api` 这一段摘掉、只留源站。
+     -------------------------------------------------------------------------- */
+  var ORIGIN = BASE.replace(/\/api$/, '');
+
+  function assetUrl(url) {
+    if (!url) { return ''; }
+    if (/^https?:\/\//i.test(url)) { return url; }
+    return ORIGIN + (url.charAt(0) === '/' ? url : '/' + url);
+  }
 
   /* --------------------------------------------------------------------------
      本地只读缓存
@@ -152,6 +170,49 @@
             var e = new Error(msg);
             e.status = res.status;
             e.code = (parsed && parsed.error && parsed.error.code) || 'UNKNOWN';
+            /* 服务端说"缺的是哪一项服务项目"时会带上 perk（403 PERK_REQUIRED）——
+               透给页面，它才能说出"缺的是哪一项"，而不是一句笼统的"要开通会员"。 */
+            e.perk = (parsed && parsed.error && parsed.error.perk) || undefined;
+            throw e;
+          }
+          return parsed;
+        });
+      },
+      function () {
+        window.clearTimeout(timer);
+        var e = new Error('连不上服务器');
+        e.status = 0;
+        throw e;
+      }
+    );
+  }
+
+  /* --------------------------------------------------------------------------
+     原样发一个 body —— **上传图片走这条**。
+     不套 FormData、也不转 base64：服务端收的就是原始字节（见上传接口那段注释）。
+     把 File / Blob 直接当 body，浏览器自己会按二进制发出去。
+     -------------------------------------------------------------------------- */
+  function requestRaw(path, body, contentType) {
+    var ctrl = typeof window.AbortController === 'function' ? new window.AbortController() : null;
+    var timer = window.setTimeout(function () { if (ctrl) { ctrl.abort(); } }, UPLOAD_TIMEOUT_MS);
+
+    var opts = { method: 'POST', credentials: 'include', headers: {} };
+    if (contentType) { opts.headers['Content-Type'] = contentType; }
+    opts.body = body;
+    if (ctrl) { opts.signal = ctrl.signal; }
+
+    return window.fetch(BASE + path, opts).then(
+      function (res) {
+        window.clearTimeout(timer);
+        if (res.status === 204) { return null; }
+        return res.text().then(function (text) {
+          var parsed = null;
+          try { parsed = text ? JSON.parse(text) : null; } catch (e) { parsed = null; }
+          if (!res.ok) {
+            var msg = (parsed && parsed.error && parsed.error.message) || ('接口回了 ' + res.status);
+            var e = new Error(msg);
+            e.status = res.status;
+            e.code = (parsed && parsed.error && parsed.error.code) || 'UNKNOWN';
             throw e;
           }
           return parsed;
@@ -168,6 +229,9 @@
 
   function get(path) { return request('GET', path); }
   function post(path, body) { return request('POST', path, body === undefined ? {} : body); }
+  function del(path) { return request('DELETE', path); }
+  /** 上传图片：原样发 body（File / Blob / ArrayBuffer），不套 JSON 也不套 FormData */
+  function raw(path, body, contentType) { return requestRaw(path, body, contentType); }
 
   /* --------------------------------------------------------------------------
      知识树
@@ -339,6 +403,9 @@
     learning: learning,
     get: get,
     post: post,
+    del: del,
+    raw: raw,
+    asset: assetUrl,
     dropLearningCache: dropLearningCache,
     ready: ready,
     boot: boot,
