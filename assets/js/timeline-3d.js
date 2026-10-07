@@ -200,6 +200,9 @@ var __wkRender3d = function () {
   var grid = readColor('--math-line');
   var accent = readColor('--math-primary');
   var weak = readColor('--math-bar-weak');
+  /* 「我传的卷子」这一层专用色：**故意避开考试那层的 accent**，一眼分得开是两回事
+     （照旧从令牌读，不写死；挑"应用层"那一档的黄，和主色蓝差得开）。 */
+  var upColor = readColor('--math-lv-3');
   var FS = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--math-fs')) || 1;
   var FONT = (getComputedStyle(document.documentElement).getPropertyValue('--math-font-sans') || '').trim() ||
              'sans-serif';
@@ -274,6 +277,87 @@ var __wkRender3d = function () {
         Math.max(1, e.paper.length)
     };
   });
+
+  /* ---- 学生自己上传的「考试切片」= **我传的卷子** ----
+     用户 2026-10-07："学生账户可以上传考试图片，标记年月日和考试情况……录进 3D 时间轴"。
+     这是**单独一层**：不与上面那 15 场演示考试（EXAMS）混在一起，字段形状相近但各走各的数组。
+     数据由 `GET /me/exam-slices` 异步取回（见文件末尾的 loadSlices），取不到就整层不画。 */
+  var SLICES = [];
+
+  /* 这一帧「我传的卷子」那几块板投影到屏幕上的四边形（与 `scanBoxes()` / `paperHit()`
+     同一个用途：验收和排查时能直接量"到底画了没有、画在哪"，不用靠肉眼）。 */
+  var UP_QUADS = [];
+
+  /* 知识点 id → 它在轴上占的**格号区间**。
+     为什么要在这儿自己再走一遍图谱：`timeline-axis.js` 摊平出来的 `ALL[i]` 只留了名字，
+     **没把节点 id 带下来**（它只服务"2D 与 3D 同一根轴"这一件事），而切片给的 `nodes[].id`
+     是后台的节点 id。这里的摊平规则与它逐条对齐（point 恒占一格；section 底下没有 point 才
+     自己占；chapter 底下没有 section / point 才自己占），并且**章节要把它底下的格子整段算进来**——
+     所以记的是每棵子树的格子区间，而不是"这个节点自己是不是一格"。 */
+  var NODE_SPAN = {};
+  (function buildNodeSpan() {
+    var tree = window.MATH_TREE;
+    if (!tree || !tree.children) { return; }
+    var n = 0;
+    (function walk(node) {
+      var start = n;
+      var kind = node.kind;
+      var kids = node.children || [];
+      if (kind === 'point') { n += 1; }
+      else if (kind === 'section') {
+        if (!kids.some(function (k) { return k.kind === 'point'; })) { n += 1; }
+      } else if (kind === 'chapter') {
+        if (!kids.some(function (k) { return k.kind === 'section' || k.kind === 'point'; })) { n += 1; }
+      }
+      kids.forEach(walk);
+      if (n > start && node.id !== undefined) { NODE_SPAN[node.id] = [start, n - 1]; }
+    }(tree));
+  }());
+
+  /** 后台的切片 → 渲染要的形状。`score / full / rate` 可能是 null（学生可以不填分数），原样留着。 */
+  function adaptSlices(list) {
+    return (list || []).map(function (s) {
+      var cells = [];
+      (s.nodes || []).forEach(function (nd) {
+        var sp = NODE_SPAN[nd.id];
+        if (!sp) { return; }
+        for (var i = sp[0]; i <= sp[1]; i += 1) {
+          /* 只留落在**当前学段视窗**里的格子（轴外的画不出来） */
+          if (i >= SPAN.from && i < SPAN.to) { cells.push(i - SPAN.from); }
+        }
+      });
+      cells = cells.filter(function (v, i, a) { return a.indexOf(v) === i; })
+        .sort(function (a, b) { return a - b; });
+      /* **连续的那几段**：画板要一段一块地画。
+         标的两章在轴上离得远时（三年级与六年级），拿 min…max 画一整块会把
+         中间根本不属这次考试的一大段也罩进去 —— 那是假的覆盖范围。
+         `range` 仍留着（相机取景要一个整体跨度），画板用 `runs`。 */
+      var runs = [];
+      cells.forEach(function (c) {
+        var last = runs[runs.length - 1];
+        if (last && c === last[1] + 1) { last[1] = c; } else { runs.push([c, c]); }
+      });
+      return {
+        id: 'S' + s.id,            /* 与 E1…E15 不撞 */
+        sid: s.id,
+        name: s.name,
+        day: parseDay(s.date),     /* YYYY-MM-DD → 毫秒 */
+        date: s.date,
+        subject: s.subject || '',
+        paperType: s.paperType || '',
+        score: s.score === undefined ? null : s.score,
+        full: s.full === undefined ? null : s.full,
+        rate: s.rate === undefined ? null : s.rate,
+        boxes: s.boxes || [],
+        nodes: (s.nodes || []).map(function (n) { return n.name; }),
+        cells: cells,
+        runs: runs,
+        /* 没标章节（或标了但都不在本学段）→ **没有格可定位**：老实设 null，
+           画的时候只在它那天立一枚"一格宽"的窄标记并写"未标章节"，不编一个假范围。 */
+        range: cells.length ? [cells[0], cells[cells.length - 1]] : null
+      };
+    });
+  }
 
   /* ---- 「投入练习」那一层的数据 ----
      原型那条画的是"有效学习时间（分钟）+ 新题 / 复做"，我们**没有时长**这条数据，
@@ -507,6 +591,10 @@ var __wkRender3d = function () {
        然后鼠标滑上去的时候，它再显示透明度百分之百……大约是 80% 吧，你就直接定好，
        默认 80%，鼠标滑上去的时候 100%"）—— `true` 时那两张卷子按 100% 画。 */
     hoverPaper: false,
+    /* 「我传的卷子」那一层（学生自己传的切片）：`upload` = 钉住的那一张（**与 state.exam 各走各的**，
+       不共用考试那套选中机制，免得把 15 场演示考试的既有行为改坏）；`hoverUpload` = 划过的那一张。 */
+    upload: null,
+    hoverUpload: null,
     examWin: true,             /* 考试浮窗开着没有（收起来只是收起浮窗，钉子还在） */
     examTab: 'report',         /* 考试浮窗那一页：report（分析）/ paper（试卷） */
     railLevels: false,         /* 右侧那排：「难度层」点开没有（点开才展开五档勾选） */
@@ -1152,6 +1240,60 @@ var __wkRender3d = function () {
       });
     }
 
+    /* ---- 我传的卷子（学生自己上传的切片）：**另起一层**，与上面那 15 场考试分开画 ----
+       样子要一眼看得出不是考试：**换一个色**（`upColor`，和考试那层的 accent 明显不同）、
+       **描边走虚线**、板上一直写着"名字 + 得分"。
+       这一层**不受右侧那颗「切片」开关管**（那颗管的是上面那 15 场演示考试），一直画。
+
+       **它也不跟时间条走**（上面那 15 场是"只画已经考过的"）。原因是一条真事：
+       这个时间轴的"今天"是演示数据冻结的 2026-06-30，而学生今天传上来的卷子日期是
+       2026-10-07 —— 照"只画考过的"这条规则，他刚传完的卷子在轴上根本看不见，
+       看上去就是"功能没生效"。自己传的卷子必须传完就看得见。
+       位置仍由它**自己的日期**定（`zOf` 会把越过窗口的日期夹到轴尾），所以不会乱跑。 */
+    UP_QUADS = [];
+    if (state.view !== 'axis' && SLICES.length) {
+      SLICES.slice().sort(function (a, b) { return b.day - a.day; }).forEach(function (s) {
+        if (s.day === null) { return; }        /* 日期都读不出来的那条：不画 */
+        var z = zOf(s.day);
+        var hot = state.upload === s.id;
+        var hov = state.hoverUpload === s.id;
+        /* 板上这一行：名字 + 得分（没填分数就写"没记分数"） */
+        var sc = (s.score === null || s.score === undefined)
+          ? '没记分数'
+          : (s.score + '/' + s.full + ' · ' +
+             (s.rate === null || s.rate === undefined
+               ? Math.round(s.score / s.full * 100) : Math.round(s.rate * 100)) + '%');
+        var label = s.name + ' · ' + sc;
+        /* **一段一块板**（见 adaptSlices 里 runs 那段注释）。没标章节的（runs 空）
+           就立一枚一格宽的窄标记，如实写"未标章节"，不编一个假跨度。 */
+        var segs = s.runs.length
+          ? s.runs
+          : [[(range[0] + range[1]) / 2 - 0.5, (range[0] + range[1]) / 2 + 0.5]];
+        var labeled = false;
+        segs.forEach(function (run) {
+          var a = Math.max(range[0], run[0]) - 0.5;
+          var b = Math.min(range[1], run[1]) + 0.5;
+          if (b < a) { return; }
+          var pts = [p(xx(a), 0, z), p(xx(b), 0, z), p(xx(b), 21, z), p(xx(a), 21, z)];
+          polygon(pts, upColor, hot ? 0.06 : hov ? 0.04 : 0.016);
+          pts.forEach(function (pt, k) {
+            line(pt, pts[(k + 1) % 4], upColor, hot ? 0.55 : hov ? 0.7 : 0.28,
+                 (hot || hov) ? 1.7 : 1.1, [3, 3]);
+          });
+          /* 字只写在第一块板上 —— 分两段时写两遍会重影 */
+          if (!labeled) {
+            text(label, { x: pts[3].x, y: pts[3].y - 19 }, upColor, 'left', 12);
+            if (!s.runs.length) {
+              text('未标章节', { x: pts[3].x, y: pts[3].y + 15 }, upColor, 'left', 11);
+            }
+            labeled = true;
+          }
+          UP_QUADS.push(pts);
+          dots.push({ upQuad: pts, upload: s.id, r: 0 });
+        });
+      });
+    }
+
     /* ---- 知识柱（原型：一根竖线 + 基点） ---- */
     /* ---- 投入练习图层（照参照原型那个模块：按时间数投入量）----
        原型画的是"有效学习时间（分钟）+ 新题 / 复做"两段，我们**没有时长**这条数据，
@@ -1552,7 +1694,12 @@ var __wkRender3d = function () {
     var dot = null;          /* 最近的那个"点"（板上的考点 / 柱脚 / 那一排里的题） */
     var dotD = 1e9;
     var quad = null;         /* 落在哪块板面上 */
+    var up = null;           /* 落在我传的卷子那一层的哪块板上（与考试板面分开记） */
     hitRef.current.forEach(function (pt) {
+      if (pt.upQuad) {
+        if (inQuad(x, y, pt.upQuad)) { up = pt; }
+        return;
+      }
       if (pt.quad) {
         if (inQuad(x, y, pt.quad)) { quad = pt; }
         return;
@@ -1580,6 +1727,9 @@ var __wkRender3d = function () {
     if (dot && dotD <= 12) { return dot; }
     if (quad) { return quad; }
     if (dot && dotD < 22) { return dot; }
+    /* 我传的卷子那块板：排在上面那些之后（**最低优先**，别抢了考试的板面与点），
+       点它就是"钉住这一张、聚焦过去"。 */
+    if (up) { return up; }
     /* 立在场景里那两张**实物卷**：**最低优先级** —— 卷子很大，可要紧的交互（点那道题、
        点考点、点板面）都压在它身上，别把它们抢了。点它就是"把这张卷子平整地展开"。 */
     var pp = hitPaper(x, y);
@@ -1679,6 +1829,8 @@ var __wkRender3d = function () {
     var ex = best && best.exam ? best.exam : null;
     var onSlice = !!(best && best.onSlice);
     var onRow = !!(best && best.onRow);
+    /* 划到的"我传的卷子"那一层（它的板面单独记，见 hit 里的 upQuad） */
+    var upId = (best && best.upload !== undefined) ? best.upload : null;
     /* 光标压在某根轴上吗（用户 2026-10-01："如果鼠标放在时间轴上的时候，就可以缩放"）——
        压上了就把这一根点亮、光标变成"缩放"；轴上本来没有别的东西，所以这一路优先。 */
     var rect = canvas ? canvas.getBoundingClientRect() : { left: 0, top: 0 };
@@ -1726,9 +1878,11 @@ var __wkRender3d = function () {
         : onSlice ? 'crosshair'
           : (best && (best.quad || onRow || best.paperPage !== undefined)) ? 'pointer' : '';
     }
+    /* 压在我传的卷子那块板上 → 也是"可以点"（单独一行，免得动上面那条已被守线钉住的写法） */
+    if (canvas && upId) { canvas.style.cursor = 'pointer'; }
     if (id !== state.hovered || ex !== state.hoverExam || onSlice !== state.hoverSlice ||
         axKey !== state.axisHot || !ptSame || !rowSame || !cardSame ||
-        overPaper !== state.hoverPaper) {
+        overPaper !== state.hoverPaper || upId !== state.hoverUpload) {
       state.hovered = id;
       state.hoverExam = ex;          /* 划过的那一场 → 给它描个边 */
       state.hoverSlice = onSlice;
@@ -1737,6 +1891,7 @@ var __wkRender3d = function () {
       state.hoverRow = rowInfo;
       state.hoverCard = cardInfo;    /* 落在哪一块 → 底部那一行提示说出来 */
       state.hoverPaper = overPaper;  /* 压在实物卷上 → 那两张按 100% 重画（默认 80%） */
+      state.hoverUpload = upId;      /* 划过的那张我传的卷子 → 给它把虚边描重 */
       render();
       syncReadout();
     }
@@ -1746,7 +1901,7 @@ var __wkRender3d = function () {
   function clearHover() {
     if (state.hovered === null && state.hoverExam === null && !state.hoverSlice &&
         !state.axisHot && !state.hoverPt && !state.hoverRow && !state.hoverCard &&
-        !state.hoverPaper) { return; }
+        !state.hoverPaper && state.hoverUpload === null) { return; }
     state.hovered = null;
     state.hoverExam = null;
     state.hoverSlice = false;
@@ -1755,6 +1910,7 @@ var __wkRender3d = function () {
     state.hoverRow = null;
     state.hoverCard = null;
     state.hoverPaper = false;
+    state.hoverUpload = null;
     if (canvas) { canvas.style.cursor = ''; }
     render();
     syncReadout();
@@ -1814,6 +1970,12 @@ var __wkRender3d = function () {
 
   function select(e) {
     var best = hit(e);
+    /* 点在**我传的卷子**那块板上（新的一层，与 15 场演示考试各走各的）：
+       钉住这一张、把相机聚焦过去；再点一次同一块就松开。**state.exam 一个字都不碰。** */
+    if (best && best.upload !== undefined) {
+      pickUpload(best.upload);
+      return;
+    }
     /* 板上的点**先让位给板面**（用户 2026-09-30："我点击切片，现在还给我出这个考点和这个
        分析、试卷呀？……默认是不出现的，是干干净净的"）：这一场还没钉住时，点在板子上**任何
        地方**都算"点这块板" —— 板上的覆盖点非常密，不让位的话随手一点就命中一个点，
@@ -1897,6 +2059,8 @@ var __wkRender3d = function () {
       state.hoverSlice = false;
       state.hoverPt = null;
       state.hoverRow = null;
+      /* 「我传的卷子」那一层也一样：点空白顺手把它的钉子松开（它不归考试那套机制管） */
+      state.upload = null;
       if (canvas) { canvas.style.cursor = ''; }
       /* `state.exam` 一个字都不碰、相机一行都不动 —— 点空白只是"取消选中的那个点"，
          不是"退出这一场"。要退出只有右侧那颗「回到总轴」。 */
@@ -1904,6 +2068,7 @@ var __wkRender3d = function () {
     render();
     syncReadout();
     syncZoomLabel();
+    if (upRef && upRef.box) { renderUploads(); }   /* 列表那一小节的选中态跟着刷新 */
   }
 
   /* 把相机**适配到这一场考试**（用户 2026-09-30："直接聚焦到'我的这次考试'这个图……
@@ -2714,8 +2879,10 @@ var __wkRender3d = function () {
     state.pickedQ = null;
     state.exam = null;
     state.examWin = false;
+    state.upload = null;      /* 我传的卷子那一层也一起松开（它与考试各走各的） */
     /* 先空渲染一帧：旋转焦点跟着"松开之后"重算，zoomFitAll 才是这个状态下的量 */
     render();
+    if (upRef && upRef.box) { renderUploads(); }
     camTo({ center: (RANGE[0] + RANGE[1]) / 2, zoom: fitZoom(), yaw: state.yaw, pitch: state.pitch,
             panX: 0, panY: 0, flat: 1 });
   }
@@ -2794,6 +2961,152 @@ var __wkRender3d = function () {
       b.setAttribute('aria-label', cnDate(e.date) + ' · ' + e.name);
       box.appendChild(b);
     });
+  }
+
+  /* ---- 「我传的卷子」那一小节 ----
+     这一层是**新加的**，页面上没有给它留位置（配套的 timeline-3d.html 一个字不动），
+     所以整块由脚本自己建：一个标题 + 每张卷子一行（名字 · 日期 · 得分），
+     点一行 = 钉住它、聚焦过去；下面跟着这一张的详情与「去管理切片」入口。
+     位置落在**右上角**（右侧那一竖排是垂直居中的，上面这块地方一直是空的）。
+     颜色一律走 `readColor()` 令牌，字号乘 --math-fs，和页面里其它块同一把尺子。 */
+  var upRef = { box: null, list: null, detail: null };
+
+  function sliceById(id) {
+    var out = null;
+    SLICES.forEach(function (s) { if (s.id === id) { out = s; } });
+    return out;
+  }
+
+  /** 聚焦到某一张我传的卷子（与 focusExam 同一套相机动作，只是数据源换成切片）。
+      没标章节那种没有 X 跨度，就取轴中段一格宽。 */
+  function focusUpload(s) {
+    var a = s.range ? Math.max(RANGE[0], s.range[0]) - 0.5 : (RANGE[0] + RANGE[1]) / 2 - 0.5;
+    var b = s.range ? Math.min(RANGE[1], s.range[1]) + 0.5 : a + 1;
+    var w = (b - a) / N * 100;
+    camTo({
+      center: (a + b) / 2,
+      zoom: Math.max(1, Math.min(2.6, 100 / Math.max(26, w * 3.2))),
+      yaw: state.yaw, pitch: state.pitch, panX: 0, panY: 0, flat: 0
+    });
+  }
+
+  /** 钉住 / 松开一张我传的卷子（再点同一块 = 松开）。**只碰 state.upload，不碰 state.exam。** */
+  function pickUpload(id) {
+    var s = sliceById(id);
+    if (!s) { return; }
+    if (state.upload === id) {
+      state.upload = null;
+    } else {
+      state.upload = id;
+      state.hoverUpload = null;
+      focusUpload(s);
+    }
+    render();
+    syncReadout();
+    syncZoomLabel();
+    renderUploads();
+  }
+
+  function buildUploads() {
+    if (!SLICES.length) { return; }
+    var stage = document.querySelector('.t3-stage') || document.querySelector('[data-t3]');
+    if (!stage || !document.createElement) { return; }
+    if (!upRef.box) {
+      var box = document.createElement('div');
+      box.className = 't3-uploads';
+      box.setAttribute('data-t3-uploads', '');
+      box.setAttribute('aria-label', '我传的卷子');
+      box.style.cssText =
+        'position:absolute;top:12px;right:18px;z-index:6;width:232px;max-height:45%;' +
+        'overflow:auto;padding:8px 10px 10px;border-radius:' + readColor('--math-radius-lg') + ';' +
+        'border:1px solid ' + readColor('--math-border') + ';' +
+        'background:' + readColor('--math-panel') + ';color:' + readColor('--math-ink-2') + ';' +
+        'box-shadow:' + readColor('--math-shadow-1') + ';' +
+        'font-size:calc(11.5px * var(--math-fs));';
+      var head = document.createElement('div');
+      head.className = 't3-uploads__head';
+      head.textContent = '我传的卷子';
+      head.style.cssText = 'font-weight:600;color:' + readColor('--math-foreground') + ';margin-bottom:6px;';
+      box.appendChild(head);
+      upRef.list = document.createElement('div');
+      upRef.list.className = 't3-uploads__list';
+      box.appendChild(upRef.list);
+      upRef.detail = document.createElement('div');
+      upRef.detail.className = 't3-uploads__detail';
+      upRef.detail.style.cssText =
+        'margin-top:8px;padding-top:8px;border-top:1px solid ' + readColor('--math-border') + ';';
+      box.appendChild(upRef.detail);
+      /* 行是重画的，监听挂在容器上收口（和 exam-slices.html 那边同一个套路） */
+      box.addEventListener('click', function (ev) {
+        var t = ev.target;
+        while (t && t !== box && !(t.getAttribute && t.getAttribute('data-t3-upload'))) { t = t.parentNode; }
+        if (t && t !== box) { pickUpload(t.getAttribute('data-t3-upload')); }
+      });
+      stage.appendChild(box);
+      upRef.box = box;
+    }
+    renderUploads();
+  }
+
+  function renderUploads() {
+    if (!upRef.box || !upRef.list || !upRef.detail) { return; }
+    upRef.list.textContent = '';
+    SLICES.forEach(function (s) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 't3-uploads__row' + (state.upload === s.id ? ' is-on' : '');
+      row.setAttribute('data-t3-upload', s.id);
+      row.style.cssText = 'display:block;width:100%;text-align:left;padding:4px 6px;border:0;' +
+        'border-radius:8px;cursor:pointer;color:inherit;font:inherit;background:' +
+        (state.upload === s.id ? readColor('--math-primary-tint') : 'none') + ';';
+      var nm = document.createElement('span');
+      nm.style.cssText = 'display:block;color:' + readColor('--math-foreground') + ';';
+      nm.textContent = s.name;
+      var mt = document.createElement('span');
+      mt.style.cssText = 'display:block;color:' + readColor('--math-ink-4') + ';font-variant-numeric:tabular-nums;';
+      mt.textContent = s.date + ' · ' +
+        ((s.score === null || s.score === undefined) ? '没记分数' : s.score + '/' + s.full);
+      row.appendChild(nm);
+      row.appendChild(mt);
+      upRef.list.appendChild(row);
+    });
+    /* 选中那一张的详情：名字 / 日期 / 科目·卷型 / 得分 / 覆盖哪几章 / 框出来的错题 + 去管理切片 */
+    var s = state.upload === null ? null : sliceById(state.upload);
+    upRef.detail.textContent = '';
+    if (!s) {
+      var tip = document.createElement('p');
+      tip.style.cssText = 'margin:0;color:' + readColor('--math-ink-4') + ';';
+      tip.textContent = '点上面一张，看它的详情。';
+      upRef.detail.appendChild(tip);
+      return;
+    }
+    var scoreTxt = (s.score === null || s.score === undefined)
+      ? '没记分数'
+      : (s.score + ' / ' + s.full +
+         ((s.rate === null || s.rate === undefined) ? '' : '（' + Math.round(s.rate * 100) + '%）'));
+    [['名字', s.name],
+     ['日期', s.date],
+     ['科目 / 卷型', (s.subject || '—') + ' / ' + (s.paperType || '—')],
+     ['得分', scoreTxt],
+     ['覆盖章节', s.nodes.length ? s.nodes.join('、') : '没标章节'],
+     ['框出的错题', s.boxes.length + ' 道']].forEach(function (kv) {
+      var d = document.createElement('div');
+      var k = document.createElement('span');
+      k.style.cssText = 'display:inline-block;min-width:66px;color:' + readColor('--math-ink-4') + ';';
+      k.textContent = kv[0];
+      var v = document.createElement('span');
+      v.style.cssText = 'color:' + readColor('--math-ink-2') + ';';
+      v.textContent = kv[1];
+      d.appendChild(k);
+      d.appendChild(v);
+      upRef.detail.appendChild(d);
+    });
+    var link = document.createElement('a');
+    link.className = 't3-uploads__link';
+    link.href = 'exam-slices.html';
+    link.textContent = '去管理切片 →';
+    link.style.cssText = 'display:inline-block;margin-top:6px;color:' + accent + ';';
+    upRef.detail.appendChild(link);
   }
 
   function buildTimebar() {
@@ -3303,6 +3616,11 @@ var __wkRender3d = function () {
   window.WK_TIMELINE_3D = {
     state: state, render: render, resize: resize,
     nodes: NODES, exams: EXAMS, stages: STAGES, range: RANGE,
+    /* 「我传的卷子」那一层（学生自己上传的切片）—— 验收 / 排查时直接调它读数据 */
+    slices: function () { return SLICES; },
+    upload: function () { return state.upload; },
+    /* 这一帧「我传的卷子」那几块板的屏幕四边形（验收时量"画了没有、画在哪"） */
+    uploadQuads: function () { return UP_QUADS; },
     /* 调试用：当前这一帧的投影与取景（体检 / 排查透视时直接调它量） */
     project: function (x, y, z) { return viewRef.current ? viewRef.current.project(x, y, z) : null; },
     toScreen: function (x, y, z) { return viewRef.current ? viewRef.current.p(x, y, z) : null; },
@@ -3340,6 +3658,22 @@ var __wkRender3d = function () {
       return out;
     }
   };
+
+  /* ---- 取学生自己传的切片（**异步**；渲染本身是同步跑完的，所以拿到之后再重画一次）----
+     `WK_API.get` 已经处理了 401 / 超时 / 兜底（见 api.js）。这里**失败就静默**：
+     没登录 / 接口没通 / 一条切片都没有 → 这一层干脆不画，绝不因此崩掉整张图、也不弹兜底页。
+     测试脚手架里可能没有 `window.WK_API`，所以要能容错（没有就直接跳过）。 */
+  (function loadSlices() {
+    var API = window.WK_API;
+    if (!API || !API.get) { return; }
+    API.get('/me/exam-slices').then(function (d) {
+      SLICES = adaptSlices((d && d.items) || []);
+      if (!SLICES.length) { return; }
+      buildUploads();     /* 右侧那一小节 */
+      render();           /* 拿到数据后重画一帧，这一层就出来了 */
+      syncReadout();
+    }, function () { /* 静默：没登录 / 接口没通 / 没切片 */ });
+  }());
 };
 
 /* 等接口把知识树取回来再跑 —— 拉不到、且本地没缓存时由 WK_API.boot 出兜底页，绝不留白屏。
