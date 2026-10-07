@@ -94,91 +94,33 @@
         </nav>
 
         <header class="rhead">
-          <p class="rhead__no">第二章 整式的加减 · 真题速练</p>
+          <p class="rhead__no">考点速练 · 练习结果</p>
           <h1 class="rhead__title">练习结果</h1>
-          <p class="rhead__meta">提交于今天 20:14 · 用时 4 分 12 秒</p>
+          <p class="rhead__meta" id="pr-meta">正在读取…</p>
 
-          <section class="score" aria-label="成绩概览">
-            <div class="score__item">
-              <p class="score__num">3 / 4</p>
-              <p class="score__label">答对</p>
-            </div>
-            <div class="score__item">
-              <p class="score__num">75%</p>
-              <p class="score__label">正确率</p>
-            </div>
-            <div class="score__item">
-              <p class="score__num score__num--bad">1</p>
-              <p class="score__label">答错</p>
-            </div>
-            <div class="score__item">
-              <p class="score__num">4′12″</p>
-              <p class="score__label">用时</p>
-            </div>
-          </section>
+          <section class="score" aria-label="成绩概览" id="pr-score"></section>
 
-          <div class="bar" role="progressbar" aria-label="本次正确率" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
-            <div class="bar__fill" style="width:75%"></div>
+          <div class="bar" role="progressbar" aria-label="本次正确率" id="pr-bar"
+            aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div class="bar__fill" id="pr-bar-fill" style="width:0"></div>
           </div>
         </header>
 
         <section class="sec" aria-labelledby="review-heading">
           <div class="sec__head">
             <h2 class="sec__title" id="review-heading">逐题回顾</h2>
-            <span class="sec__note">4 题</span>
+            <span class="sec__note" id="pr-count"></span>
           </div>
 
-          <a class="arow" href="practice.html">
-            <span class="arow__no">第 1 题</span>
-            <span class="arow__body">
-              <span class="arow__stem">下列各式中，是单项式的是（　）</span>
-              <span class="arow__meta">
-                <span class="arow__tag">考点 1 整式的概念</span>
-              </span>
-            </span>
-            <span class="arow__verdict arow__verdict--ok"><i data-lucide="check" style="width:14px;height:14px"></i>答对</span>
-          </a>
-
-          <a class="arow" href="practice.html">
-            <span class="arow__no">第 2 题</span>
-            <span class="arow__body">
-              <span class="arow__stem">下列计算正确的是（　）</span>
-              <span class="arow__meta">
-                <span class="arow__tag">考点 2 整式的加减</span>
-              </span>
-            </span>
-            <span class="arow__verdict arow__verdict--ok"><i data-lucide="check" style="width:14px;height:14px"></i>答对</span>
-          </a>
-
-          <a class="arow" href="mistakes.html" data-dom-id="result-review-mistake">
-            <span class="arow__no">第 3 题</span>
-            <span class="arow__body">
-              <span class="arow__stem">单项式 <span class="m">−3x²y</span> 的系数是　　　，次数是　　　。</span>
-              <span class="arow__meta">
-                <span class="arow__tag">考点 1 整式的概念</span>
-              </span>
-            </span>
-            <span class="arow__verdict arow__verdict--bad"><i data-lucide="x" style="width:14px;height:14px"></i>答错</span>
-          </a>
-
-          <a class="arow" href="practice.html">
-            <span class="arow__no">第 4 题</span>
-            <span class="arow__body">
-              <span class="arow__stem">化简：<span class="m">(3x² − 2x) − (x² − 3x)</span></span>
-              <span class="arow__meta">
-                <span class="arow__tag">考点 2 整式的加减</span>
-              </span>
-            </span>
-            <span class="arow__verdict arow__verdict--ok"><i data-lucide="check" style="width:14px;height:14px"></i>答对</span>
-          </a>
+          <div id="pr-rows"></div>
+          <p class="pr-empty" id="pr-empty" hidden>还没有已交的练习 ——
+            <a href="practice.html">先去做一组</a>，做完的结果会留在这一页。</p>
         </section>
 
-        <div class="note">
-          <p>本次答错的 <strong>1</strong> 道题已自动加入错题本，按「第二章 整式的加减」归档。建议今天订正，明天再练一次同考点。</p>
-        </div>
+        <div class="note" id="pr-note" hidden></div>
 
         <div class="actions">
-          <a class="btn btn--ghost" href="practice.html" data-dom-id="result-retry">重做本组</a>
+          <a class="btn btn--ghost" href="practice.html" data-dom-id="result-retry">再练一组</a>
           <div class="actions__right">
             <a class="btn btn--primary" href="chapter.html" data-dom-id="result-next-chapter">进入下一章</a>
             <a class="btn btn--ghost" href="mistakes.html">查看错题本</a>
@@ -214,7 +156,7 @@ body{font-variant-numeric:tabular-nums}
 .arow:focus-visible{outline:2px solid var(--math-ring);outline-offset:2px;background:var(--math-surface)}
 .actions .btn{flex:0 0 auto}
 @media (max-width:640px){.actions{margin-top:24px}.actions__right{margin-left:0}.score{row-gap:20px}.arow{gap:10px}.arow__no{min-width:40px}}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
+.arow__verdict--done{color:var(--math-ink-3)}.pr-loading,.pr-empty{font-size:calc(14px * var(--math-fs));color:var(--math-ink-3);padding:20px 0;margin:0}.pr-empty a{color:var(--math-primary)}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}</style>
 
     <script>lucide.createIcons();</script>
     <link rel="stylesheet" href="assets/css/shell.css">
@@ -225,5 +167,6 @@ body{font-variant-numeric:tabular-nums}
     <script src="assets/js/ide-shell.js"></script>
     <script src="assets/js/board-link.js"></script>
     <script src="assets/js/pages.js"></script>
+    <script src="assets/js/practice-result-live.js"></script>
 </body>
 </html>

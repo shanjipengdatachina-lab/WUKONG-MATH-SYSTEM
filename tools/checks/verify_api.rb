@@ -128,6 +128,45 @@ mods.each_value do |(src, g)|
   issues << "#{src} 里出现了接口地址（取数只该经 api.js）" if js =~ %r{/\?version=|fetch\(base}
 end
 
-puts '接口层体检：零构建 / 只有一扇门（只有 api.js 取树）/ 只读缓存且处处包 try / 版本走查询参数(+304)+超时 / 拉不到走兜底页不白屏 / 四张页面挂 api.js 不挂 math-tree.js / 四个模块走 boot 且保留同步兜底'
+# ---------- 8. 断网降级：退缓存可以，「问不到」不许说成「没有」 ----------
+# 2026-10-07 手工验收查出来的两条（造断网的办法：`kill -STOP` 冻住接口那个进程，
+# 端口还听着但不回话 —— 请求挂到 8 秒撞超时。见计划文档那一节）：
+#   ① entitlement.js 拉不到就把 ent 判成 null → has() 恒 false → 一个**买了会员**的人
+#      断网打开 3D 页，被自己的页面拦在门外，还被告知"当前方案里没有这一项"；
+#   ② auth-client.js 在"连不上"时也走 clearShell() → 顺手把跟人走的学习缓存删了，
+#      而那份缓存存在的意义正是为了断网时还能看。
+# 守线钉住修完之后的写法（都是字面匹配，散文里提到同名字词不会误报）。
+auth = read('assets/js/auth-client.js')
+ent  = read('assets/js/entitlement.js')
+
+# ① 把"服务端说没登录(401)"和"根本没答上(连不上)"分开
+issues << 'auth-client.js 没有区分「401」和「连不上」（两条都当没登录）' unless
+  auth =~ /err\.status === 0/ && auth =~ /err\.status === 401/
+issues << 'auth-client.js 的 clearShell() 没有守在 401 上 —— 连不上时也清，就把离线缓存一起删了' unless
+  auth.include?('if (err && err.status === 401) { clearShell(); }')
+issues << 'auth-client.js 没把 reachable() 挂出去（上层分不出「确实没登录」和「问不到」）' unless
+  auth.include?('reachable: reachable')
+issues << 'auth-client.js 没把 mirrorName() 挂出去（断网时认不出本地这份缓存是谁的）' unless
+  auth.include?('mirrorName: mirrorName')
+
+# ② api.js 认"缓存是谁的"时，问不到就退镜像
+issues << 'api.js 的 whoIsMine() 没退回镜像 —— 断网会把"自己那份"判成"别人的"丢掉' unless
+  api.include?('WK_AUTH.mirrorName')
+
+# ③ entitlement.js 要有只读缓存，且"问不到"单独一支
+issues << 'entitlement.js 没有权益缓存（断网只能一律判成"没有"）' unless
+  ent.include?('CACHE_KEY') && ent.include?('readCache') && ent.include?('writeCache')
+issues << 'entitlement.js 没把「问不到」单独分出来（会替用户断言"你没开通"）' unless
+  ent.include?('state.unknown') && ent.include?('data-ent-unknown')
+issues << 'entitlement.js 的「问不到」那张牌上没有说人话的正文' unless
+  ent.include?('现在问不到你的权益')
+# 反向：权益缓存**不许**用来顶替请求（套餐一改就该立刻反映，拿缓存顶会把"改了没生效"藏起来）。
+# 写法上就两条：成功那支只**写**缓存；以及"读缓存"全文件只有一处 —— 就是失败那一支。
+issues << 'entitlement.js 拉到权益后没把它存下来（断网就没得退）' unless
+  ent.include?('writeCache(ent, who)')
+issues << 'entitlement.js 不止一处读缓存 —— 权益缓存只该在"拉不到"时用，不许拿来顶替请求' unless
+  ent.scan(/= readCache\(\);/).size == 1
+
+puts '接口层体检：零构建 / 只有一扇门（只有 api.js 取树）/ 只读缓存且处处包 try / 版本走查询参数(+304)+超时 / 拉不到走兜底页不白屏 / 四张页面挂 api.js 不挂 math-tree.js / 四个模块走 boot 且保留同步兜底 / 断网降级（401 与连不上分开、权益有缓存、"问不到"不说成"没有"）'
 puts issues.empty? ? '接口层体检全部通过 ✓' : issues.map { |i| "  ✗ #{i}" }.join("\n")
 exit(issues.empty? ? 0 : 1)

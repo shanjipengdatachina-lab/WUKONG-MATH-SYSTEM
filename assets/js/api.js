@@ -229,6 +229,7 @@
 
   function get(path) { return request('GET', path); }
   function post(path, body) { return request('POST', path, body === undefined ? {} : body); }
+  function patch(path, body) { return request('PATCH', path, body === undefined ? {} : body); }
   function del(path) { return request('DELETE', path); }
   /** 上传图片：原样发 body（File / Blob / ArrayBuffer），不套 JSON 也不套 FormData */
   function raw(path, body, contentType) { return requestRaw(path, body, contentType); }
@@ -263,7 +264,16 @@
   function whoIsMine() {
     if (window.WK_AUTH && window.WK_AUTH.ready) {
       return window.WK_AUTH.ready().then(
-        function (u) { return u ? (u.username || '') : ''; },
+        function (u) {
+          if (u) { return u.username || ''; }
+          /* **"这一会儿问不到"要退回镜像里那个登录名** —— 它是本地那份缓存的主人。
+             不这么退的话，一次网络抖动就会让下面那句 `cached.who !== who` 成立，
+             把自己那份缓存判成"别人的"直接丢掉（2026-10-07 手工验收查出来的）。
+             镜像只用来认"这份缓存是谁的"，不拿它当身份去决定发不发请求。 */
+          var asked = window.WK_AUTH.reachable ? window.WK_AUTH.reachable() : true;
+          if (asked) { return ''; }
+          return window.WK_AUTH.mirrorName ? window.WK_AUTH.mirrorName() : '';
+        },
         function () { return ''; },
       );
     }
@@ -273,7 +283,9 @@
   function learning() {
     return whoIsMine().then(function (who) {
       var cached = readCache(LEARN_KEY);
-      /* 缓存是跟人走的：换了人（或者退出登录）就不能拿上一份用 */
+      /* 缓存是跟人走的：换了人（或者退出登录）就不能拿上一份用。
+         注意 `who` 可能来自**镜像**（连不上时）—— 那正是为了"断网还能看自己那份"，
+         见 whoIsMine() 里那段。 */
       if (cached && (cached.who || '') !== who) { cached = null; }
 
       var path = who ? '/me/learning' : '/learning/demo';
@@ -403,6 +415,7 @@
     learning: learning,
     get: get,
     post: post,
+    patch: patch,
     del: del,
     raw: raw,
     asset: assetUrl,

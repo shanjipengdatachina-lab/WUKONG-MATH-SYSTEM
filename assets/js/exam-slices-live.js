@@ -223,6 +223,7 @@
       '<p class="sc__meta dim">覆盖 ' + (s.nodes || []).length + ' 章 · 框了 ' +
       (s.boxes || []).length + ' 道错题</p>' +
       '<div class="sc__acts">' +
+      '<a class="btn btn--primary btn--sm" href="exam-slice-detail.html?id=' + s.id + '">标注错题</a>' +
       (img ? '<a class="btn btn--ghost btn--sm" href="' + esc(API.asset(img.url)) +
         '" target="_blank" rel="noopener">看原图</a>' : '') +
       '<button type="button" class="btn btn--ghost btn--sm" data-del="' + s.id + '">删除</button>' +

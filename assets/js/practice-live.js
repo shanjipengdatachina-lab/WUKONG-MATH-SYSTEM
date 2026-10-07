@@ -8,6 +8,9 @@
         都翻不到答案；判分发生在服务端（设计稿 §3.6：前端说了不算）。
      2. **未登录不许做。** 用户原话："真题可以一直看，方法也是公共的，
         但是要用题库那时候，我就需要登录了。" 所以没登录时这一块只出一张登录卡。
+     3. **白板题（kind=board）判不了分，但绝不判错。** 它们只有题面（58 道真题面），
+        学生能在纸上真做完 —— 标「做完了」记一笔习题量，跳过的服务器会把那条撤掉。
+        页面上也不能把它们写成「错误」：那等于让学生背一件系统自己说做不到的事。
 
    依赖：assets/js/api.js（取数）、assets/js/auth-client.js（身份与闸）。
    写死的那个列表会被这里整块换掉（pages.js 对它的绑定随之失效，不影响别的功能）。
@@ -65,6 +68,15 @@
       'line-height:1.9;color:var(--math-ink-2)}' +
       '.quiz-status[data-tone="success"]{color:var(--math-primary)}' +
       '.quiz-status[data-tone="error"]{color:var(--math-danger,#b42318)}' +
+      '.quiz-status[data-tone="done"]{color:var(--math-ink-3)}' +
+      '.quiz-tag--board{color:var(--math-ink-3)}' +
+      '.board-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 6px}' +
+      '.board-done{height:34px;padding:0 14px;border:1px solid var(--math-border);' +
+      'border-radius:var(--math-radius-md);background:transparent;color:var(--math-ink);' +
+      'font-size:calc(13px * var(--math-fs));cursor:pointer}' +
+      '.board-done[aria-pressed="true"]{border-color:var(--math-primary);color:var(--math-primary)}' +
+      '.board-done:disabled{cursor:default}' +
+      '.board-row__note{font-size:calc(12px * var(--math-fs));color:var(--math-ink-3)}' +
       '.explain[hidden]{display:none}' +
       '.blank-row{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0 6px}' +
       '.blank-cell{display:inline-flex;align-items:center;gap:8px;font-size:calc(13px * var(--math-fs));' +
@@ -88,11 +100,21 @@
       var head = '<div class="quiz-head">' +
         '<span class="quiz-no">第 ' + (i + 1) + ' 题</span>' +
         (q.tag ? '<span class="quiz-tag">' + esc(q.tag) + '</span>' : '') +
+        (q.kind === 'board' ? '<span class="quiz-tag quiz-tag--board">白板题</span>' : '') +
         '<span class="quiz-status" hidden></span>' +
         '</div>';
 
       var body;
-      if (q.kind === 'blank') {
+      if (q.kind === 'board') {
+        /* 白板题：只有题面、没有标准答案，系统判不了分。
+           学生做完自己标一下 —— 标了才记「做了」（进习题量）。 */
+        body = '<p class="quiz-stem">' + q.stem + '</p>' +
+          '<div class="board-row">' +
+          '<button type="button" class="board-done" data-qid="' + q.id + '" aria-pressed="false">' +
+          '在纸上做完，标一下</button>' +
+          '<span class="board-row__note">只有题面、没有标准答案 —— 标记后只记「做了」，不判分。</span>' +
+          '</div>';
+      } else if (q.kind === 'blank') {
         body = '<p class="quiz-stem">' + q.stem + '</p>' +
           '<div class="blank-row">' + q.blanks.map(function (b, bi) {
             return '<label class="blank-cell"><span class="blank-cell__label">' + esc(b.label) + '</span>' +
@@ -124,7 +146,8 @@
   function renderSubmit() {
     return '<div class="quiz-actions" id="quiz-actions">' +
       '<button type="button" class="btn btn--primary" id="quiz-submit">提交并判分</button>' +
-      '<p class="quiz-actions__note" id="quiz-note">答案在服务端判 —— 页面上拿不到正确答案。</p>' +
+      '<p class="quiz-actions__note" id="quiz-note">判分在服务端 —— 页面上拿不到正确答案。' +
+      '白板题没有标准答案：标了「做完了」只记进习题量，不判分；不做也行。</p>' +
       '</div>';
   }
 
@@ -132,6 +155,17 @@
    * 交互
    * ------------------------------------------------------------------ */
   list.addEventListener('click', function (event) {
+    /* 白板题的「做完了」：再点一下取消 —— 取消就是这次没做，服务器会把那条撤掉 */
+    var doneBtn = event.target.closest ? event.target.closest('.board-done') : null;
+    if (doneBtn && !state.result) {
+      var bqid = Number(doneBtn.getAttribute('data-qid'));
+      var on = doneBtn.getAttribute('aria-pressed') === 'true';
+      doneBtn.setAttribute('aria-pressed', on ? 'false' : 'true');
+      doneBtn.textContent = on ? '在纸上做完，标一下' : '已标记「做完了」';
+      if (on) { delete state.picked[bqid]; } else { state.picked[bqid] = ''; }
+      return;
+    }
+
     var opt = event.target.closest ? event.target.closest('.opt') : null;
     if (opt && !state.result) {
       var qid = opt.getAttribute('data-qid');
@@ -172,8 +206,13 @@
 
   function submit() {
     var answers = collect();
-    if (answers.length < state.session.questions.length) {
-      setNote('还有 ' + (state.session.questions.length - answers.length) + ' 道没作答。都做完再交。', 'warn');
+    /* 判得了分的题必须都作答；白板题**跳不跳都行** ——
+       跳过的服务器会整条撤掉，不进「习题量」（也就刷不出数）。 */
+    var missing = state.session.questions.filter(function (q) {
+      return q.kind !== 'board' && !(q.id in state.picked);
+    }).length;
+    if (missing > 0) {
+      setNote('还有 ' + missing + ' 道（要判分的）没作答。都做完再交。', 'warn');
       return;
     }
     var btn = qs('#quiz-submit', list);
@@ -199,10 +238,26 @@
       var status = qs('.quiz-status', item);
       if (status) {
         status.hidden = false;
-        status.setAttribute('data-tone', d.correct ? 'success' : 'error');
-        status.innerHTML = '<i data-lucide="' + (d.correct ? 'check' : 'x') + '" class="quiz-status__icon" ' +
-          'style="width:14px;height:14px"></i><span>' + (d.correct ? '正确' : '错误') + '</span>';
+        if (d.judged === false) {
+          /* 白板题**不判分** —— 别写成「错误」 */
+          status.setAttribute('data-tone', 'done');
+          status.innerHTML = '<span>已记录 · 白板题不判分</span>';
+        } else {
+          status.setAttribute('data-tone', d.correct ? 'success' : 'error');
+          status.innerHTML = '<i data-lucide="' + (d.correct ? 'check' : 'x') + '" class="quiz-status__icon" ' +
+            'style="width:14px;height:14px"></i><span>' + (d.correct ? '正确' : '错误') + '</span>';
+        }
       }
+
+      var doneBtn = qs('.board-done', item);
+      if (doneBtn) {
+        doneBtn.disabled = true;
+        doneBtn.setAttribute('aria-pressed', 'true');
+        doneBtn.textContent = '已记入习题量';
+      }
+
+      /* 白板题没有正确答案、也没有解析 —— 那一段整块不出现 */
+      if (d.judged === false) { return; }
 
       qsa('.opt', item).forEach(function (b) {
         var key = b.getAttribute('data-key');
@@ -233,20 +288,27 @@
     if (actions) {
       /* 错题本满了会有几道进不去 —— 后台配的容量（免费版 50 道）。
          这种情况**必须说出来**：不说的话，学生只会觉得"我明明错了三道，怎么只多了一条"。 */
-      var wrongCount = res.total - res.correct;
+      /* 白板题进了习题量但不判分 —— 这两件事要分开说，
+         否则「对 3 / 20」看着像考砸了，其实判分的只有 4 道。 */
+      var wrongCount = res.judged - res.correct;
       var tail;
       if (wrongCount === 0) {
-        tail = '全对。';
+        tail = res.judged ? '判分的几道全对。' : '';
       } else if (typeof res.dropped === 'number' && res.dropped > 0) {
         tail = '错的 ' + wrongCount + ' 道里有 <b>' + res.dropped + '</b> 道没能进错题本 —— ' +
           '错题本满了（<a href="membership.html">开通会员</a>之后不限量）。';
       } else {
         tail = '错的 ' + wrongCount + ' 道已经进你的错题本。';
       }
-      actions.innerHTML = '<p class="quiz-actions__note" data-tone="done">得分 <b>' + res.score +
-        '</b> 分（对 ' + res.correct + ' / ' + res.total + '）。' + tail +
+      var boardTail = res.total > res.judged
+        ? '另有 <b>' + (res.total - res.judged) + '</b> 道白板题记进了习题量（它们没有标准答案，判不了分）。'
+        : '';
+      var scoreText = res.score === null
+        ? '这次没有可判分的题'
+        : '得分 <b>' + res.score + '</b> 分（对 ' + res.correct + ' / ' + res.judged + ' 道判分题）';
+      actions.innerHTML = '<p class="quiz-actions__note" data-tone="done">' + scoreText + '。' + tail + boardTail +
         '</p><a class="btn btn--ghost" href="mistakes.html">去错题本</a>' +
-        '<a class="btn btn--ghost" href="practice-result.html">看这次的结果</a>';
+        '<a class="btn btn--ghost" href="practice-result.html?id=' + res.sessionId + '">看这次的结果</a>';
     }
     icons();
   }

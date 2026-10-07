@@ -179,7 +179,25 @@
       body: row.body || '',
       floors: floors || new Array(row.replies || 0),
       mine: row.mine === true,
+      pinned: row.pinned === true,
+      good: row.good === true,
     };
+  }
+
+  /** 置顶/加精小标记 —— 列表里挂在标题前，颜色用 token 而不是写死。
+      用 inline 样式是因为 forum.html / board.html / my-posts.html 各自带 style 块，
+      在每个文件里加一遍样式不如这里集中管一份。 */
+  function pinTag(p) {
+    var s = 'display:inline-flex;align-items:center;height:18px;padding:0 6px;' +
+      'border-radius:var(--math-radius-xs);font-size:calc(11px * var(--math-fs));' +
+      'font-weight:600;margin-right:6px;line-height:1;letter-spacing:.04em;';
+    var out = '';
+    if (p.pinned) out += '<span class="post__pin" style="' + s +
+      'background:var(--math-primary-tint);color:var(--math-primary);">置顶</span>';
+    if (p.good) out += '<span class="post__good" style="' + s +
+      'background:color-mix(in srgb, var(--math-state-warning) 16%, transparent);' +
+      'color:var(--math-state-warning);">精</span>';
+    return out;
   }
 
   function toLocalFloor(r) {
@@ -204,7 +222,12 @@
       }
       return A.get('/forum/posts');
     }).then(function (list) {
-      REMOTE = { v: VER, posts: (list.items || []).map(function (p) { return toLocalPost(p); }) };
+      var posts = (list.items || []).map(function (p) { return toLocalPost(p); });
+      /* **原地更新**，不要整个换成新对象：页面里 `var db = load()` 早就把
+         REMOTE 这个引用存下来了（发完帖再 pullRemote 一次时，换新对象会让
+         db 还指着旧那份，列表就迟迟不刷新）。 */
+      if (REMOTE) { REMOTE.v = VER; REMOTE.posts = posts; }
+      else { REMOTE = { v: VER, posts: posts }; }
       return true;
     }, function () { return false; });
   }
@@ -336,7 +359,7 @@
     function postHtml(p) {
       return '<a class="post" href="forum-thread.html?id=' + encodeURIComponent(p.id) + '">' +
         '<div class="post__body">' +
-          '<p class="post__title">' + esc(p.title) + '</p>' +
+          '<p class="post__title">' + pinTag(p) + esc(p.title) + '</p>' +
           '<div class="post__meta">' +
             '<span class="post__tag">' + esc(boardOf(p.board).name) + '</span>' +
             '<span class="post__info">' + esc(p.author) + ' · <b>' + p.floors.length + '</b> 条回复 · ' + timeAgo(p.at) + '</span>' +
@@ -515,11 +538,36 @@
     if (titleEl) titleEl.textContent = post.title;
     if (tagEl) tagEl.textContent = boardOf(post.board).name;
     if (boardEl) boardEl.textContent = boardOf(post.board).name;
-    bodyEl.innerHTML = rich(post.body);
+    /* 占位文字里的名字要跟着这一帖的作者走（原来是写死的"陈知远"） */
+    if (replyBox) replyBox.placeholder = '回复' + post.author + '的帖子。公式用 $…$ 包起来，例如 $k > 0$';
+
+    var editing = false;      /* 编辑模式开关 */
+    var draft = '';           /* 编辑中的草稿，取消就丢掉 */
+    /** 正文区：平时渲染富文本，编辑态换成一个 textarea + 保存/取消 */
+    function renderBody() {
+      if (!bodyEl) return;
+      if (!editing) { bodyEl.innerHTML = rich(post.body); return; }
+      bodyEl.innerHTML =
+        '<textarea id="post-edit" class="thread__editor" rows="8"></textarea>' +
+        '<div class="thread__editacts">' +
+          '<button type="button" class="thread__save" data-edit="save">保存</button>' +
+          '<button type="button" class="thread__cancel" data-edit="cancel">取消</button>' +
+        '</div>';
+      var ta = byId('post-edit');
+      if (ta) ta.value = draft;
+    }
 
     function metaHtml() {
-      return '<a class="thread__author" href="user.html">' + esc(post.author) + '</a> · <b>' +
+      var s = '<a class="thread__author" href="user.html">' + esc(post.author) + '</a> · <b>' +
         post.floors.length + '</b> 条回复 · ' + timeAgo(post.at);
+      /* 作者本人能改删自己的帖；未登录/不是作者的帖不显示这两个按钮 */
+      if (post.mine && !editing) {
+        s += ' · <a class="thread__act" href="#" data-act="edit">改</a>';
+        s += ' · <a class="thread__act thread__act--danger" href="#" data-act="delete">删</a>';
+      }
+      if (post.pinned) s += ' · <span class="thread__mark">置顶</span>';
+      if (post.good) s += ' · <span class="thread__mark thread__mark--good">精</span>';
+      return s;
     }
     function floorHtml(f, i) {
       return '<article class="floor">' +
@@ -541,6 +589,7 @@
     function render() {
       if (metaEl) metaEl.innerHTML = metaHtml();
       if (viewsEl) viewsEl.innerHTML = '浏览 <b>' + (post.views || 0) + '</b>';
+      renderBody();
       if (floorsEl) {
         floorsEl.innerHTML = post.floors.length
           ? post.floors.map(floorHtml).join('')
@@ -559,8 +608,10 @@
         post.body = d.body || '';
         post.floors = (d.replies || []).map(toLocalFloor);
         post.mine = d.mine === true;
-        /* 列表接口不返回正文，所以正文要等这一趟才有内容 */
-        if (bodyEl) { bodyEl.innerHTML = rich(post.body); }
+        post.pinned = d.pinned === true;
+        post.good = d.good === true;
+        /* 正文靠 render() 里的 renderBody() 落笔 —— 列表接口不返回正文，
+           所以要等这一趟才有内容 */
         render();
       }, function () { /* 取不到就保持原样，别把已经渲染好的页面弄没了 */ });
     }
@@ -615,6 +666,62 @@
         toast('回复已发表');
       });
     }
+
+    /* ---- 作者改/删自己的帖（M5）---- */
+    if (metaEl) {
+      metaEl.addEventListener('click', function (event) {
+        var node = event.target && event.target.closest ? event.target.closest('[data-act]') : null;
+        if (!node) return;
+        var act = node.getAttribute('data-act');
+        if (act !== 'edit' && act !== 'delete') return;
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        /* 改删都落在服务端，没连服务器就只能提示一句 */
+        if (!REMOTE || !api()) { toast('改/删帖子要连上服务器才行'); return; }
+
+        if (act === 'edit') {
+          if (editing) return;
+          editing = true;
+          draft = post.body || '';
+          render();
+          var ta = byId('post-edit');
+          if (ta && ta.focus) ta.focus();
+          return;
+        }
+        if (window.confirm && !window.confirm('删掉这一帖？回复会一起删，不能恢复。')) return;
+        api().del('/forum/posts/' + encodeURIComponent(post.id)).then(function () {
+          toast('已删除');
+          window.location.href = 'forum.html';
+        }, function (err) {
+          toast((err && err.message) || '删除失败，再试一次');
+        });
+      });
+    }
+
+    /* 编辑态里的保存/取消 */
+    if (bodyEl) {
+      bodyEl.addEventListener('click', function (event) {
+        var node = event.target && event.target.closest ? event.target.closest('[data-edit]') : null;
+        if (!node) return;
+        if (typeof event.preventDefault === 'function') event.preventDefault();
+        var act = node.getAttribute('data-edit');
+        if (act === 'cancel') { editing = false; render(); return; }
+        if (act !== 'save') return;
+
+        var ta = byId('post-edit');
+        var text = (ta && ta.value ? ta.value : '').trim();
+        if (text.length < 2) { toast('正文太短了'); return; }
+        if (!REMOTE || !api()) { editing = false; post.body = text; save(db); render(); toast('已保存'); return; }
+
+        api().patch('/forum/posts/' + encodeURIComponent(post.id), { body: text }).then(function () {
+          editing = false;
+          post.body = text;
+          render();
+          toast('已保存');
+        }, function (err) {
+          toast((err && err.message) || '保存失败，再试一次');
+        });
+      });
+    }
     return true;
   }
 
@@ -651,7 +758,7 @@
     function rowHtml(p) {
       return '<a class="trow" href="forum-thread.html?id=' + encodeURIComponent(p.id) + '">' +
         '<div class="trow__body">' +
-          '<p class="trow__title">' + inline(p.title) + '</p>' +
+          '<p class="trow__title">' + pinTag(p) + inline(p.title) + '</p>' +
           '<div class="trow__meta">' +
             '<span class="trow__tag">' + esc(info.name) + '</span>' +
             '<span class="trow__info">' + esc(p.author) + ' · <b>' + p.floors.length +
@@ -721,7 +828,7 @@
         ? mine.map(function (p) {
           return '<a class="prow" href="forum-thread.html?id=' + encodeURIComponent(p.id) + '">' +
             '<div class="prow__body">' +
-              '<p class="prow__title">' + inline(p.title) + '</p>' +
+              '<p class="prow__title">' + pinTag(p) + inline(p.title) + '</p>' +
               '<div class="prow__meta">' +
                 '<span class="prow__tag">' + esc(boardOf(p.board).name) + '</span>' +
                 '<span class="prow__info"><b>' + p.floors.length + '</b> 条回复 · ' + timeAgo(p.at) + '</span>' +
