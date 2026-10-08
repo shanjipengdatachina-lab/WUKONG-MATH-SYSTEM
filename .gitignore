@@ -10,6 +10,9 @@ tools/checks/_build/
 # 设计讨论用的样张会话（brainstorming 视觉伴侣，本地留存，不入库）
 .superpowers/
 
+# 改工作目录外的文件时用的临时补丁器与锚点草稿（本地留存，不入库）
+.tmp-edit/
+
 # 系统 / 编辑器杂项
 .DS_Store
 *.swp
